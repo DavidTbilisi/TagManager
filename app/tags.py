@@ -53,7 +53,12 @@ def open_list_files_by_tag_result(array_of_file_path):
 
 def list_tags_all():
     tags = load_tags()
-    return tags
+    all_tags = []
+    for file, file_tags in tags.items():
+        for tag in file_tags:
+            if tag not in all_tags:
+                all_tags.append(tag)
+    return all_tags
 
 
 def list_files_by_tags(tag, exact=False):
@@ -68,3 +73,16 @@ def list_files_by_tags(tag, exact=False):
                 if re.search(tag, file_tag, re.IGNORECASE):
                     files.append(file)
     return files
+
+
+def search_tags(tag):
+    tags = load_tags()
+    tag_list = []
+    for file, file_tags in tags.items():
+        for file_tag in file_tags:
+            if re.search(tag, file_tag, re.IGNORECASE):
+                tag_list.append(file_tag)
+    return tag_list
+
+
+

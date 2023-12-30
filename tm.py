@@ -1,17 +1,15 @@
 import argparse
 import sys
-from app.tags import open_list_files_by_tag_result, list_files_by_tags
+from app.tags import open_list_files_by_tag_result, list_files_by_tags, list_tags_all, search_tags
 from app.list import list_tags
 from app.add import add_tags
 from app.remove import remove_tags
 from app.list_all import print_list_tags_all_table
+from app.storage import show_storage_location, open_storage_location
 
 sys.stdin.reconfigure(encoding='utf-8')
 sys.stdout.reconfigure(encoding='utf-8')
 
-
-# Define the file path for the tag file in the user's home directory
-# TAG_FILE = os.path.expanduser("~/file_tags.json")
 
 def main():
     parser = argparse.ArgumentParser(description="File Tagging System")
@@ -32,7 +30,15 @@ def main():
     parser_list.add_argument("file", help="Path to the file")
 
     # Subparser for list all
-    subparsers.add_parser('list-all', help='List all tags')
+    subparsers.add_parser('list-all', help='List all files and tags in a table')
+
+    # Subparser for storage
+    parser_storage = subparsers.add_parser('storage', help='Display storage location of the tag file')
+    parser_storage.add_argument("--open", action="store_true", help="Open the storage location")
+
+    # Subparser for tags
+    tags_parser = subparsers.add_parser('tags', help='List all tags')
+    tags_parser.add_argument('--search', help='List files by a specific tag')
 
     # Subparser for list files by tag
     parser_list_files_by_tag = subparsers.add_parser('tag-search', help='List files by a specific tag')
@@ -50,11 +56,21 @@ def main():
         print(list_tags(args.file))
     elif args.command == 'list-all':
         print_list_tags_all_table()
+    elif args.command == 'tags':
+        if args.search:
+            print(search_tags(args.search))
+        else:
+            print(list_tags_all())
     elif args.command == 'tag-search':
         if args.open:
             open_list_files_by_tag_result(list_files_by_tags(args.tag, args.exact))
         else:
             print(list_files_by_tags(args.tag, args.exact))
+    elif args.command == 'storage':
+        if args.open:
+            open_storage_location()
+        else:
+            print(show_storage_location())
     else:
         parser.print_help()
 
