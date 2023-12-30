@@ -1,27 +1,30 @@
 import os
 import sys
+import re
 from app.helpers import load_tags, save_tags
+
 
 def display_menu(array_of_file_path):
     print("\n\n")
-    for i, file in enumerate(array_of_file_path):
+    for i, file in enumerate(array_of_file_path, start=1):
         print(f"{i}. {file}")
     print("q. Quit")
     return input("Enter choice: ")
 
-def open_directory (file_path):
+
+def open_directory(file_path):
     if sys.platform.startswith('darwin'):
-        os.system(f"open {file_path}") # open in finder
+        os.system(f"open {file_path}")  # open in finder
     elif sys.platform.startswith('win32'):
-        os.system(f"explorer {file_path}") # open in explorer
+        os.system(f"explorer {file_path}")  # open in explorer
     elif sys.platform.startswith('linux'):
-        os.system(f"xdg-open {file_path}") # open in xdg-open
+        os.system(f"xdg-open {file_path}")  # open in xdg-open
     else:
         print('Unsupported OS')
 
+
 # after list_files_by_tags, suggest to open the file
 def open_list_files_by_tag_result(array_of_file_path):
-
     if len(array_of_file_path) == 0:
         print("No files found with that tag.")
         return
@@ -30,6 +33,7 @@ def open_list_files_by_tag_result(array_of_file_path):
         if choice == 'q':
             break
         else:
+            choice = int(choice) - 1
             try:
                 # if directory, open in finder or explorer or xdg-open for linux. depending on OS
                 if os.path.isdir(array_of_file_path[int(choice)]):
@@ -52,10 +56,15 @@ def list_tags_all():
     return tags
 
 
-def list_files_by_tags (tag):
+def list_files_by_tags(tag, exact=False):
     tags = load_tags()
     files = []
-    for file in tags:
-        if tag in tags[file]:
-            files.append(file)
+    for file, file_tags in tags.items():
+        if exact:
+            if tag in file_tags:
+                files.append(file)
+        else:
+            for file_tag in file_tags:
+                if re.search(tag, file_tag, re.IGNORECASE):
+                    files.append(file)
     return files

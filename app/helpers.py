@@ -17,6 +17,7 @@ def load_tags():
     with open(TAG_FILE, "r", encoding="utf-8") as file:
         return json.load(file)
 
+
 def save_tags(tags):
     with open(TAG_FILE, "w", encoding="utf-8") as file:
         json.dump(tags, file, indent=4)

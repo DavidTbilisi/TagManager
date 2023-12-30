@@ -9,6 +9,7 @@ from app.list_all import print_list_tags_all_table
 sys.stdin.reconfigure(encoding='utf-8')
 sys.stdout.reconfigure(encoding='utf-8')
 
+
 # Define the file path for the tag file in the user's home directory
 # TAG_FILE = os.path.expanduser("~/file_tags.json")
 
@@ -34,9 +35,10 @@ def main():
     subparsers.add_parser('list-all', help='List all tags')
 
     # Subparser for list files by tag
-    parser_list_files_by_tag = subparsers.add_parser('tagsearch', help='List files by a specific tag')
+    parser_list_files_by_tag = subparsers.add_parser('tag-search', help='List files by a specific tag')
     parser_list_files_by_tag.add_argument("tag", help="Tag to list files for")
-
+    parser_list_files_by_tag.add_argument("--open", action="store_true", help="Open the file")
+    parser_list_files_by_tag.add_argument("--exact", action="store_true", help="Exact match for tag")
 
     args = parser.parse_args()
 
@@ -48,10 +50,14 @@ def main():
         print(list_tags(args.file))
     elif args.command == 'list-all':
         print_list_tags_all_table()
-    elif args.command == 'tagsearch':
-        open_list_files_by_tag_result(list_files_by_tags(args.tag))
+    elif args.command == 'tag-search':
+        if args.open:
+            open_list_files_by_tag_result(list_files_by_tags(args.tag, args.exact))
+        else:
+            print(list_files_by_tags(args.tag, args.exact))
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     main()
