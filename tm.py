@@ -12,7 +12,10 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 
 def main():
-    parser = argparse.ArgumentParser(description="File Tagging System")
+    parser = argparse.ArgumentParser(
+        prog="tm",
+        description="Tag Manager - File Tagging System",
+    )
     subparsers = parser.add_subparsers(dest='command')
 
     # Subparser for add
