@@ -22,6 +22,7 @@ def main():
     parser_add = subparsers.add_parser('add', help='Add tags to a file')
     parser_add.add_argument("file", help="Path to the file")
     parser_add.add_argument("--tags", nargs='+', required=True, help="Tags to add")
+    # parser_add.add_argument("--desc", help="Description for the file")
 
     # Subparser for remove
     parser_remove = subparsers.add_parser('remove', help='Remove tags from a file')
@@ -33,7 +34,8 @@ def main():
     parser_list.add_argument("file", help="Path to the file")
 
     # Subparser for list all
-    subparsers.add_parser('list-all', help='List all files and tags in a table')
+    parser_list_all = subparsers.add_parser('list-all', help='List all files and tags in a table')
+    parser_list_all.add_argument("--ext", help="List files with a specific extension")
 
     # Subparser for storage
     parser_storage = subparsers.add_parser('storage', help='Display storage location of the tag file')
