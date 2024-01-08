@@ -1,7 +1,7 @@
 import argparse
 import sys
 from app.tags import open_list_files_by_tag_result, list_files_by_tags, list_tags_all, search_tags
-from app.list import list_tags
+from app.paths import path_tags, fuzzy_search_path
 from app.add import add_tags
 from app.remove import remove_tags
 from app.list_all import print_list_tags_all_table
@@ -29,12 +29,16 @@ def main():
     parser_remove.add_argument("file", help="Path to the file")
     parser_remove.add_argument("--tags", nargs='+', required=True, help="Tags to remove")
 
-    # Subparser for list
-    parser_list = subparsers.add_parser('list', help='List tags of a file')
-    parser_list.add_argument("file", help="Path to the file")
+    # Subparser for path
+    parser_path = subparsers.add_parser('path', help='List tags of a file')
+    parser_path.add_argument("filepath", help="Path to the file")
+    parser_path.add_argument("--fuzzy", action="store_true", help="Type of search to use")
+    parser_path.add_argument("--folder", action="store_true", help="Search for a folder instead of a file")
+    parser_path.add_argument("--exact", action="store_true", help="Exact match for file path")
 
     # Subparser for list all
-    parser_list_all = subparsers.add_parser('list-all', help='List all files and tags in a table')
+    parser_list_all = subparsers.add_parser('ls', help='List files and tags in a table')
+    parser_list_all.add_argument("--all", help="List files with a specific extension")
     parser_list_all.add_argument("--ext", help="List files with a specific extension")
 
     # Subparser for storage
@@ -50,6 +54,7 @@ def main():
     parser_list_files_by_tag.add_argument("tag", help="Tag to list files for")
     parser_list_files_by_tag.add_argument("--open", action="store_true", help="Open the file")
     parser_list_files_by_tag.add_argument("--exact", action="store_true", help="Exact match for tag")
+    parser_list_files_by_tag.add_argument("--where", action="store_true", help="Display the path of the file")
 
     args = parser.parse_args()
 
@@ -57,9 +62,14 @@ def main():
         add_tags(args.file, args.tags)
     elif args.command == 'remove':
         remove_tags(args.file, args.tags)
-    elif args.command == 'list':
-        print(list_tags(args.file))
-    elif args.command == 'list-all':
+    elif args.command == 'path':
+        if args.fuzzy:
+            print(fuzzy_search_path(args.filepath))
+        elif args.exact:
+            print(path_tags(args.filepath))
+        else:
+            print(fuzzy_search_path(args.filepath))
+    elif args.command == 'ls':
         print_list_tags_all_table()
     elif args.command == 'tags':
         if args.search:
@@ -67,10 +77,16 @@ def main():
         else:
             print(list_tags_all())
     elif args.command == 'tag-search':
+        by_tags = list_files_by_tags(args.tag, args.exact)
         if args.open:
-            open_list_files_by_tag_result(list_files_by_tags(args.tag, args.exact))
+            # interactive mode
+            open_list_files_by_tag_result(by_tags)
+        elif args.where:
+            # interactive mode
+            print(open_list_files_by_tag_result(by_tags, True))
         else:
-            print(list_files_by_tags(args.tag, args.exact))
+            for index, file in enumerate(by_tags, start=1):
+                print(index, file)
     elif args.command == 'storage':
         if args.open:
             open_storage_location()
@@ -80,5 +96,36 @@ def main():
         parser.print_help()
 
 
+"""
+TODO: Refactoring
+def handle_add_command(args):
+    add_tags(args.file, args.tags)
+
+def handle_remove_command(args):
+    remove_tags(args.file, args.tags)
+
+def handle_path_command(args):
+    if args.exact:
+        print(path_tags(args.filepath))
+    else:  # Default to fuzzy search
+        print(fuzzy_search_path(args.filepath))
+
+# ... similar functions for other commands ...
+
+args = parser.parse_args()
+
+command_handlers = {
+    'add': handle_add_command,
+    'remove': handle_remove_command,
+    'path': handle_path_command,
+    # ... other commands ...
+}
+
+handler = command_handlers.get(args.command)
+if handler:
+    handler(args)
+else:
+    parser.print_help()
+"""
 if __name__ == "__main__":
     main()

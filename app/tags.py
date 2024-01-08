@@ -24,7 +24,7 @@ def open_directory(file_path):
 
 
 # after list_files_by_tags, suggest to open the file
-def open_list_files_by_tag_result(array_of_file_path):
+def open_list_files_by_tag_result(array_of_file_path, show_path=False):
     if len(array_of_file_path) == 0:
         print("No files found with that tag.")
         return
@@ -34,6 +34,10 @@ def open_list_files_by_tag_result(array_of_file_path):
             break
         else:
             choice = int(choice) - 1
+
+            if show_path:
+                return array_of_file_path[int(choice)]
+
             try:
                 # if directory, open in finder or explorer or xdg-open for linux. depending on OS
                 if os.path.isdir(array_of_file_path[int(choice)]):

@@ -10,6 +10,7 @@ config['DEFAULT'] = {
 config["LIST_ALL"] = {
     "# PATH or FILENAME": None,
     "DISPLAY_FILE_AS": "PATH",
+    "MAX_PATH_LENGTH": "70",
 }
 
 config['DEFAULT']['TAG_FILE'] = os.path.expanduser(config['DEFAULT']['TAG_FILE'])

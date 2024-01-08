@@ -1,0 +1,40 @@
+import unittest
+import configparser
+import os
+from time import sleep
+
+from app.helpers import load_tags, save_tags
+from app.tags import open_list_files_by_tag_result, list_files_by_tags, list_tags_all, search_tags
+from app.paths import path_tags
+from app.add import add_tags
+from app.remove import remove_tags
+from app.list_all import print_list_tags_all_table
+from app.storage import show_storage_location, open_storage_location
+
+config = configparser.ConfigParser()
+path = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.dirname(path)
+config_file = os.path.join(root_dir, "test_config.ini")
+config.read(config_file)
+
+
+class TestApp(unittest.TestCase):
+    def test_a_save_tags_none_existing(self):
+        save_tags({})
+        self.assertEqual(save_tags({"C:\\laragon\\www\\python\\TagManager\\tests\\non_existing_test.txt": ["test1", "test2"]}), True)
+
+    def test_b_save_tags(self):
+        self.assertEqual(save_tags({"C:\\laragon\\www\\python\\TagManager\\tests\\test.txt": ["test1", "test2"]}), True)
+
+    def test_c_load_tags(self):
+        self.assertEqual(load_tags(), {"C:\\laragon\\www\\python\\TagManager\\tests\\test.txt": ["test1", "test2"]})
+
+    def test_d_list_tags(self):
+        self.assertEqual(path_tags("C:\\laragon\\www\\python\\TagManager\\tests\\test.txt"), ['test1', 'test2'])
+
+    def test_e_add_tags(self):
+        add_tags("C:\\laragon\\www\\python\\TagManager\\tests\\test.txt", ["test3"])
+        path_tags_result = path_tags("C:\\laragon\\www\\python\\TagManager\\tests\\test.txt")
+        self.assertEqual( path_tags_result.sort(), ['test2', 'test3', 'test1'].sort())
+
+
