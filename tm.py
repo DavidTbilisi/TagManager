@@ -1,11 +1,11 @@
 import argparse
 import sys
-from app.tags import open_list_files_by_tag_result, list_files_by_tags, list_tags_all, search_tags
-from app.paths import path_tags, fuzzy_search_path
-from app.add import add_tags
-from app.remove import remove_tags
-from app.list_all import print_list_tags_all_table
-from app.storage import show_storage_location, open_storage_location
+from app.tags.tags import open_list_files_by_tag_result, list_files_by_tags, list_tags_all, search_tags
+from app.paths.paths import path_tags, fuzzy_search_path
+from app.add.add import add_tags
+from app.remove.remove import remove_tags
+from app.list_all.list_all import print_list_tags_all_table
+from app.storage.storage import show_storage_location, open_storage_location
 
 sys.stdin.reconfigure(encoding='utf-8')
 sys.stdout.reconfigure(encoding='utf-8')
