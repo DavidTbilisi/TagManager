@@ -20,6 +20,8 @@ command_handlers = {
     'storage': handle_storage_command,
     'tags': handle_tags_command,
 }
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="tm",
@@ -31,20 +33,20 @@ def main():
     # Subparser for add
     parser_add = subparsers.add_parser('add', help='Add tags to a file')
     parser_add.add_argument("file", help="Path to the file")
-    parser_add.add_argument("--tags", nargs='+', required=True, help="Tags to add")
+    parser_add.add_argument("-t", "--tags", nargs='+', required=True, help="Tags to add")
     # parser_add.add_argument("--desc", help="Description for the file")
 
     # Subparser for remove
     parser_remove = subparsers.add_parser('remove', help='Remove path from tags')
-    parser_remove.add_argument("--path", help="Path to the file")
-    parser_remove.add_argument("--invalid", action="store_true", help="Remove invalid paths from tags")
+    parser_remove.add_argument("-p", "--path", help="Path to the file")
+    parser_remove.add_argument("-i", "--invalid", action="store_true", help="Remove invalid paths from tags")
 
     # Subparser for path
     parser_path = subparsers.add_parser('path', help='List tags of a file')
     parser_path.add_argument("filepath", help="Path to the file")
-    parser_path.add_argument("--fuzzy", action="store_true", help="Type of search to use")
-    parser_path.add_argument("--folder", action="store_true", help="Search for a folder instead of a file")
-    parser_path.add_argument("--exact", action="store_true", help="Exact match for file path")
+    parser_path.add_argument("-f", "--fuzzy", action="store_true", help="Type of search to use")
+    parser_path.add_argument("-F", "--folder", action="store_true", help="Search for a folder instead of a file")
+    parser_path.add_argument("-e", "--exact", action="store_true", help="Exact match for file path")
 
     # Subparser for list all
     parser_list_all = subparsers.add_parser('ls', help='List files and tags in a table')
@@ -53,14 +55,14 @@ def main():
 
     # Subparser for storage
     parser_storage = subparsers.add_parser('storage', help='Display storage location of the tag file')
-    parser_storage.add_argument("--open", action="store_true", help="Open the storage location")
+    parser_storage.add_argument("-o", "--open", action="store_true", help="Open the storage location")
 
     # Subparser for tags
     tags_parser = subparsers.add_parser('tags', help='List all tags')
-    tags_parser.add_argument("--search", help="List files by a specific tag")
-    tags_parser.add_argument("--open", action="store_true", help="Open the file")
-    tags_parser.add_argument("--exact", action="store_true", help="Exact match for tag")
-    tags_parser.add_argument("--where", action="store_true", help="Display the path of the file")
+    tags_parser.add_argument("-s", "--search", help="List files by a specific tag")
+    tags_parser.add_argument("-o", "--open", action="store_true", help="Open the file")
+    tags_parser.add_argument("-e", "--exact", action="store_true", help="Exact match for tag")
+    tags_parser.add_argument("-w", "--where", action="store_true", help="Display the path of the file")
 
     args = parser.parse_args()
 
@@ -70,18 +72,5 @@ def main():
         parser.print_help()
 
 
-"""
-TODO: Refactoring
-
-
-args = parser.parse_args()
-
-
-handler = command_handlers.get(args.command)
-if handler:
-    handler(args)
-else:
-    parser.print_help()
-"""
 if __name__ == "__main__":
     main()
