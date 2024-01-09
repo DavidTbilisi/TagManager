@@ -19,6 +19,8 @@ config.read(config_file)
 
 
 class TestApp(unittest.TestCase):
+
+    # Invalid tests for now
     def test_a_save_tags_none_existing(self):
         save_tags({})
         self.assertEqual(save_tags({"C:\\laragon\\www\\python\\TagManager\\tests\\non_existing_test.txt": ["test1", "test2"]}), True)

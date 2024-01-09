@@ -1,17 +1,10 @@
 import json
-import configparser
 import os
+from configReader import config
 
-config = configparser.ConfigParser()
+
 path = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(path)
-
-if os.path.exists(os.path.join(root_dir, "test_config.ini")):
-    config_file = os.path.join(root_dir, "test_config.ini")
-else:
-    config_file = os.path.join(root_dir, "config.ini")
-
-config.read(config_file)
 
 TAG_FILE = config['DEFAULT']['TAG_FILE']
 

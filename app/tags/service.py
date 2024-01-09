@@ -5,7 +5,7 @@ from app.helpers import load_tags, save_tags
 
 
 def display_menu(array_of_file_path):
-    print("\n\n")
+    print("Select a file to open:")
     for i, file in enumerate(array_of_file_path, start=1):
         print(f"{i}. {file}")
     print("q. Quit")
@@ -34,10 +34,8 @@ def open_list_files_by_tag_result(array_of_file_path, show_path=False):
             break
         else:
             choice = int(choice) - 1
-
             if show_path:
                 return array_of_file_path[int(choice)]
-
             try:
                 # if directory, open in finder or explorer or xdg-open for linux. depending on OS
                 if os.path.isdir(array_of_file_path[int(choice)]):
