@@ -60,6 +60,7 @@ def list_tags_all():
         for tag in file_tags:
             if tag not in all_tags:
                 all_tags.append(tag)
+    all_tags.sort()
     return all_tags
 
 

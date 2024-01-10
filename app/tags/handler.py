@@ -11,4 +11,5 @@ def handle_tags_command(args):
         for i, file in enumerate(result, start=1):
             print(f"{i}. {file}")
     else:
-        print(list_tags_all())
+        for i, tag in enumerate(list_tags_all(), start=1):
+            print(f"{i}. {tag}")

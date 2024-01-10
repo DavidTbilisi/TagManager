@@ -12,6 +12,33 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 * **David Chincharashvili** - *Initial work* - [DavidTbilisi](https://github.com/davidtbilisi)
 
 
+## Project Structure
+
+```
+│
+├── app/
+│   ├── add/
+│   ├── list_all/
+│   ├── paths/
+│   ├── remove/
+│   ├── storage/
+│   └── tags/
+│
+├── tests/
+│   ├── add/
+│   ├── list_all/
+│   ... (etc.)
+│
+├── utils/ (or common/)
+├── docs/
+├── resources/ (or assets/)
+├── scripts/ (or bin/)
+│
+├── requirements.txt
+├── README.md
+└── LICENSE
+```
+
 ## License
 
 This project is licensed under the [LICENSE NAME] License - see the [LICENSE.md](LICENSE.md) file for details.
