@@ -1,91 +1,97 @@
 import os
 import sys
 import re
-from app.helpers import load_tags, save_tags
+from app.helpers import load_tags
+from typing import List, Optional, Set
 
 
-def display_menu(array_of_file_path):
+def get_system_command(file_path: str) -> Optional[str]:
+    """ Returns the appropriate system command based on the OS. """
+    if sys.platform.startswith('darwin'):
+        return f"open {file_path}"
+    elif sys.platform.startswith('win32'):
+        return f"explorer {file_path}"
+    elif sys.platform.startswith('linux'):
+        return f"xdg-open {file_path}"
+    else:
+        return None
+
+
+def open_file_or_directory(path: str) -> None:
+    """ Opens a file or directory based on the provided path. """
+    if os.path.isdir(path):
+        command = get_system_command(path)
+        if command:
+            os.system(command)
+        else:
+            print('Unsupported OS')
+    elif os.path.isfile(path):
+        os.startfile(path)
+    else:
+        print(f"Path not found: {path}")
+
+
+def display_menu(items: List[str]) -> str:
+    """ Display a menu of items and prompt the user to make a selection. """
     print("Select a file to open:")
-    for i, file in enumerate(array_of_file_path, start=1):
-        print(f"{i}. {file}")
+    for index, item in enumerate(items, start=1):
+        print(f"{index}. {item}")
     print("q. Quit")
     return input("Enter choice: ")
 
 
-def open_directory(file_path):
-    if sys.platform.startswith('darwin'):
-        os.system(f"open {file_path}")  # open in finder
-    elif sys.platform.startswith('win32'):
-        os.system(f"explorer {file_path}")  # open in explorer
-    elif sys.platform.startswith('linux'):
-        os.system(f"xdg-open {file_path}")  # open in xdg-open
-    else:
-        print('Unsupported OS')
-
-
-# after list_files_by_tags, suggest to open the file
-def open_list_files_by_tag_result(array_of_file_path, show_path=False):
-    if len(array_of_file_path) == 0:
-        print("No files found with that tag.")
-        return
+def get_user_choice(items: List[str]) -> Optional[str]:
+    """ Gets and validates the user's choice. """
     while True:
-        choice = display_menu(array_of_file_path)
+        choice = display_menu(items)
         if choice == 'q':
-            break
-        else:
-            choice = int(choice) - 1
-            if show_path:
-                return array_of_file_path[int(choice)]
-            try:
-                # if directory, open in finder or explorer or xdg-open for linux. depending on OS
-                if os.path.isdir(array_of_file_path[int(choice)]):
-                    open_directory(array_of_file_path[int(choice)])
-                    break
-                # if file, open in default application depending on OS
-                else:
-                    os.startfile(array_of_file_path[int(choice)])
-                    break
-            except IndexError:
-                print("Invalid choice, try again.")
-                continue
-            except ValueError:
-                print("Invalid choice, try again.")
-                continue
+            return None
+        try:
+            choice_index = int(choice) - 1
+            return items[choice_index]
+        except (IndexError, ValueError):
+            print("Invalid choice, try again.")
 
 
-def list_tags_all():
+def open_list_files_by_tag_result(files: List[str], show_path: bool = False) -> Optional[str]:
+    """ Opens a list of files based on the tag result. """
+    if not files:
+        print("No files found with that tag.")
+        return None
+
+    selected_file = get_user_choice(files)
+    if selected_file and not show_path:
+        open_file_or_directory(selected_file)
+    return selected_file
+
+
+def list_all_tags() -> List[str]:
+    """ Lists all unique tags. """
     tags = load_tags()
-    all_tags = []
-    for file, file_tags in tags.items():
-        for tag in file_tags:
-            if tag not in all_tags:
-                all_tags.append(tag)
-    all_tags.sort()
-    return all_tags
+    all_tags: Set[str] = set()
+    for file_tags in tags.values():
+        all_tags.update(file_tags)
+    return sorted(list(all_tags))
 
 
-def list_files_by_tags(tag, exact=False):
+def search_files_by_tag(tag: str, exact: bool = False) -> List[str]:
+    """ Searches for files by tag. """
     tags = load_tags()
-    files = []
+    matched_files: List[str] = []
     for file, file_tags in tags.items():
-        if exact:
-            if tag in file_tags:
-                files.append(file)
-        else:
-            for file_tag in file_tags:
-                if re.search(tag, file_tag, re.IGNORECASE):
-                    files.append(file)
-    return files
+        if exact and tag in file_tags:
+            matched_files.append(file)
+        elif any(re.search(tag, file_tag, re.IGNORECASE) for file_tag in file_tags):
+            matched_files.append(file)
+    return matched_files
 
 
-def search_tags(tag):
+def search_tags(tag: str) -> List[str]:
+    """ Searches for tags. """
     tags = load_tags()
-    tag_list = []
-    for file, file_tags in tags.items():
-        for file_tag in file_tags:
-            if re.search(tag, file_tag, re.IGNORECASE):
-                tag_list.append(file_tag)
-    return tag_list
-
-
-
+    matched_tags: Set[str] = set()
+    for file_tags in tags.values():
+        matched_tags.update(
+            file_tag for file_tag in file_tags if re.search(tag, file_tag, re.IGNORECASE)
+        )
+    return list(matched_tags)
