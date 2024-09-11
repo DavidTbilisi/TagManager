@@ -19,23 +19,11 @@ def get_system_command(file_path: str) -> Optional[str]:
 
 def open_file_or_directory(path: str) -> None:
     """ Opens a file or directory based on the provided path and OS. """
-    if os.path.isdir(path):
-        command = get_system_command(path)
-        if command:
-            os.system(command)
-        else:
-            print('Unsupported OS')
-    elif os.path.isfile(path):
-        if sys.platform.startswith('darwin'):
-            os.system(f"open {path}")
-        elif sys.platform.startswith('win32'):
-            os.startfile(path)
-        elif sys.platform.startswith('linux'):
-            os.system(f"xdg-open {path}")
-        else:
-            print('Unsupported OS')
+    command = get_system_command(path)
+    if command:
+        os.system(command)
     else:
-        print(f"Path not found: {path}")
+        print('Unsupported OS')
 
 
 def display_menu(items: List[str]) -> str:
