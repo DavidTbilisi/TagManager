@@ -23,7 +23,7 @@ def print_list_tags_all_table():
         console.print(
             Panel.fit(
                 "[bold yellow]No tagged files found![/bold yellow]\n\n"
-                "Use [bold green]tm add <file> --tags <tag1> <tag2>[/bold green] to start tagging your files.",
+                "Use [bold green]tm add <file> --tags <tag1>,<tag2>[/bold green] to start tagging your files.",
                 title="🏷️ TagManager",
                 border_style="magenta"
             )
