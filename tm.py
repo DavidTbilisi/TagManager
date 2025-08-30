@@ -4,6 +4,7 @@ from typing import List, Optional
 import typer
 
 from app.add.service import add_tags
+from app.bulk.handler import handle_bulk_add, handle_bulk_remove, handle_bulk_retag
 from app.list_all.service import print_list_tags_all_table
 from app.paths.service import path_tags, fuzzy_search_path
 from app.remove.service import remove_path, remove_invalid_paths
@@ -133,6 +134,42 @@ def search(
         print()
     else:
         print("No files found matching the criteria.")
+
+
+# Create bulk subcommand group
+bulk_app = typer.Typer(help="Bulk operations for managing tags")
+app.add_typer(bulk_app, name="bulk")
+
+
+@bulk_app.command("add")
+def bulk_add(
+    pattern: str = typer.Argument(..., help="File pattern to match (e.g., '*.py', '**/*.txt')"),
+    tags: List[str] = typer.Option(..., "--tags", "-t", help="Tags to add to matching files"),
+    base_path: str = typer.Option(".", "--path", "-p", help="Base directory to search from"),
+    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would be done without making changes")
+):
+    """Add tags to all files matching a pattern"""
+    handle_bulk_add(pattern, tags, base_path, dry_run)
+
+
+@bulk_app.command("remove")
+def bulk_remove(
+    tag: Optional[str] = typer.Option(None, "--tag", help="Remove all files with this tag"),
+    remove_tag: Optional[str] = typer.Option(None, "--remove-tag", help="Remove this tag from all files"),
+    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would be done without making changes")
+):
+    """Remove files by tag or remove tag from all files"""
+    handle_bulk_remove(tag, remove_tag, dry_run)
+
+
+@bulk_app.command("retag")
+def bulk_retag(
+    from_tag: str = typer.Option(..., "--from", help="Current tag name to replace"),
+    to_tag: str = typer.Option(..., "--to", help="New tag name"),
+    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would be done without making changes")
+):
+    """Rename a tag across all files"""
+    handle_bulk_retag(from_tag, to_tag, dry_run)
 
 
 @app.command()
