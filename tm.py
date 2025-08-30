@@ -16,6 +16,7 @@ from app.search.service import combined_search, search_files_by_path, search_fil
 from app.stats.handler import handle_stats_command
 from app.storage.service import show_storage_location, open_storage_location
 from app.tags.service import list_all_tags, search_files_by_tag, open_list_files_by_tag_result
+from app.visualization.handler import handle_tree_view, handle_tag_cloud, handle_stats_charts
 
 
 sys.stdin.reconfigure(encoding='utf-8')
@@ -54,10 +55,14 @@ def remove(
 @app.command("ls")
 def list_all(
     all: Optional[str] = typer.Option(None, "--all", help="Not implemented"),
-    ext: Optional[str] = typer.Option(None, "--ext", help="Not implemented")
+    ext: Optional[str] = typer.Option(None, "--ext", help="Not implemented"),
+    tree: bool = typer.Option(False, "--tree", help="Display files in tree view")
 ):
-    """List files and tags in a table"""
-    print_list_tags_all_table()
+    """List files and tags in a table or tree view"""
+    if tree:
+        handle_tree_view()
+    else:
+        print_list_tags_all_table()
 
 
 @app.command()
@@ -79,10 +84,13 @@ def tags(
     search: Optional[str] = typer.Option(None, "-s", "--search", help="List files by a specific tag"),
     open: bool = typer.Option(False, "-o", "--open", help="Open the file"),
     exact: bool = typer.Option(False, "-e", "--exact", help="Exact match for tag"),
-    where: bool = typer.Option(False, "-w", "--where", help="Display the path of the file")
+    where: bool = typer.Option(False, "-w", "--where", help="Display the path of the file"),
+    cloud: bool = typer.Option(False, "--cloud", help="Display tags as a visual cloud")
 ):
-    """List all tags"""
-    if search and open:
+    """List all tags or display as a cloud"""
+    if cloud:
+        handle_tag_cloud()
+    elif search and open:
         open_list_files_by_tag_result(
             search_files_by_tag(search, exact)
         )
@@ -220,10 +228,14 @@ def filter_isolated(
 @app.command()
 def stats(
     tag: Optional[str] = typer.Option(None, "--tag", help="Show statistics for a specific tag"),
-    file_count: bool = typer.Option(False, "--file-count", help="Show files per tag distribution")
+    file_count: bool = typer.Option(False, "--file-count", help="Show files per tag distribution"),
+    chart: bool = typer.Option(False, "--chart", help="Display statistics as ASCII charts")
 ):
     """Show tag statistics and analytics"""
-    handle_stats_command(tag=tag, file_count=file_count)
+    if chart:
+        handle_stats_charts()
+    else:
+        handle_stats_command(tag=tag, file_count=file_count)
 
 
 if __name__ == "__main__":
