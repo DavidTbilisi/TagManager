@@ -4,12 +4,12 @@ import os
 from time import sleep
 
 from app.helpers import load_tags, save_tags
-from app.tags import open_list_files_by_tag_result, list_files_by_tags, list_tags_all, search_tags
-from app.paths import path_tags
-from app.add import add_tags
-from app.remove import remove_tags
-from app.list_all import print_list_tags_all_table
-from app.storage import show_storage_location, open_storage_location
+from app.tags.service import open_list_files_by_tag_result, search_files_by_tag, list_all_tags
+from app.paths.service import path_tags
+from app.add.service import add_tags
+from app.remove.service import remove_path
+from app.list_all.service import print_list_tags_all_table
+from app.storage.service import show_storage_location, open_storage_location
 
 config = configparser.ConfigParser()
 path = os.path.dirname(os.path.abspath(__file__))
