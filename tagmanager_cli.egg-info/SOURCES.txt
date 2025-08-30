@@ -6,6 +6,7 @@ tagmanager/__init__.py
 tagmanager/cli.py
 tagmanager/config.ini
 tagmanager/configReader.py
+tagmanager/config_manager.py
 tagmanager/app/__init__.py
 tagmanager/app/helpers.py
 tagmanager/app/add/__init__.py
@@ -14,6 +15,9 @@ tagmanager/app/add/service.py
 tagmanager/app/bulk/__init__.py
 tagmanager/app/bulk/handler.py
 tagmanager/app/bulk/service.py
+tagmanager/app/config/__init__.py
+tagmanager/app/config/handler.py
+tagmanager/app/config/service.py
 tagmanager/app/filter/__init__.py
 tagmanager/app/filter/handler.py
 tagmanager/app/filter/service.py

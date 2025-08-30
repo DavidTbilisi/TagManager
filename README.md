@@ -173,6 +173,27 @@ tm filter clusters --min-size 3
 tm filter isolated --max-shared 1
 ```
 
+#### ⚙️ **Configuration Management**
+
+```bash
+# View all configuration options
+tagmanager config list --show-defaults
+
+# Customize display settings
+tagmanager config set display.emojis false
+tagmanager config set display.max_items 200
+
+# Configure search behavior
+tagmanager config set search.fuzzy_threshold 0.8
+
+# Export/import settings
+tagmanager config export --file my_settings.json
+tagmanager config import team_settings.json
+
+# View settings by category
+tagmanager config list --category performance
+```
+
 ## 🎨 Examples
 
 ### Beautiful Tree View
@@ -313,6 +334,13 @@ tm stats --chart  # Visualize project file distribution
 > _"The bulk operations saved me hours of manual work. Dry-run mode gives me confidence to make big changes."_  
 > — Lisa Park, Data Analyst
 
+## 📚 **Complete Documentation**
+
+- **[Configuration Guide](CONFIGURATION_GUIDE.md)** - Comprehensive configuration management
+- **[Installation Guide](INSTALLATION.md)** - Complete installation instructions
+- **[Package Summary](PACKAGE_SUMMARY.md)** - Overview of the pip package
+- **[Automation Guide](AUTOMATION_GUIDE.md)** - Version management and publishing
+- **[Windows Compatibility](WINDOWS_COMPATIBILITY.md)** - Windows-specific features and fixes
 
 ## 📄 License
 

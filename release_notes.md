@@ -1,7 +1,7 @@
-# TagManager v1.0.2
+# TagManager v1.0.3
 
 ## What's New
-- Version 1.0.2 release
+- Version 1.0.3 release
 - See CHANGELOG.md for detailed changes
 
 ## Installation

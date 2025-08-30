@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: tagmanager-cli
-Version: 1.0.2
+Version: 1.0.3
 Summary: The Ultimate Command-Line File Tagging System - Transform chaos into order with intelligent file organization
 Author-email: David Chincharashvili <david@example.com>
 Maintainer-email: David Chincharashvili <david@example.com>
@@ -357,13 +357,6 @@ tm stats --chart  # Visualize project file distribution
 > _"The bulk operations saved me hours of manual work. Dry-run mode gives me confidence to make big changes."_  
 > — Lisa Park, Data Analyst
 
-## 🔮 Roadmap
-
-- [ ] **🤖 AI-Powered Tagging**: Automatic tag suggestions based on file content
-- [ ] **🌐 Web Interface**: Browser-based tag management
-- [ ] **☁️ Cloud Sync**: Synchronize tags across devices
-- [ ] **🔌 Plugin System**: Extensible architecture for custom features
-- [ ] **📱 Mobile App**: Tag management on the go
 
 ## 📄 License
 

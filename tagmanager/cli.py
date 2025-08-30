@@ -24,6 +24,11 @@ from .app.stats.handler import handle_stats_command
 from .app.storage.service import show_storage_location, open_storage_location
 from .app.tags.service import list_all_tags, search_files_by_tag, open_list_files_by_tag_result
 from .app.visualization.handler import handle_tree_view, handle_tag_cloud, handle_stats_charts
+from .app.config.handler import (
+    handle_config_get, handle_config_set, handle_config_delete, handle_config_list,
+    handle_config_reset, handle_config_info, handle_config_export, handle_config_import,
+    handle_config_categories, handle_config_validate
+)
 
 
 sys.stdin.reconfigure(encoding='utf-8')
@@ -163,6 +168,10 @@ app.add_typer(bulk_app, name="bulk")
 filter_app = typer.Typer(help="Smart filtering and analysis of tagged files")
 app.add_typer(filter_app, name="filter")
 
+# Create config subcommand group
+config_app = typer.Typer(help="Configuration management")
+app.add_typer(config_app, name="config")
+
 
 @bulk_app.command("add")
 def bulk_add(
@@ -243,6 +252,85 @@ def stats(
         handle_stats_charts()
     else:
         handle_stats_command(tag=tag, file_count=file_count)
+
+
+@config_app.command("get")
+def config_get(
+    key: str = typer.Argument(..., help="Configuration key to retrieve")
+):
+    """Get a configuration value"""
+    handle_config_get(key)
+
+
+@config_app.command("set")
+def config_set(
+    key: str = typer.Argument(..., help="Configuration key to set"),
+    value: str = typer.Argument(..., help="Value to set")
+):
+    """Set a configuration value"""
+    handle_config_set(key, value)
+
+
+@config_app.command("delete")
+def config_delete(
+    key: str = typer.Argument(..., help="Configuration key to delete")
+):
+    """Delete a configuration value (revert to default)"""
+    handle_config_delete(key)
+
+
+@config_app.command("list")
+def config_list(
+    category: Optional[str] = typer.Option(None, "--category", "-c", help="Filter by category"),
+    show_defaults: bool = typer.Option(False, "--show-defaults", "-d", help="Show default values"),
+    output_format: str = typer.Option("table", "--format", "-f", help="Output format (table, json)")
+):
+    """List configuration values"""
+    handle_config_list(category, show_defaults, output_format)
+
+
+@config_app.command("reset")
+def config_reset(
+    key: Optional[str] = typer.Argument(None, help="Configuration key to reset (or all if not specified)"),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt")
+):
+    """Reset configuration to defaults"""
+    handle_config_reset(key, yes)
+
+
+@config_app.command("info")
+def config_info():
+    """Show configuration system information"""
+    handle_config_info()
+
+
+@config_app.command("export")
+def config_export(
+    file_path: Optional[str] = typer.Option(None, "--file", "-f", help="Export file path")
+):
+    """Export configuration to a file"""
+    handle_config_export(file_path)
+
+
+@config_app.command("import")
+def config_import(
+    file_path: str = typer.Argument(..., help="Configuration file to import"),
+    replace: bool = typer.Option(False, "--replace", help="Replace entire configuration instead of merging")
+):
+    """Import configuration from a file"""
+    handle_config_import(file_path, not replace)
+
+
+@config_app.command("categories")
+def config_categories():
+    """Show available configuration categories"""
+    handle_config_categories()
+
+
+@config_app.command("validate")
+def config_validate():
+    """Validate current configuration"""
+    handle_config_validate()
 
 
 def main():
