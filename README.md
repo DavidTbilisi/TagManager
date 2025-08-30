@@ -313,13 +313,6 @@ tm stats --chart  # Visualize project file distribution
 > _"The bulk operations saved me hours of manual work. Dry-run mode gives me confidence to make big changes."_  
 > — Lisa Park, Data Analyst
 
-## 🔮 Roadmap
-
-- [ ] **🤖 AI-Powered Tagging**: Automatic tag suggestions based on file content
-- [ ] **🌐 Web Interface**: Browser-based tag management
-- [ ] **☁️ Cloud Sync**: Synchronize tags across devices
-- [ ] **🔌 Plugin System**: Extensible architecture for custom features
-- [ ] **📱 Mobile App**: Tag management on the go
 
 ## 📄 License
 
