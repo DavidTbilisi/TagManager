@@ -5,6 +5,10 @@ import typer
 
 from app.add.service import add_tags
 from app.bulk.handler import handle_bulk_add, handle_bulk_remove, handle_bulk_retag
+from app.filter.handler import (
+    handle_filter_duplicates, handle_filter_orphans, handle_filter_similar,
+    handle_filter_clusters, handle_filter_isolated
+)
 from app.list_all.service import print_list_tags_all_table
 from app.paths.service import path_tags, fuzzy_search_path
 from app.remove.service import remove_path, remove_invalid_paths
@@ -140,6 +144,10 @@ def search(
 bulk_app = typer.Typer(help="Bulk operations for managing tags")
 app.add_typer(bulk_app, name="bulk")
 
+# Create filter subcommand group
+filter_app = typer.Typer(help="Smart filtering and analysis of tagged files")
+app.add_typer(filter_app, name="filter")
+
 
 @bulk_app.command("add")
 def bulk_add(
@@ -170,6 +178,43 @@ def bulk_retag(
 ):
     """Rename a tag across all files"""
     handle_bulk_retag(from_tag, to_tag, dry_run)
+
+
+@filter_app.command("duplicates")
+def filter_duplicates():
+    """Find files with identical tag sets"""
+    handle_filter_duplicates()
+
+
+@filter_app.command("orphans")
+def filter_orphans():
+    """Find files with no tags"""
+    handle_filter_orphans()
+
+
+@filter_app.command("similar")
+def filter_similar(
+    file_path: str = typer.Argument(..., help="Path to the target file"),
+    threshold: float = typer.Option(0.3, "--threshold", "-t", help="Similarity threshold (0.0-1.0)")
+):
+    """Find files with similar tags to a target file"""
+    handle_filter_similar(file_path, threshold)
+
+
+@filter_app.command("clusters")
+def filter_clusters(
+    min_size: int = typer.Option(2, "--min-size", "-s", help="Minimum number of files in a cluster")
+):
+    """Find clusters of files sharing common tags"""
+    handle_filter_clusters(min_size)
+
+
+@filter_app.command("isolated")
+def filter_isolated(
+    max_shared: int = typer.Option(1, "--max-shared", "-m", help="Maximum shared tags to be considered isolated")
+):
+    """Find files that share few tags with others"""
+    handle_filter_isolated(max_shared)
 
 
 @app.command()
