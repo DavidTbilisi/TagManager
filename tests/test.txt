@@ -1,2 +1,0 @@
-This file is for testing purposes only.
-It is not part of the project.
