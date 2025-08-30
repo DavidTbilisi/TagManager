@@ -2,6 +2,6 @@ __pycache__/
 _trial_temp/
 .idea/
 app/__pycache__/
-dist/tagmanager_cli-1.1.0-py3-none-any.whl
-dist/tagmanager_cli-1.1.0.tar.gz
+dist/*
 tagmanager_cli.egg-info/*
+
