@@ -15,8 +15,27 @@ Usage:
 import re
 import sys
 import argparse
+import os
 from pathlib import Path
 from typing import Tuple, List
+
+# Fix encoding issues on Windows
+if sys.platform.startswith('win'):
+    # Try to set UTF-8 encoding for Windows
+    try:
+        import codecs
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
+    except:
+        # Fallback: disable emojis on Windows if encoding fails
+        os.environ['NO_EMOJIS'] = '1'
+
+# Emoji fallbacks for Windows compatibility
+def get_emoji(emoji, fallback):
+    """Get emoji or fallback text based on platform support"""
+    if os.getenv('NO_EMOJIS') or sys.platform.startswith('win'):
+        return fallback
+    return emoji
 
 
 class VersionBumper:
@@ -168,7 +187,7 @@ Examples:
         current_version = bumper.get_current_version()
         
         if args.current:
-            print(f"📦 Current version: {current_version}")
+            print(f"{get_emoji('📦', '[PACKAGE]')} Current version: {current_version}")
             return
         
         # Bump version
