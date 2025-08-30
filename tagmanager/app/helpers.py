@@ -1,12 +1,25 @@
 import json
 import os
-from ..configReader import config
+from ..config_manager import get_config
 
 
 path = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(path)
 
-TAG_FILE = config['DEFAULT']['TAG_FILE']
+def get_tag_file_path():
+    """Get the tag file path from configuration, with fallback to legacy config"""
+    try:
+        # Try new configuration system first
+        tag_path = get_config('storage.tag_file_path', '~/file_tags.json')
+    except:
+        # Fallback to legacy configuration
+        from ..configReader import config
+        tag_path = config['DEFAULT']['TAG_FILE']
+    
+    # Expand ~ to home directory
+    return os.path.expanduser(tag_path)
+
+TAG_FILE = get_tag_file_path()
 
 
 def load_tags() -> dict:

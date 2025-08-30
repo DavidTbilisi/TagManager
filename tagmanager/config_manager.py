@@ -57,6 +57,9 @@ class ConfigDefaults:
     backup_count: int = 5
     backup_on_bulk_operations: bool = True
     
+    # Storage settings
+    tag_file_path: str = "~/file_tags.json"
+    
     # Advanced settings
     debug_mode: bool = False
     log_level: str = "INFO"
@@ -255,6 +258,8 @@ class ConfigManager:
             'backup.count': self._defaults.backup_count,
             'backup.on_bulk_operations': self._defaults.backup_on_bulk_operations,
             
+            'storage.tag_file_path': self._defaults.tag_file_path,
+            
             'advanced.debug_mode': self._defaults.debug_mode,
             'advanced.log_level': self._defaults.log_level,
             'advanced.plugin_directory': self._defaults.plugin_directory,
@@ -295,6 +300,8 @@ class ConfigManager:
             'backup.auto_backup': bool,
             'backup.count': int,
             'backup.on_bulk_operations': bool,
+            
+            'storage.tag_file_path': str,
             
             'advanced.debug_mode': bool,
             'advanced.log_level': str,

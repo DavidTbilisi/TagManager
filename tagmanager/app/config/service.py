@@ -227,6 +227,9 @@ def _get_all_configuration_keys() -> List[str]:
         'backup.count',
         'backup.on_bulk_operations',
         
+        # Storage settings
+        'storage.tag_file_path',
+        
         # Advanced settings
         'advanced.debug_mode',
         'advanced.log_level',
@@ -244,6 +247,7 @@ def _get_configuration_categories() -> List[str]:
         'output',
         'performance',
         'backup',
+        'storage',
         'advanced'
     ]
 
@@ -287,6 +291,9 @@ def _get_key_description(key: str) -> str:
         'backup.auto_backup': 'Automatically backup tag database',
         'backup.count': 'Number of backup files to keep',
         'backup.on_bulk_operations': 'Create backup before bulk operations',
+        
+        # Storage settings
+        'storage.tag_file_path': 'Path to the tag database file (supports ~ for home directory)',
         
         # Advanced settings
         'advanced.debug_mode': 'Enable debug mode with verbose output',

@@ -44,10 +44,16 @@ app = typer.Typer(
 @app.command()
 def add(
     file: str = typer.Argument(..., help="Path to the file"),
-    tags: List[str] = typer.Option(..., "-t", "--tags", help="Tags to add")
+    tags: List[str] = typer.Option(..., "-t", "--tags", help="Tags to add (comma-separated or multiple --tags)")
 ):
     """Add tags to a file"""
-    add_tags(file, tags)
+    # Flatten and split comma-separated tags
+    flattened_tags = []
+    for tag_group in tags:
+        # Split by comma and strip whitespace
+        flattened_tags.extend([tag.strip() for tag in tag_group.split(',') if tag.strip()])
+    
+    add_tags(file, flattened_tags)
 
 
 @app.command()
@@ -176,12 +182,18 @@ app.add_typer(config_app, name="config")
 @bulk_app.command("add")
 def bulk_add(
     pattern: str = typer.Argument(..., help="File pattern to match (e.g., '*.py', '**/*.txt')"),
-    tags: List[str] = typer.Option(..., "--tags", "-t", help="Tags to add to matching files"),
+    tags: List[str] = typer.Option(..., "--tags", "-t", help="Tags to add to matching files (comma-separated or multiple --tags)"),
     base_path: str = typer.Option(".", "--path", "-p", help="Base directory to search from"),
     dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would be done without making changes")
 ):
     """Add tags to all files matching a pattern"""
-    handle_bulk_add(pattern, tags, base_path, dry_run)
+    # Flatten and split comma-separated tags
+    flattened_tags = []
+    for tag_group in tags:
+        # Split by comma and strip whitespace
+        flattened_tags.extend([tag.strip() for tag in tag_group.split(',') if tag.strip()])
+    
+    handle_bulk_add(pattern, flattened_tags, base_path, dry_run)
 
 
 @bulk_app.command("remove")
