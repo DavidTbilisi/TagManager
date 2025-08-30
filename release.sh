@@ -123,12 +123,16 @@ bump_version() {
         return 0
     fi
     
+    # Get current version before bumping
+    CURRENT_VERSION=$(python bump_version.py --current | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
+    
+    # Bump the version
     python bump_version.py "$bump_type"
     
     if [[ $? -eq 0 ]]; then
-        NEW_VERSION=$(python bump_version.py --current)
+        NEW_VERSION=$(python bump_version.py --current | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
         print_success "Version bumped to $NEW_VERSION"
-        echo "NEW_VERSION=$NEW_VERSION" > .release_version
+        echo "$NEW_VERSION" > .release_version
     else
         print_error "Version bump failed"
         exit 1
@@ -274,7 +278,7 @@ main() {
     
     # Get version for later steps
     if [[ -f ".release_version" ]]; then
-        source .release_version
+        NEW_VERSION=$(cat .release_version)
         rm .release_version
     else
         NEW_VERSION="unknown"
