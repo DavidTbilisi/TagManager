@@ -1,0 +1,10 @@
+# Core dependencies
+typer>=0.9.0
+rich>=10.0.0
+
+# Optional dependencies for development
+pytest>=6.0; extra == "dev"
+pytest-cov; extra == "dev"
+black; extra == "dev"
+flake8; extra == "dev"
+mypy; extra == "dev"
