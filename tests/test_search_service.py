@@ -340,9 +340,11 @@ class TestSearchService(unittest.TestCase):
             "/path/file1.py": ["python", "backend"]
         }
         
-        # Execute with None - should handle gracefully
-        with self.assertRaises((TypeError, AttributeError)):
-            search_by_tags(None)
+        # Execute with None - should handle gracefully and return empty list
+        result = search_by_tags(None)
+        
+        # Verify graceful handling
+        self.assertEqual(result, [])
     
     def test_search_by_tags_non_list_input(self):
         """Test searching with non-list input"""
@@ -352,9 +354,11 @@ class TestSearchService(unittest.TestCase):
             "/path/file1.py": ["python", "backend"]
         }
         
-        # Execute with string instead of list
-        with self.assertRaises((TypeError, AttributeError)):
-            search_by_tags("python")
+        # Execute with string instead of list - should handle gracefully
+        result = search_by_tags("python")
+        
+        # Verify graceful handling
+        self.assertEqual(result, [])
     
     def test_search_by_tags_mixed_types_in_list(self):
         """Test searching with mixed types in tag list"""

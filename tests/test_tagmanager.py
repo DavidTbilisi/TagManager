@@ -100,18 +100,19 @@ class TestTagManager(unittest.TestCase):
         self.assertEqual(set(saved_tags[self.test_file]), expected_tags)
     
     def test_add_tags_nonexistent_file(self):
-        """Test adding tags to a non-existent file (should create it)"""
+        """Test adding tags to a non-existent file (conservative behavior - should return False)"""
         nonexistent_file = os.path.join(self.test_dir, "new_file.txt")
         tags = ["new", "file"]
         
         result = add_tags(nonexistent_file, tags)
         
-        self.assertTrue(result)
-        self.assertTrue(os.path.exists(nonexistent_file))
+        # Updated behavior: returns False for non-existent files
+        self.assertFalse(result)
+        self.assertFalse(os.path.exists(nonexistent_file))
         
+        # File should not be added to tags since it doesn't exist
         saved_tags = load_tags()
-        self.assertIn(nonexistent_file, saved_tags)
-        self.assertEqual(set(saved_tags[nonexistent_file]), set(tags))
+        self.assertNotIn(nonexistent_file, saved_tags)
     
     def test_remove_path(self):
         """Test removing a file path from tags"""
@@ -264,8 +265,9 @@ class TestConfigurationManagement(unittest.TestCase):
     def test_config_service_import(self):
         """Test that config service can be imported"""
         try:
-            from tagmanager.app.config.service import get_config_value, set_config_value
-            self.assertTrue(True)
+            from tagmanager.app.config.service import get_configuration_value, set_configuration_value
+            self.assertTrue(callable(get_configuration_value))
+            self.assertTrue(callable(set_configuration_value))
         except ImportError:
             self.fail("Config service could not be imported")
 

@@ -81,14 +81,15 @@ class TestServicesQuick(unittest.TestCase):
         except ImportError as e:
             self.fail(f"❌ Helpers import failed: {e}")
     
-    @patch('tagmanager.app.helpers.load_tags')
-    @patch('tagmanager.app.helpers.save_tags')
+    @patch('tagmanager.app.add.service.load_tags')
+    @patch('tagmanager.app.add.service.save_tags')
     def test_add_service_functionality(self, mock_save, mock_load):
         """Test basic add functionality"""
         from tagmanager.app.add.service import add_tags
         
-        # Mock empty tags
+        # Mock empty tags and successful save
         mock_load.return_value = {}
+        mock_save.return_value = True  # Ensure save returns True for success
         
         # Test adding tags
         result = add_tags(self.test_file, ["python", "test"])
@@ -99,7 +100,7 @@ class TestServicesQuick(unittest.TestCase):
         self.assertTrue(result)
         print("✅ Add service: basic functionality works")
     
-    @patch('tagmanager.app.helpers.load_tags')
+    @patch('tagmanager.app.search.service.load_tags')
     def test_search_service_functionality(self, mock_load):
         """Test basic search functionality"""
         from tagmanager.app.search.service import search_files_by_tags

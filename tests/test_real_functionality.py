@@ -32,6 +32,10 @@ class TestRealFunctionality(unittest.TestCase):
         self.tag_file_patcher = patch('tagmanager.app.helpers.TAG_FILE', self.test_tag_file)
         self.tag_file_patcher.start()
         
+        # Clear any existing tag data before each test
+        from tagmanager.app.helpers import save_tags
+        save_tags({})  # Start with clean tag data
+        
         # Create test files
         self.test_file1 = os.path.join(self.test_dir, "test1.py")
         self.test_file2 = os.path.join(self.test_dir, "test2.js")
@@ -51,10 +55,10 @@ class TestRealFunctionality(unittest.TestCase):
         """Test that helpers can save and load data"""
         from tagmanager.app.helpers import load_tags, save_tags
         
-        # Test data
+        # Use real test file paths instead of hardcoded ones
         test_data = {
-            "/path/to/file1.py": ["python", "test"],
-            "/path/to/file2.js": ["javascript", "web"]
+            os.path.abspath(self.test_file1): ["python", "test"],
+            os.path.abspath(self.test_file2): ["javascript", "web"]
         }
         
         # Save data
@@ -129,9 +133,10 @@ class TestRealFunctionality(unittest.TestCase):
         add_tags(self.test_file1, ["python", "backend"])
         add_tags(self.test_file2, ["python", "frontend"])
         
-        # Search for files with python tag
-        python_files = search_files_by_tag("python")
+        # Search for files with python tag (exact match)
+        python_files = search_files_by_tag("python", exact=True)
         
+        # add_tags stores absolute paths, so we need to compare with absolute paths
         expected_paths = {os.path.abspath(self.test_file1), os.path.abspath(self.test_file2)}
         result_paths = set(python_files)
         

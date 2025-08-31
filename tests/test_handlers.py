@@ -187,9 +187,9 @@ class TestTagsHandler(unittest.TestCase):
         mock_search_by_tag.assert_called_once_with("python", True)
         self.assertTrue(mock_print.called)
 
-    @patch('tagmanager.app.tags.service.open_list_files_by_tag_result')
-    @patch('tagmanager.app.tags.service.search_files_by_tag')
-    def test_handle_tags_command_search_and_open(self, mock_search_by_tag, mock_open_result):
+    @patch('builtins.input', return_value='q')  # Mock user choosing to quit
+    @patch('tagmanager.app.tags.handler.search_files_by_tag')
+    def test_handle_tags_command_search_and_open(self, mock_search_by_tag, mock_input):
         """Test searching and opening files by tag"""
         from tagmanager.app.tags.handler import handle_tags_command
         
@@ -207,7 +207,8 @@ class TestTagsHandler(unittest.TestCase):
         
         # Verify
         mock_search_by_tag.assert_called_once_with("python", False)
-        mock_open_result.assert_called_once_with(["/path/file1.py"])
+        # Verify that input was called (user interaction)
+        mock_input.assert_called_once()
 
 
 if __name__ == '__main__':

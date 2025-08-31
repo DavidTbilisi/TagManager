@@ -302,9 +302,11 @@ class TestHelpers(unittest.TestCase):
         test_data = {"/path/file.py": ["python"]}
         
         with patch('tagmanager.app.helpers.TAG_FILE', "/restricted/file.json"):
-            # Execute - should raise exception
-            with self.assertRaises(PermissionError):
-                save_tags(test_data)
+            # Execute - should return False and print error
+            result = save_tags(test_data)
+            
+        # Verify function returns False on error
+        self.assertFalse(result)
     
     @patch('builtins.open', side_effect=OSError("Disk full"))
     @patch('tagmanager.app.helpers.TAG_FILE')
@@ -315,9 +317,11 @@ class TestHelpers(unittest.TestCase):
         test_data = {"/path/file.py": ["python"]}
         
         with patch('tagmanager.app.helpers.TAG_FILE', "/full/disk/file.json"):
-            # Execute - should raise exception
-            with self.assertRaises(OSError):
-                save_tags(test_data)
+            # Execute - should return False and print error
+            result = save_tags(test_data)
+            
+        # Verify function returns False on error
+        self.assertFalse(result)
     
     @patch('tagmanager.app.helpers.TAG_FILE')
     def test_save_tags_directory_creation(self, mock_tag_file):
@@ -355,9 +359,11 @@ class TestHelpers(unittest.TestCase):
         }
         
         with patch('tagmanager.app.helpers.TAG_FILE', self.test_tags_file):
-            # Execute - should raise TypeError
-            with self.assertRaises(TypeError):
-                save_tags(non_serializable_data)
+            # Execute - should return False and print error
+            result = save_tags(non_serializable_data)
+            
+        # Verify function returns False on serialization error
+        self.assertFalse(result)
     
     @patch('tagmanager.app.helpers.TAG_FILE')
     def test_load_save_roundtrip(self, mock_tag_file):

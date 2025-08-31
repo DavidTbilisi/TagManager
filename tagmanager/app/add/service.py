@@ -19,14 +19,19 @@ def add_tags(file_path: str, tags: list) -> bool:
     existing_tags[file_path] = list(
         set(existing_tags.get(file_path, [])).union(set(tags))
     )
-
-    try:
-        save_tags(existing_tags)
-        print(f"Tags added to '{file_path}'")
-        return True
-    except UnicodeEncodeError as e:
-        print("Error while printing:", e)
-        return True  # Still return True since tags were saved
-    except OSError as e:
-        print(f"Error while adding tags: {e}")
+    is_saved = save_tags(existing_tags)
+   
+    if is_saved:
+        try:
+            print(f"Tags added to '{file_path}'")
+            return True
+        except UnicodeEncodeError as e:
+            # Handle Unicode encoding error gracefully
+            try:
+                print("Error while printing:", str(e))
+            except:
+                pass  # Ignore errors in error handling
+            return True  # Still return True since tags were saved
+    else:
+        print(f"Error: Failed to save tags for '{file_path}'")
         return False

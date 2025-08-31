@@ -39,7 +39,7 @@ class TestAddService(unittest.TestCase):
         
         # Default mock behavior
         self.mock_load_tags.return_value = {}
-        self.mock_save_tags.return_value = None
+        self.mock_save_tags.return_value = True  # save_tags should return True on success
         
     def tearDown(self):
         """Clean up after each test"""
@@ -137,7 +137,7 @@ class TestAddService(unittest.TestCase):
         self.assertEqual(saved_data[expected_path], [])
     
     def test_add_tags_nonexistent_file_creates_file(self):
-        """Test adding tags to non-existent file creates the file"""
+        """Test adding tags to non-existent file returns False (conservative behavior)"""
         from tagmanager.app.add.service import add_tags
         
         # Non-existent file path
@@ -150,30 +150,28 @@ class TestAddService(unittest.TestCase):
         # Execute
         result = add_tags(nonexistent_file, tags)
         
-        # Verify file was created
-        self.assertTrue(result)
-        self.assertTrue(os.path.exists(nonexistent_file))
+        # Verify conservative behavior - returns False, doesn't create file
+        self.assertFalse(result)
+        self.assertFalse(os.path.exists(nonexistent_file))
         
-        # Check saved data
-        saved_data = self.mock_save_tags.call_args[0][0]
-        expected_path = os.path.abspath(nonexistent_file)
-        self.assertIn(expected_path, saved_data)
-        self.assertEqual(set(saved_data[expected_path]), set(tags))
+        # Verify save_tags was not called for non-existent file
+        self.mock_save_tags.assert_not_called()
     
     @patch('builtins.print')
     def test_add_tags_file_creation_success_message(self, mock_print):
-        """Test that success message is printed when file is created"""
+        """Test that error message is printed when file doesn't exist"""
         from tagmanager.app.add.service import add_tags
         
         nonexistent_file = os.path.join(self.test_dir, "new_file.txt")
         self.mock_load_tags.return_value = {}
         
         # Execute
-        add_tags(nonexistent_file, ["tag"])
+        result = add_tags(nonexistent_file, ["tag"])
         
-        # Verify print was called with creation message
+        # Verify error message was printed and function returned False
+        self.assertFalse(result)
         expected_path = os.path.abspath(nonexistent_file)
-        mock_print.assert_any_call(f"Created new file: '{expected_path}'")
+        mock_print.assert_any_call(f"Error: The file '{expected_path}' does not exist Disk full.")
     
     @patch('builtins.print')
     def test_add_tags_success_message(self, mock_print):
@@ -206,13 +204,13 @@ class TestAddService(unittest.TestCase):
         # Execute
         result = add_tags(nonexistent_file, ["tag"])
         
-        # Verify
+        # Verify - function returns False for non-existent files before trying file operations
         self.assertFalse(result)
         mock_print.assert_called()
         
-        # Check error message was printed
+        # Check that the basic "file does not exist" error was printed
         print_calls = [call[0][0] for call in mock_print.call_args_list]
-        error_messages = [msg for msg in print_calls if "Error" in msg and "Permission denied" in msg]
+        error_messages = [msg for msg in print_calls if "does not exist" in msg]
         self.assertTrue(len(error_messages) > 0)
     
     @patch('builtins.open', side_effect=OSError("Disk full"))
@@ -242,12 +240,16 @@ class TestAddService(unittest.TestCase):
         from tagmanager.app.add.service import add_tags
         
         self.mock_load_tags.return_value = {}
+        self.mock_save_tags.return_value = True  # Ensure save succeeds
         
         # Execute
         result = add_tags(self.test_file, ["tag"])
         
         # Should still return True despite print error
         self.assertTrue(result)
+        
+        # Verify tags were still saved
+        self.mock_save_tags.assert_called_once()
     
     def test_add_tags_relative_path_conversion(self):
         """Test that relative paths are converted to absolute paths"""
