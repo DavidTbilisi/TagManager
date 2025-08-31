@@ -8,10 +8,12 @@ from rich.text import Text
 from rich.panel import Panel
 from rich import box
 
+
 def truncate(string, length):
     if length < 4:
         return string[:length]
-    return (string[:length - 3] + '...') if len(string) > length else string
+    return (string[: length - 3] + "...") if len(string) > length else string
+
 
 def print_list_tags_all_table():
     console = Console()
@@ -25,7 +27,7 @@ def print_list_tags_all_table():
                 "[bold yellow]No tagged files found![/bold yellow]\n\n"
                 "Use [bold green]tm add <file> --tags <tag1>,<tag2>[/bold green] to start tagging your files.",
                 title="🏷️ TagManager",
-                border_style="magenta"
+                border_style="magenta",
             )
         )
         return
@@ -47,19 +49,23 @@ def print_list_tags_all_table():
         box=box.ROUNDED,
         highlight=True,
         title="[bold blue]All Tagged Files[/bold blue]",
-        caption="[dim]Tip: Use [green]tm tags[/green] to see all tags[/dim]"
+        caption="[dim]Tip: Use [green]tm tags[/green] to see all tags[/dim]",
     )
     table.add_column("File", style="bold cyan", no_wrap=True, max_width=max_file_len)
     table.add_column("Tags", style="bold green", overflow="fold")
 
     for file, file_tags in tags.items():
         truncated_tags = [
-            f"[bold]{truncate(tag, max_tag_len)}[/bold]" if len(tag) == max_tag_len else tag
+            (
+                f"[bold]{truncate(tag, max_tag_len)}[/bold]"
+                if len(tag) == max_tag_len
+                else tag
+            )
             for tag in file_tags
         ]
         display_file = file if display_file_as == "PATH" else os.path.split(file)[1]
         display_file = truncate(display_file, max_file_len)
-        tags_str = ', '.join(truncated_tags) if truncated_tags else "[dim]No tags[/dim]"
+        tags_str = ", ".join(truncated_tags) if truncated_tags else "[dim]No tags[/dim]"
         table.add_row(display_file, tags_str)
 
     console.print(table)

@@ -336,11 +336,14 @@ tm stats --chart  # Visualize project file distribution
 
 ## 📚 **Complete Documentation**
 
-- **[Configuration Guide](CONFIGURATION_GUIDE.md)** - Comprehensive configuration management
-- **[Installation Guide](INSTALLATION.md)** - Complete installation instructions
-- **[Package Summary](PACKAGE_SUMMARY.md)** - Overview of the pip package
-- **[Automation Guide](AUTOMATION_GUIDE.md)** - Version management and publishing
-- **[Windows Compatibility](WINDOWS_COMPATIBILITY.md)** - Windows-specific features and fixes
+All detailed documentation has been organized in the **[📖 docs/ folder](docs/)**:
+
+- **[📋 Installation Guide](docs/INSTALLATION.md)** - Complete installation instructions
+- **[⚙️ Configuration Guide](docs/CONFIGURATION_GUIDE.md)** - Comprehensive configuration management
+- **[🧪 Testing Documentation](docs/COMPREHENSIVE_TESTS_SUMMARY.md)** - 110+ comprehensive test cases
+- **[🤖 Automation Guide](docs/AUTOMATION_GUIDE.md)** - Version management and publishing
+- **[🔧 Windows Compatibility](docs/WINDOWS_COMPATIBILITY.md)** - Windows-specific features and fixes
+- **[📝 All Documentation Index](docs/README.md)** - Complete documentation overview
 
 ## 📄 License
 

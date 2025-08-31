@@ -34,8 +34,7 @@ safe_remove "test_config.json"
 safe_remove "tm.bat"
 safe_remove "tm"
 
-# Test files (minimal content)
-safe_remove "tests/"
+# Legacy test files (keep new tests/ directory)
 safe_remove "tests.py"
 
 echo ""

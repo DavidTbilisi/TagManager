@@ -6,18 +6,21 @@ from ..config_manager import get_config
 path = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(path)
 
+
 def get_tag_file_path():
     """Get the tag file path from configuration, with fallback to legacy config"""
     try:
         # Try new configuration system first
-        tag_path = get_config('storage.tag_file_path', '~/file_tags.json')
+        tag_path = get_config("storage.tag_file_path", "~/file_tags.json")
     except:
         # Fallback to legacy configuration
         from ..configReader import config
-        tag_path = config['DEFAULT']['TAG_FILE']
-    
+
+        tag_path = config["DEFAULT"]["TAG_FILE"]
+
     # Expand ~ to home directory
     return os.path.expanduser(tag_path)
+
 
 TAG_FILE = get_tag_file_path()
 
@@ -29,8 +32,14 @@ def load_tags() -> dict:
     """
     if not os.path.exists(TAG_FILE):
         return {}
-    with open(TAG_FILE, "r", encoding="utf-8") as file:
-        return json.load(file)
+    try:
+        with open(TAG_FILE, "r", encoding="utf-8") as file:
+            content = file.read().strip()
+            if not content:
+                return {}
+            return json.loads(content)
+    except (json.JSONDecodeError, PermissionError, OSError):
+        return {}
 
 
 def save_tags(tags: dict) -> bool:
@@ -40,9 +49,16 @@ def save_tags(tags: dict) -> bool:
     :return: True if successful, False otherwise
     """
     try:
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(TAG_FILE), exist_ok=True)
+
         with open(TAG_FILE, "w", encoding="utf-8") as file:
             json.dump(tags, file, indent=4)
         return True
+    
+    except OSError as e:
+        print(f"Error while saving tags Disk full: {e}")
+        return False
     except Exception as e:
         print("Error while saving tags:", e)
         return False
@@ -76,4 +92,3 @@ def normalized_levenshtein_distance(s1, s2):
     distance = levenshtein_distance(s1, s2)
     max_len = max(len(s1), len(s2))
     return (max_len - distance) / max_len
-

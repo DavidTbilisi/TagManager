@@ -4,14 +4,14 @@ from .service import (
     get_file_count_distribution,
     format_overall_statistics,
     format_tag_statistics,
-    format_file_count_distribution
+    format_file_count_distribution,
 )
 
 
 def handle_stats_command(tag: str = None, file_count: bool = False):
     """
     Handle the stats command with different options.
-    
+
     :param tag: Specific tag to analyze
     :param file_count: Whether to show file count distribution
     """

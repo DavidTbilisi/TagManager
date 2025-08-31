@@ -41,8 +41,3 @@ def fuzzy_search_path(search_query: str) -> str:
 
     # Return the top result as a string, or an empty string if no results
     return dist[0][1] if dist else ""
-
-
-
-
-

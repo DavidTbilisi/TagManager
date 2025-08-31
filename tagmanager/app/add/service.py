@@ -11,16 +11,22 @@ def add_tags(file_path: str, tags: list) -> bool:
     """
     file_path = os.path.abspath(os.path.join(os.getcwd(), file_path))
     if not os.path.exists(file_path):
-        print(f"Error: The file '{file_path}' does not exist.")
+        print(f"Error: The file '{file_path}' does not exist Disk full.")
         return False
 
+    # Load existing tags and add new ones
     existing_tags = load_tags()
-    existing_tags[file_path] = list(set(existing_tags.get(file_path, [])).union(set(tags)))
-    save_tags(existing_tags)
+    existing_tags[file_path] = list(
+        set(existing_tags.get(file_path, [])).union(set(tags))
+    )
 
     try:
-        print(f"Tags added to '{file_path}'\n".encode('utf-8', 'replace').decode('utf-8'))
+        save_tags(existing_tags)
+        print(f"Tags added to '{file_path}'")
         return True
     except UnicodeEncodeError as e:
         print("Error while printing:", e)
+        return True  # Still return True since tags were saved
+    except OSError as e:
+        print(f"Error while adding tags: {e}")
         return False

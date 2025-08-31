@@ -16,7 +16,9 @@ def handle_search_command(args):
         print("Example: tm search -t python -p C:\\Users\\User\\Documents")
         print("Example: tm search -t python -t linux")
         print("Example: tm search -p C:\\Users\\User\\Documents")
-        print("Example: tm search -p C:\\Users\\User\\Documents -p C:\\Users\\User\\Downloads")
+        print(
+            "Example: tm search -p C:\\Users\\User\\Documents -p C:\\Users\\User\\Downloads"
+        )
         return
 
     if result:
@@ -25,5 +27,3 @@ def handle_search_command(args):
         print()
     else:
         print("No files found matching the criteria.")
-
-

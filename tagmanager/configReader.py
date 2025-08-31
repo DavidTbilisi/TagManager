@@ -11,4 +11,3 @@ else:
     config_file = os.path.join(root_dir, "config.ini")
 
 config.read(config_file)
-

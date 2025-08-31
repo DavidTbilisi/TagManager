@@ -41,5 +41,3 @@ def remove_invalid_paths() -> None:
 
     save_tags(tags)
     return None
-
-
