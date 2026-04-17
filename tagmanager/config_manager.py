@@ -8,6 +8,7 @@ and easy CLI access to settings.
 
 import json
 import os
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -384,6 +385,44 @@ class ConfigManager:
             self._config = imported_config
 
         self._save_config()
+
+
+def backup_tag_file(tag_file: str, max_backups: int = 5) -> bool:
+    """
+    Rotate backups of the tag file: tag_file.bak.1 is newest, up to max_backups.
+    Returns True if a backup was created or there was nothing to back up.
+    """
+    if not os.path.exists(tag_file):
+        return True
+    try:
+        # Rotate existing backups: .bak.4 -> .bak.5, etc.
+        for i in range(max_backups - 1, 0, -1):
+            src = f"{tag_file}.bak.{i}"
+            dst = f"{tag_file}.bak.{i + 1}"
+            if os.path.exists(src):
+                if os.path.exists(dst):
+                    os.remove(dst)
+                os.rename(src, dst)
+        shutil.copy2(tag_file, f"{tag_file}.bak.1")
+        return True
+    except OSError as e:
+        print(f"Warning: Could not create backup of tag file: {e}")
+        return False
+
+
+def backup_if_configured() -> None:
+    """Create a backup of the tag file if auto_backup is enabled in config."""
+    try:
+        auto_backup = get_config_manager().get("backup.auto_backup", True)
+        if not auto_backup:
+            return
+        max_backups = int(get_config_manager().get("backup.count", 5))
+        tag_file = os.path.expanduser(
+            get_config_manager().get("storage.tag_file_path", "~/file_tags.json")
+        )
+        backup_tag_file(tag_file, max_backups)
+    except Exception as e:
+        print(f"Warning: Backup check failed: {e}")
 
 
 # Global configuration instance

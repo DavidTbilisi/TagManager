@@ -1,5 +1,6 @@
-from ..helpers import load_tags
+from ..helpers import load_tags, normalized_levenshtein_distance
 from ...configReader import config
+from ...config_manager import get_config
 from typing import List, Optional, Set
 
 
@@ -14,36 +15,43 @@ def search_files_by_tags(
     :param exact_match: If True, only return files that match tags exactly.
     :return: A list of files that match the tags.
     """
-    data = load_tags()  # Assuming load_tags() fetches your data structure
+    data = load_tags()
+    fuzzy_threshold = get_config("search.fuzzy_threshold", 0.6)
     matched_files: Set[str] = set()
 
     for file, file_tags in data.items():
         if exact_match:
-            # Use exact matching
-            compare = lambda tag, file_tag: tag.lower() == file_tag.lower()
+            def matches(tag, file_tag):
+                return tag.lower() == file_tag.lower()
         else:
-            # Use partial, case-insensitive matching
-            compare = lambda tag, file_tag: tag.lower() in file_tag.lower()
+            def matches(tag, file_tag):
+                tl, ftl = tag.lower(), file_tag.lower()
+                return tl in ftl or normalized_levenshtein_distance(tl, ftl) >= fuzzy_threshold
 
         if match_all:
-            if all(compare(tag, file_tag) for tag in tags for file_tag in file_tags):
+            if all(
+                any(matches(tag, file_tag) for file_tag in file_tags)
+                for tag in tags
+            ):
                 matched_files.add(file)
         else:
-            if any(compare(tag, file_tag) for tag in tags for file_tag in file_tags):
+            if any(
+                any(matches(tag, file_tag) for file_tag in file_tags)
+                for tag in tags
+            ):
                 matched_files.add(file)
 
     file_or_path = config["LIST_ALL"]["DISPLAY_FILE_AS"]
     max_path_length = int(config["LIST_ALL"]["MAX_PATH_LENGTH"])
 
     if file_or_path == "FILENAME":
-        for file in matched_files:
-            matched_files.remove(file)
-            matched_files.add(file.split("\\")[-1])
+        matched_files = {file.split("\\")[-1] for file in matched_files}
 
-    for file in matched_files:
-        if len(file) > max_path_length:
-            matched_files.remove(file)
-            matched_files.add(file[: max_path_length - 3] + "...")
+    matched_files = {
+        file[: max_path_length - 3] + "..." if len(file) > max_path_length else file
+        for file in matched_files
+    }
+
     return list(matched_files)
 
 
@@ -74,14 +82,17 @@ def combined_search(
     if not tags and not path_query:
         return []
 
+    data = load_tags()
+    all_files = set(data.keys())
+
     tag_matched_files = (
-        search_files_by_tags(tags, match_all_tags) if tags else load_tags().keys()
+        set(search_files_by_tags(tags, match_all_tags)) if tags else all_files
     )
     path_matched_files = (
-        search_files_by_path(path_query) if path_query else load_tags().keys()
+        set(search_files_by_path(path_query)) if path_query else all_files
     )
 
-    return list(set(tag_matched_files) & set(path_matched_files))
+    return list(tag_matched_files & path_matched_files)
 
 
 def search_by_tags(tags: List[str]) -> List[str]:
@@ -97,7 +108,6 @@ def search_by_tags(tags: List[str]) -> List[str]:
     matched_files = []
 
     for file_path, file_tags in data.items():
-        # Check if ALL search tags are present in file tags (AND logic)
         if all(tag in file_tags for tag in tags):
             matched_files.append(file_path)
 
