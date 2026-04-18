@@ -51,6 +51,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+mcp = [
+    "mcp>=1.0.0"
+]
 watch = [
     "watchdog>=2.0.0"
 ]
@@ -78,6 +81,7 @@ Changelog = "https://github.com/davidtbilisi/TagManager/releases"
 [project.scripts]
 tm = "tagmanager.cli:main"
 tagmanager = "tagmanager.cli:main"
+tm-mcp = "tagmanager.mcp_server.server:main"
 
 [tool.setuptools]
 packages = ["tagmanager", "tagmanager.app", "tagmanager.app.add", "tagmanager.app.alias",
@@ -87,7 +91,7 @@ packages = ["tagmanager", "tagmanager.app", "tagmanager.app.add", "tagmanager.ap
            "tagmanager.app.remove", "tagmanager.app.search",
            "tagmanager.app.stats", "tagmanager.app.storage", "tagmanager.app.tags",
            "tagmanager.app.visualization", "tagmanager.app.graph", "tagmanager.app.watch",
-           "tagmanager.app.exportdata"]
+           "tagmanager.app.exportdata", "tagmanager.mcp_server"]
 
 [tool.setuptools.package-data]
 tagmanager = ["*.ini", "*.json"]
