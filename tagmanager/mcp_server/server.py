@@ -230,17 +230,34 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
             tags = arguments["tags"]
             match_all = arguments.get("match_all", False)
             exclude = arguments.get("exclude_tags", [])
-            path_q = arguments.get("path_query", "")
+            path_q = arguments.get("path_query", "").lower()
+            fuzzy_threshold = 0.6
 
+            # Search directly on raw data to always return full paths
+            data = load_tags()
+            from tagmanager.app.helpers import normalized_levenshtein_distance
+            matched: set = set()
+            for path, file_tags in data.items():
+                def _matches(tag, ft):
+                    tl, ftl = tag.lower(), ft.lower()
+                    return tl in ftl or normalized_levenshtein_distance(tl, ftl) >= fuzzy_threshold
+
+                if match_all:
+                    hit = all(any(_matches(t, ft) for ft in file_tags) for t in tags)
+                else:
+                    hit = any(any(_matches(t, ft) for ft in file_tags) for t in tags)
+                if hit:
+                    matched.add(path)
+
+            if exclude:
+                matched = {
+                    p for p in matched
+                    if not any(e.lower() in ft.lower() for e in exclude for ft in data[p])
+                }
             if path_q:
-                files = combined_search(
-                    tags=tags, path_query=path_q,
-                    match_all_tags=match_all, exclude_tags=exclude,
-                )
-            else:
-                files = search_files_by_tags(tags, match_all=match_all, exclude_tags=exclude)
+                matched = {p for p in matched if path_q in p.lower()}
 
-            return _ok({"count": len(files), "files": sorted(files)})
+            return _ok({"count": len(matched), "files": sorted(matched)})
 
         elif name == "tm_list_all":
             data = load_tags()
