@@ -75,16 +75,24 @@ check_dependencies() {
         exit 1
     fi
     
-    # Use python3 if available, otherwise python
-    if command -v python3 &> /dev/null; then
-        PYTHON_CMD="python3"
-        PIP_CMD="pip3"
+    # Always use the workspace virtual environment if available
+    VENV_PY="$PROJECT_DIR/.venv/Scripts/python.exe"
+    VENV_PIP="$PROJECT_DIR/.venv/Scripts/pip.exe"
+    if [[ -f "$VENV_PY" && -f "$VENV_PIP" ]]; then
+        PYTHON_CMD="$VENV_PY"
+        PIP_CMD="$VENV_PIP"
+        print_info "Using virtualenv Python: $($PYTHON_CMD --version)"
     else
-        PYTHON_CMD="python"
-        PIP_CMD="pip"
+        # Fallback to system python
+        if command -v python3 &> /dev/null; then
+            PYTHON_CMD="python3"
+            PIP_CMD="pip3"
+        else
+            PYTHON_CMD="python"
+            PIP_CMD="pip"
+        fi
+        print_info "Using Python: $($PYTHON_CMD --version)"
     fi
-    
-    print_info "Using Python: $($PYTHON_CMD --version)"
     
     # Check pip
     if ! command -v $PIP_CMD &> /dev/null; then

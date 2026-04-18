@@ -195,9 +195,14 @@ def path(
 ):
     """List tags of a file"""
     if fuzzy:
-        print(fuzzy_search_path(filepath))
+        result = fuzzy_search_path(filepath)
     else:
-        print(path_tags(filepath))
+        result = path_tags(filepath)
+    if json_out:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        print(result)
+    json_out: bool = typer.Option(False, "--json", help="Output results as JSON"),
 
 
 @app.command()
@@ -220,11 +225,18 @@ def tags(
         open_list_files_by_tag_result(search_files_by_tag(search, exact))
     elif search:
         result = search_files_by_tag(search, exact)
-        for i, file in enumerate(result, start=1):
-            print(f"{i}. {file}")
+        if json_out:
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+        else:
+            for i, file in enumerate(result, start=1):
+                print(f"{i}. {file}")
     else:
-        for i, tag in enumerate(list_all_tags(), start=1):
-            print(f"{i}. {tag}")
+        tags_list = list_all_tags()
+        if json_out:
+            print(json.dumps(tags_list, indent=2, ensure_ascii=False))
+        else:
+            for i, tag in enumerate(tags_list, start=1):
+                print(f"{i}. {tag}")
 
 
 @app.command()
@@ -318,42 +330,52 @@ def stats(
     if chart:
         handle_stats_charts()
     else:
-        handle_stats_command(tag=tag, file_count=file_count)
+        result = handle_stats_command(tag=tag, file_count=file_count, return_data=json_out)
+        if json_out and result is not None:
+            print(json.dumps(result, indent=2, ensure_ascii=False))
 
 
 # ---------------------------------------------------------------------------
-# Sub-apps
-# ---------------------------------------------------------------------------
-
-bulk_app = typer.Typer(help="Bulk operations for managing tags")
-app.add_typer(bulk_app, name="bulk")
-
-filter_app = typer.Typer(help="Smart filtering and analysis of tagged files")
-app.add_typer(filter_app, name="filter")
-
-config_app = typer.Typer(help="Configuration management")
-app.add_typer(config_app, name="config")
-
-alias_app = typer.Typer(help="Manage tag aliases (shortcuts that resolve to canonical tags)")
-app.add_typer(alias_app, name="alias")
-
-preset_app = typer.Typer(help="Manage tag presets (named groups of tags)")
-app.add_typer(preset_app, name="preset")
-
-
-# ---------------------------------------------------------------------------
-# Bulk sub-commands
-# ---------------------------------------------------------------------------
-
-@bulk_app.command("add")
-def bulk_add(
-    pattern: str = typer.Argument(..., help="File pattern to match"),
-    tags: List[str] = typer.Option(..., "--tags", "-t", help="Tags to add", autocompletion=_complete_tags),
-    base_path: str = typer.Option(".", "--path", "-p", help="Base directory to search from"),
-    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would be done"),
+def search(
+    tags: Optional[List[str]] = typer.Option(
+        None, "-t", "--tags", help="List of tags to search for",
+        autocompletion=_complete_tags,
+    ),
+    path: Optional[str] = typer.Option(
+        None, "-p", "--path", help="Path query to search for"
+    ),
+    match_all: bool = typer.Option(
+        False, "-a", "--match_all", help="Match all specified tags (AND operation)"
+    ),
+    exact: bool = typer.Option(False, "-e", "--exact", help="Exact match for tags"),
+    open: bool = typer.Option(False, "-o", "--open", help="Open the file"),
+    json_out: bool = typer.Option(False, "--json", help="Output results as JSON"),
 ):
-    """Add tags to all files matching a pattern"""
-    flat = [t.strip() for tg in tags for t in tg.split(",") if t.strip()]
+    """Search files by tags or path"""
+    import json
+    if tags and path:
+        result = combined_search(tags, path, match_all)
+    elif tags:
+        result = search_files_by_tags(tags, match_all, exact)
+    elif path:
+        result = search_files_by_path(path)
+    else:
+        typer.echo("No search criteria provided.")
+        typer.echo("Example: tm search -t python -p C:\\Users\\User\\Documents")
+        return
+
+    if result:
+        if json_out:
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+        else:
+            for i, file in enumerate(result, start=1):
+                print(f"{i}. {file}")
+            print()
+    else:
+        if json_out:
+            print(json.dumps([]))
+        else:
+            print("No files found matching the criteria.")
     handle_bulk_add(pattern, flat, base_path, dry_run)
 
 
