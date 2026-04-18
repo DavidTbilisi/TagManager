@@ -3,6 +3,7 @@
 TagManager CLI Entry Point
 """
 
+import os
 import sys
 from typing import List, Optional
 
@@ -19,7 +20,7 @@ from .app.filter.handler import (
 )
 from .app.list_all.service import print_list_tags_all_table
 from .app.paths.service import path_tags, fuzzy_search_path
-from .app.remove.service import remove_path, remove_invalid_paths
+from .app.remove.service import remove_path, remove_invalid_paths, remove_all_tags
 from .app.search.service import (
     combined_search,
     search_files_by_path,
@@ -64,6 +65,7 @@ from .app.preset.service import (
 from .app.move.service import move_path, clean_missing
 from .app.graph.handler import handle_graph_command
 from .app.watch.handler import handle_watch_command
+from .app.exportdata.service import export_tags_json, export_tags_csv, import_tags
 
 
 try:
@@ -159,9 +161,17 @@ def remove(
     invalid: bool = typer.Option(
         False, "-i", "--invalid", help="Remove invalid paths from tags"
     ),
+    all_tags: bool = typer.Option(
+        False, "--all-tags", help="Clear ALL tags from a file (keeps the entry, just empties its tags)"
+    ),
 ):
-    """Remove path from tags"""
-    if path:
+    """Remove a file from tags, clean invalid paths, or clear all tags from a file"""
+    if all_tags and path:
+        result = remove_all_tags(path)
+        typer.echo(result["message"])
+        if not result["success"]:
+            raise typer.Exit(1)
+    elif path:
         remove_path(path)
     elif invalid:
         remove_invalid_paths()
@@ -253,28 +263,35 @@ def storage(
 @app.command()
 def search(
     tags: Optional[List[str]] = typer.Option(
-        None, "-t", "--tags", help="List of tags to search for",
+        None, "-t", "--tags", help="Tags to search for (OR by default, AND with --match-all)",
         autocompletion=_complete_tags,
     ),
     path: Optional[str] = typer.Option(
         None, "-p", "--path", help="Path query to search for"
     ),
     match_all: bool = typer.Option(
-        False, "-a", "--match_all", help="Match all specified tags (AND operation)"
+        False, "-a", "--match-all", help="Require ALL listed tags (AND)"
     ),
-    exact: bool = typer.Option(False, "-e", "--exact", help="Exact match for tags"),
-    open: bool = typer.Option(False, "-o", "--open", help="Open the file"),
+    exclude: Optional[List[str]] = typer.Option(
+        None, "-x", "--exclude", help="Exclude files that have ANY of these tags (NOT)",
+        autocompletion=_complete_tags,
+    ),
+    exact: bool = typer.Option(False, "-e", "--exact", help="Exact tag match (no fuzzy)"),
+    open: bool = typer.Option(False, "-o", "--open", help="Open the matched file(s)"),
 ):
-    """Search files by tags or path"""
+    """Search files by tags or path. Supports AND (--match-all) and NOT (--exclude)."""
     if tags and path:
-        result = combined_search(tags, path, match_all)
+        result = combined_search(tags, path, match_all, exclude_tags=exclude)
     elif tags:
-        result = search_files_by_tags(tags, match_all, exact)
+        result = search_files_by_tags(tags, match_all, exact, exclude_tags=exclude)
     elif path:
         result = search_files_by_path(path)
     else:
         typer.echo("No search criteria provided.")
-        typer.echo("Example: tm search -t python -p C:\\Users\\User\\Documents")
+        typer.echo("Examples:")
+        typer.echo("  tm search -t python                   # files tagged python")
+        typer.echo("  tm search -t python -t web --match-all # both tags")
+        typer.echo("  tm search -t python --exclude legacy   # python but not legacy")
         return
 
     if result:
@@ -330,52 +347,42 @@ def stats(
     if chart:
         handle_stats_charts()
     else:
-        result = handle_stats_command(tag=tag, file_count=file_count, return_data=json_out)
-        if json_out and result is not None:
-            print(json.dumps(result, indent=2, ensure_ascii=False))
+        handle_stats_command(tag=tag, file_count=file_count)
 
 
 # ---------------------------------------------------------------------------
-def search(
-    tags: Optional[List[str]] = typer.Option(
-        None, "-t", "--tags", help="List of tags to search for",
+# Sub-apps
+# ---------------------------------------------------------------------------
+
+bulk_app = typer.Typer(help="Bulk tag operations")
+filter_app = typer.Typer(help="Smart filtering and analysis")
+config_app = typer.Typer(help="Configuration management")
+alias_app = typer.Typer(help="Tag alias management")
+preset_app = typer.Typer(help="Tag preset management")
+
+app.add_typer(bulk_app,   name="bulk")
+app.add_typer(filter_app, name="filter")
+app.add_typer(config_app, name="config")
+app.add_typer(alias_app,  name="alias")
+app.add_typer(preset_app, name="preset")
+
+
+# ---------------------------------------------------------------------------
+# Bulk sub-commands
+# ---------------------------------------------------------------------------
+
+@bulk_app.command("add")
+def bulk_add(
+    pattern: str = typer.Argument(..., help="Glob pattern to match files"),
+    tags: List[str] = typer.Option(
+        ..., "--tags", "-t", help="Tags to add",
         autocompletion=_complete_tags,
     ),
-    path: Optional[str] = typer.Option(
-        None, "-p", "--path", help="Path query to search for"
-    ),
-    match_all: bool = typer.Option(
-        False, "-a", "--match_all", help="Match all specified tags (AND operation)"
-    ),
-    exact: bool = typer.Option(False, "-e", "--exact", help="Exact match for tags"),
-    open: bool = typer.Option(False, "-o", "--open", help="Open the file"),
-    json_out: bool = typer.Option(False, "--json", help="Output results as JSON"),
+    base_path: Optional[str] = typer.Option(None, "--base", "-b", help="Base directory for glob"),
+    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would be done"),
 ):
-    """Search files by tags or path"""
-    import json
-    if tags and path:
-        result = combined_search(tags, path, match_all)
-    elif tags:
-        result = search_files_by_tags(tags, match_all, exact)
-    elif path:
-        result = search_files_by_path(path)
-    else:
-        typer.echo("No search criteria provided.")
-        typer.echo("Example: tm search -t python -p C:\\Users\\User\\Documents")
-        return
-
-    if result:
-        if json_out:
-            print(json.dumps(result, indent=2, ensure_ascii=False))
-        else:
-            for i, file in enumerate(result, start=1):
-                print(f"{i}. {file}")
-            print()
-    else:
-        if json_out:
-            print(json.dumps([]))
-        else:
-            print("No files found matching the criteria.")
+    """Add tags to all files matching a glob pattern"""
+    flat = [t.strip() for tg in tags for t in tg.split(",") if t.strip()]
     handle_bulk_add(pattern, flat, base_path, dry_run)
 
 
@@ -626,6 +633,54 @@ def preset_delete(
         typer.echo(f"Preset '{name}' deleted.")
     else:
         typer.echo(f"Preset '{name}' not found.")
+        raise typer.Exit(1)
+
+
+# ---------------------------------------------------------------------------
+# Export / Import tag data
+# ---------------------------------------------------------------------------
+
+@app.command("export")
+def export_data(
+    output: str = typer.Option(
+        "tag_export.json",
+        "--output", "-o",
+        help="Destination file path (.json or .csv)",
+    ),
+    fmt: Optional[str] = typer.Option(
+        None,
+        "--format", "-f",
+        help="Output format: json or csv (inferred from extension if omitted)",
+    ),
+):
+    """Export all tag data to a JSON or CSV file"""
+    ext = (fmt or os.path.splitext(output)[1].lstrip(".") or "json").lower()
+    if ext == "csv":
+        if not output.endswith(".csv"):
+            output = os.path.splitext(output)[0] + ".csv"
+        result = export_tags_csv(output)
+    else:
+        if not output.endswith(".json"):
+            output = os.path.splitext(output)[0] + ".json"
+        result = export_tags_json(output)
+    typer.echo(result["message"])
+    if not result["success"]:
+        raise typer.Exit(1)
+
+
+@app.command("import")
+def import_data(
+    input_file: str = typer.Argument(..., help="Import file (.json or .csv)"),
+    replace: bool = typer.Option(
+        False,
+        "--replace",
+        help="Replace the entire database instead of merging",
+    ),
+):
+    """Import tag data from a JSON or CSV file (merges with existing data by default)"""
+    result = import_tags(input_file, replace=replace)
+    typer.echo(result["message"])
+    if not result["success"]:
         raise typer.Exit(1)
 
 
