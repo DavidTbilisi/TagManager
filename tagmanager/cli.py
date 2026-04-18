@@ -815,6 +815,44 @@ def graph(
 
 
 # ---------------------------------------------------------------------------
+# MCP server
+# ---------------------------------------------------------------------------
+
+@app.command("mcp")
+def mcp_server(
+    show_config: bool = typer.Option(False, "--config", help="Print Claude Desktop config and exit"),
+):
+    """Start the TagManager MCP server (stdio transport for Claude/AI clients)."""
+    import sys
+    import json as _json
+
+    if show_config:
+        py_exe = sys.executable
+        cwd = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cfg = {
+            "mcpServers": {
+                "tagmanager": {
+                    "command": py_exe,
+                    "args": ["-m", "tagmanager.mcp_server"],
+                    "cwd": cwd,
+                }
+            }
+        }
+        typer.echo("\nAdd to your Claude Desktop config:")
+        typer.echo("%APPDATA%\\Claude\\claude_desktop_config.json\n")
+        typer.echo(_json.dumps(cfg, indent=2))
+        return
+
+    try:
+        from tagmanager.mcp_server.server import main as _mcp_main
+        typer.echo("Starting TagManager MCP server (stdio)…", err=True)
+        _mcp_main()
+    except ImportError:
+        typer.echo("MCP not installed. Run: pip install mcp", err=True)
+        raise typer.Exit(1)
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
