@@ -33,10 +33,15 @@ class TestAddService(unittest.TestCase):
         # Mock the helpers module
         self.helpers_patcher = patch('tagmanager.app.add.service.load_tags')
         self.save_tags_patcher = patch('tagmanager.app.add.service.save_tags')
-        
+        self.autotag_patcher = patch(
+            'tagmanager.app.autotag.service.suggest_tags_for_file',
+            return_value=[]
+        )
+
         self.mock_load_tags = self.helpers_patcher.start()
         self.mock_save_tags = self.save_tags_patcher.start()
-        
+        self.autotag_patcher.start()
+
         # Default mock behavior
         self.mock_load_tags.return_value = {}
         self.mock_save_tags.return_value = True  # save_tags should return True on success
@@ -45,6 +50,7 @@ class TestAddService(unittest.TestCase):
         """Clean up after each test"""
         self.helpers_patcher.stop()
         self.save_tags_patcher.stop()
+        self.autotag_patcher.stop()
         shutil.rmtree(self.test_dir, ignore_errors=True)
     
     def test_add_tags_existing_file_new_tags(self):

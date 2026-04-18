@@ -66,11 +66,17 @@ class TestTagManager(unittest.TestCase):
             'tagmanager.app.helpers.get_tag_file_path',
             return_value=self.test_tags_file
         )
+        self._autotag_patcher = patch(
+            'tagmanager.app.autotag.service.suggest_tags_for_file',
+            return_value=[]
+        )
         self._tag_file_patcher.start()
+        self._autotag_patcher.start()
 
     def tearDown(self):
         """Clean up after each test"""
         self._tag_file_patcher.stop()
+        self._autotag_patcher.stop()
         shutil.rmtree(self.test_dir, ignore_errors=True)
     
     def test_add_tags(self):
