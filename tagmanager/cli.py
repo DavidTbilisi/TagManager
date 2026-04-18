@@ -62,6 +62,7 @@ from .app.preset.service import (
     list_presets,
 )
 from .app.move.service import move_path, clean_missing
+from .app.graph.handler import handle_graph_command
 
 
 try:
@@ -603,6 +604,73 @@ def preset_delete(
     else:
         typer.echo(f"Preset '{name}' not found.")
         raise typer.Exit(1)
+
+
+# ---------------------------------------------------------------------------
+# Graph visualizer
+# ---------------------------------------------------------------------------
+
+@app.command("graph")
+def graph(
+    mode: str = typer.Option(
+        "tag",
+        "--mode", "-m",
+        help="Graph mode: tag (co-occurrence), file (Jaccard similarity), mixed (bipartite)",
+    ),
+    three_d: bool = typer.Option(
+        False,
+        "--3d",
+        help="Start in 3D mode (default: 2D; toggle available in the browser UI)",
+    ),
+    output: Optional[str] = typer.Option(
+        None,
+        "--output", "-o",
+        help="Save the HTML to this path instead of a temp file",
+    ),
+    export_format: Optional[str] = typer.Option(
+        None,
+        "--export",
+        help="Also export graph data: gexf | graphml",
+    ),
+    export_path: Optional[str] = typer.Option(
+        None,
+        "--export-path",
+        help="Destination path for the exported graph file",
+    ),
+    min_weight: int = typer.Option(
+        1,
+        "--min-weight",
+        help="Minimum edge weight (co-occurrences) to include",
+        min=1,
+    ),
+    threshold: float = typer.Option(
+        0.2,
+        "--threshold",
+        help="Jaccard similarity threshold for file mode (0–1)",
+    ),
+    no_open: bool = typer.Option(
+        False,
+        "--no-open",
+        help="Generate HTML but do not open it in the browser",
+    ),
+    no_server: bool = typer.Option(
+        False,
+        "--no-server",
+        help="Disable the local helper server (disables click-to-open-file)",
+    ),
+):
+    """Visualize tag relationships as an interactive network graph (2D/3D)"""
+    handle_graph_command(
+        mode=mode,
+        three_d=three_d,
+        output=output,
+        export_format=export_format,
+        export_path=export_path,
+        min_weight=min_weight,
+        threshold=threshold,
+        no_open=no_open,
+        no_server=no_server,
+    )
 
 
 # ---------------------------------------------------------------------------

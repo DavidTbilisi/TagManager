@@ -76,11 +76,13 @@ tm = "tagmanager.cli:main"
 tagmanager = "tagmanager.cli:main"
 
 [tool.setuptools]
-packages = ["tagmanager", "tagmanager.app", "tagmanager.app.add", "tagmanager.app.bulk", 
-           "tagmanager.app.config", "tagmanager.app.filter", "tagmanager.app.list_all", 
-           "tagmanager.app.paths", "tagmanager.app.remove", "tagmanager.app.search", 
-           "tagmanager.app.stats", "tagmanager.app.storage", "tagmanager.app.tags", 
-           "tagmanager.app.visualization"]
+packages = ["tagmanager", "tagmanager.app", "tagmanager.app.add", "tagmanager.app.alias",
+           "tagmanager.app.autotag", "tagmanager.app.bulk",
+           "tagmanager.app.config", "tagmanager.app.filter", "tagmanager.app.list_all",
+           "tagmanager.app.move", "tagmanager.app.paths", "tagmanager.app.preset",
+           "tagmanager.app.remove", "tagmanager.app.search",
+           "tagmanager.app.stats", "tagmanager.app.storage", "tagmanager.app.tags",
+           "tagmanager.app.visualization", "tagmanager.app.graph"]
 
 [tool.setuptools.package-data]
 tagmanager = ["*.ini", "*.json"]
