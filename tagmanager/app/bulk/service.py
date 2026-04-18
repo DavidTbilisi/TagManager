@@ -5,6 +5,7 @@ from pathlib import Path
 import fnmatch
 
 from ..helpers import load_tags, save_tags
+from ...config_manager import backup_if_configured
 
 
 def find_files_by_pattern(pattern: str, base_path: str = ".") -> List[str]:
@@ -72,6 +73,7 @@ def bulk_add_tags(
             "dry_run": True,
         }
 
+    backup_if_configured()
     # Load existing tags
     data = load_tags()
     files_modified = 0
@@ -159,6 +161,7 @@ def bulk_remove_by_tag(tag: str, dry_run: bool = False) -> Dict:
             "dry_run": True,
         }
 
+    backup_if_configured()
     # Remove files from tags
     files_removed = 0
     for file_path in files_to_remove:
@@ -231,6 +234,7 @@ def bulk_retag(from_tag: str, to_tag: str, dry_run: bool = False) -> Dict:
             "dry_run": True,
         }
 
+    backup_if_configured()
     # Update tags
     files_updated = 0
     for file_path in files_to_update:
@@ -316,6 +320,7 @@ def bulk_remove_tag_from_files(tag: str, dry_run: bool = False) -> Dict:
             "dry_run": True,
         }
 
+    backup_if_configured()
     # Remove tag from files
     files_updated = 0
     files_to_delete = []  # Files that end up with no tags

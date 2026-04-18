@@ -61,18 +61,16 @@ class TestTagManager(unittest.TestCase):
         with open(self.test_file, 'w') as f:
             f.write("Test content")
         
-        # Mock the TAG_FILE path for testing
-        import tagmanager.app.helpers as helpers
-        self.original_tag_file = helpers.TAG_FILE
-        helpers.TAG_FILE = self.test_tags_file
-        
+        from unittest.mock import patch
+        self._tag_file_patcher = patch(
+            'tagmanager.app.helpers.get_tag_file_path',
+            return_value=self.test_tags_file
+        )
+        self._tag_file_patcher.start()
+
     def tearDown(self):
         """Clean up after each test"""
-        # Restore original TAG_FILE
-        import tagmanager.app.helpers as helpers
-        helpers.TAG_FILE = self.original_tag_file
-        
-        # Remove temporary directory
+        self._tag_file_patcher.stop()
         shutil.rmtree(self.test_dir, ignore_errors=True)
     
     def test_add_tags(self):

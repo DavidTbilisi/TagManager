@@ -9,8 +9,7 @@ def remove_path(file_path: str) -> None:
     :return: None
     """
 
-    #
-    path = os.path.abspath(file_path)
+    path = os.path.normpath(os.path.abspath(file_path))
     tags = load_tags()
     popped_tags = tags.pop(path, None)
     if popped_tags is None:
