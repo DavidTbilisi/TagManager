@@ -174,6 +174,11 @@ class ConfigManager:
         # Save configuration
         self._save_config()
 
+    def set_raw(self, key: str, value: Any) -> None:
+        """Set a top-level config key without type validation (for dicts/lists)."""
+        self._config[key] = value
+        self._save_config()
+
     def delete(self, key: str) -> bool:
         """Delete configuration value"""
         keys = key.split(".")
