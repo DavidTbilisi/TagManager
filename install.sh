@@ -81,9 +81,9 @@ check_dependencies() {
     if [[ -f "$VENV_PY" && -f "$VENV_PIP" ]]; then
         PYTHON_CMD="$VENV_PY"
         PIP_CMD="$VENV_PIP"
-        print_info "Using virtualenv Python: $($PYTHON_CMD --version)"
+        print_info "Using venv Python: $($PYTHON_CMD --version)"
     else
-        # Fallback to system python
+        # Fallback to system Python if venv not found
         if command -v python3 &> /dev/null; then
             PYTHON_CMD="python3"
             PIP_CMD="pip3"
@@ -91,21 +91,19 @@ check_dependencies() {
             PYTHON_CMD="python"
             PIP_CMD="pip"
         fi
-        print_info "Using Python: $($PYTHON_CMD --version)"
+        print_info "Using system Python: $($PYTHON_CMD --version)"
     fi
-    
     # Check pip
-    if ! command -v $PIP_CMD &> /dev/null; then
+    if ! "$PIP_CMD" --version &> /dev/null; then
         print_error "pip is not installed or not in PATH"
         exit 1
     fi
-    
     print_success "Dependencies check passed"
 }
 
 install_build_tools() {
     print_step "Installing/upgrading build tools..."
-    $PIP_CMD install --upgrade pip build twine
+    "$PIP_CMD" install --upgrade pip build twine
     print_success "Build tools ready"
 }
 
@@ -121,7 +119,7 @@ build_package() {
     fi
     
     # Build package
-    $PYTHON_CMD -m build
+    "$PYTHON_CMD" -m build
     
     if [[ $? -eq 0 ]]; then
         print_success "Package built successfully"
@@ -136,7 +134,7 @@ install_local() {
     print_step "Installing package locally..."
     
     # Uninstall existing version
-    $PIP_CMD uninstall $PACKAGE_NAME -y 2>/dev/null || true
+    "$PIP_CMD" uninstall $PACKAGE_NAME -y 2>/dev/null || true
     
     # Find the wheel file
     WHEEL_FILE=$(find "$DIST_DIR" -name "*.whl" | head -n 1)
@@ -147,7 +145,7 @@ install_local() {
     fi
     
     # Install the wheel
-    $PIP_CMD install "$WHEEL_FILE"
+    "$PIP_CMD" install "$WHEEL_FILE"
     
     if [[ $? -eq 0 ]]; then
         print_success "Package installed locally"
@@ -195,10 +193,10 @@ install_from_pypi() {
     print_step "Installing from PyPI..."
     
     # Uninstall local version
-    $PIP_CMD uninstall $PACKAGE_NAME -y 2>/dev/null || true
+    "$PIP_CMD" uninstall $PACKAGE_NAME -y 2>/dev/null || true
     
     # Install from PyPI
-    $PIP_CMD install --upgrade $PACKAGE_NAME
+    "$PIP_CMD" install --upgrade $PACKAGE_NAME
     
     if [[ $? -eq 0 ]]; then
         print_success "Package installed from PyPI"
