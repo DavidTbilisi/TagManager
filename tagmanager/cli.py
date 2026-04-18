@@ -63,6 +63,7 @@ from .app.preset.service import (
 )
 from .app.move.service import move_path, clean_missing
 from .app.graph.handler import handle_graph_command
+from .app.watch.handler import handle_watch_command
 
 
 try:
@@ -604,6 +605,69 @@ def preset_delete(
     else:
         typer.echo(f"Preset '{name}' not found.")
         raise typer.Exit(1)
+
+
+# ---------------------------------------------------------------------------
+# Watch mode
+# ---------------------------------------------------------------------------
+
+_DEFAULT_IGNORE = ["*.pyc", "__pycache__", ".git", ".DS_Store", "*.swp", "*.tmp", "~*"]
+
+
+@app.command("watch")
+def watch(
+    path: str = typer.Argument(
+        ".",
+        help="Directory to watch (default: current directory)",
+    ),
+    recursive: bool = typer.Option(
+        True,
+        "--recursive/--no-recursive", "-r",
+        help="Watch subdirectories recursively",
+    ),
+    tags: Optional[List[str]] = typer.Option(
+        None,
+        "--tags", "-t",
+        help="Always add these tags to every new file",
+    ),
+    preset: Optional[str] = typer.Option(
+        None,
+        "--preset",
+        help="Apply a saved tag preset to every new file",
+    ),
+    no_auto: bool = typer.Option(
+        False,
+        "--no-auto",
+        help="Disable extension-based auto-tagging",
+    ),
+    clean_on_delete: bool = typer.Option(
+        False,
+        "--clean-on-delete",
+        help="Remove tag entry when a watched file is deleted",
+    ),
+    ignore: Optional[List[str]] = typer.Option(
+        None,
+        "--ignore", "-i",
+        help="Glob patterns to ignore (e.g. '*.pyc'). Default ignores common noise.",
+    ),
+    plain: bool = typer.Option(
+        False,
+        "--plain",
+        help="Plain line output instead of Rich live display",
+    ),
+):
+    """Watch a directory and auto-tag files as they are created or moved"""
+    ignore_patterns = list(ignore) if ignore else list(_DEFAULT_IGNORE)
+    handle_watch_command(
+        watch_path=path,
+        recursive=recursive,
+        extra_tags=list(tags) if tags else [],
+        preset_name=preset,
+        auto_tag=not no_auto,
+        on_delete_clean=clean_on_delete,
+        ignore_patterns=ignore_patterns,
+        plain=plain,
+    )
 
 
 # ---------------------------------------------------------------------------
