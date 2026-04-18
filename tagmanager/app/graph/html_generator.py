@@ -55,6 +55,8 @@ def generate_html(
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>{title}</title>
+<script src="https://unpkg.com/three@0.157.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three-spritetext@1.6.5/dist/three-spritetext.min.js"></script>
 <script src="https://unpkg.com/3d-force-graph@1.73.0/dist/3d-force-graph.min.js"></script>
 <script src="https://unpkg.com/force-graph@1.43.0/dist/force-graph.min.js"></script>
 <style>
@@ -147,6 +149,81 @@ def generate_html(
   }}
 
   .dim {{ opacity: 0.08 !important; }}
+
+  /* ── detail panel ── */
+  #detail-panel {{
+    position: fixed; top: 0; right: -380px; width: 360px; height: 100vh;
+    background: #1a1d27; border-left: 1px solid #2e3147;
+    display: flex; flex-direction: column; z-index: 500;
+    transition: right .28s cubic-bezier(.4,0,.2,1);
+    box-shadow: -6px 0 30px rgba(0,0,0,.5);
+  }}
+  #detail-panel.open {{ right: 0; }}
+  #detail-panel-header {{
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-bottom: 1px solid #2e3147; background: #14162a;
+    flex-shrink: 0;
+  }}
+  #detail-panel-title {{ font-size: 15px; font-weight: 600; color: #c5d8f5; max-width: 270px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
+  #detail-close {{
+    background: none; border: none; color: #667; font-size: 18px; cursor: pointer;
+    padding: 2px 6px; border-radius: 4px; line-height: 1;
+  }}
+  #detail-close:hover {{ background: #2e3147; color: #ccc; }}
+  #detail-panel-body {{ flex: 1; overflow-y: auto; padding: 14px 16px; scrollbar-width: thin; }}
+  #detail-panel-body::-webkit-scrollbar {{ width: 5px; }}
+  #detail-panel-body::-webkit-scrollbar-thumb {{ background: #2e3147; border-radius: 3px; }}
+
+  .detail-section {{ margin-bottom: 16px; }}
+  .detail-label {{ font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: #556; margin-bottom: 5px; }}
+  .detail-value {{ font-size: 13px; color: #c0cdd8; line-height: 1.5; word-break: break-all; }}
+  .detail-badge {{
+    display: inline-block; background: #1e2a3e; border: 1px solid #2e4060;
+    border-radius: 4px; padding: 2px 8px; font-size: 11px; margin: 2px;
+    color: #89b4d4;
+  }}
+  .detail-badge.folder {{ background: #2a2010; border-color: #604020; color: #d4a060; }}
+  .detail-badge.file   {{ background: #102a14; border-color: #205030; color: #60d490; }}
+  .detail-badge.tag    {{ background: #1e2a3e; border-color: #2e4060; color: #89b4d4; }}
+
+  #detail-open-btn {{
+    width: 100%; padding: 8px; margin-top: 4px;
+    background: #1e3a5a; color: #89c4f4; border: 1px solid #2e5080;
+    border-radius: 5px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: background .2s;
+  }}
+  #detail-open-btn:hover {{ background: #265080; }}
+
+  .dp-file-item {{
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 5px 7px; margin: 2px 0; border-radius: 4px;
+    background: #0f1117; border: 1px solid #1e2133; font-size: 11px;
+    color: #9ab; gap: 6px;
+  }}
+  .dp-file-name {{ flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
+  .dp-file-open {{
+    flex-shrink: 0; padding: 2px 7px; background: #1e3a5a; color: #89c4f4;
+    border: 1px solid #2e5080; border-radius: 3px; font-size: 10px;
+    cursor: pointer; white-space: nowrap;
+  }}
+  .dp-file-open:hover {{ background: #265080; }}
+
+  #detail-comment-area {{
+    width: 100%; min-height: 90px; padding: 8px;
+    background: #0f1117; border: 1px solid #2e3147;
+    border-radius: 5px; color: #cdd; font-size: 12px;
+    resize: vertical; outline: none; font-family: inherit;
+    transition: border-color .2s;
+  }}
+  #detail-comment-area:focus {{ border-color: #4a6fa5; }}
+  #detail-save-comment {{
+    margin-top: 6px; padding: 7px 14px;
+    background: #2d4a7a; color: #c5d8f5; border: none;
+    border-radius: 5px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: background .2s;
+  }}
+  #detail-save-comment:hover {{ background: #3a5f9a; }}
+  #comment-saved-msg {{ font-size: 11px; color: #59a14f; margin-left: 8px; display: none; }}
 </style>
 </head>
 <body>
@@ -261,8 +338,51 @@ def generate_html(
 
 <div id="graph-container"></div>
 <div id="tooltip"></div>
-<div id="status-bar">Drag to pan &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Click node to open</div>
+<div id="status-bar">Drag to pan &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Click node for details</div>
 <div id="copied-toast">Path copied to clipboard!</div>
+
+<!-- Node detail panel -->
+<div id="detail-panel">
+  <div id="detail-panel-header">
+    <div id="detail-panel-title">Node Details</div>
+    <button id="detail-close" onclick="closeDetailPanel()" title="Close">&#x2715;</button>
+  </div>
+  <div id="detail-panel-body">
+    <div class="detail-section" id="dp-type-row">
+      <div class="detail-label">Type</div>
+      <div class="detail-value" id="dp-type"></div>
+    </div>
+    <div class="detail-section" id="dp-path-row" style="display:none">
+      <div class="detail-label">Path</div>
+      <div class="detail-value" id="dp-path"></div>
+      <button id="detail-open-btn" onclick="openDetailNode()">&#128194; Open in Explorer</button>
+    </div>
+    <div class="detail-section" id="dp-tags-row" style="display:none">
+      <div class="detail-label">Tags</div>
+      <div id="dp-tags"></div>
+    </div>
+    <div class="detail-section" id="dp-files-row" style="display:none">
+      <div class="detail-label">Files <span id="dp-files-count" style="color:#667;font-weight:normal;text-transform:none;font-size:11px;"></span></div>
+      <div id="dp-files-list"></div>
+    </div>
+    <div class="detail-section" id="dp-cluster-row">
+      <div class="detail-label">Cluster</div>
+      <div class="detail-value" id="dp-cluster"></div>
+    </div>
+    <div class="detail-section" id="dp-connections-row">
+      <div class="detail-label">Connections</div>
+      <div class="detail-value" id="dp-connections"></div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-label">Comment</div>
+      <textarea id="detail-comment-area" placeholder="Add a note about this node…"></textarea>
+      <div style="display:flex;align-items:center;margin-top:6px;">
+        <button id="detail-save-comment" onclick="saveComment()">Save comment</button>
+        <span id="comment-saved-msg">&#10003; Saved</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 const GRAPH_DATA = {graph_json};
@@ -397,7 +517,7 @@ function initGraph() {{
   graph = Ctor()(container)
     .graphData(data)
     .nodeId("id")
-    .nodeLabel(n => buildTooltip(n))
+    .nodeLabel(() => "")
     .nodeVal(n => n.size * n.size)
     .nodeColor(n => n.color)
     .linkSource("source")
@@ -413,10 +533,17 @@ function initGraph() {{
   if (use3D) {{
     graph
       .linkOpacity(0.5)
+      .nodeThreeObjectExtend(true)
       .nodeThreeObject(n => {{
+        if (!SpriteText) return null;
         const sprite = new SpriteText(n.label);
-        sprite.color = n.color;
-        sprite.textHeight = Math.max(2, n.size * 1.2);
+        sprite.color = "#e8e8e8";
+        sprite.textHeight = Math.max(2.5, n.size * 1.2);
+        sprite.backgroundColor = "rgba(10,11,20,0.72)";
+        sprite.padding = 2;
+        sprite.borderRadius = 3;
+        sprite.fontFace = "Segoe UI, system-ui, sans-serif";
+        sprite.position.set(0, n.size * 3.5 + 4, 0);
         return sprite;
       }});
   }} else {{
@@ -481,16 +608,114 @@ document.addEventListener("mousemove", e => {{
   tooltip.style.top = (e.clientY - 10) + "px";
 }});
 
-// ── click to open ─────────────────────────────────────────────────────────────
+// ── detail panel ─────────────────────────────────────────────────────────────
+let _detailNode = null;
+
 function handleNodeClick(n) {{
+  _detailNode = n;
+  openDetailPanel(n);
+}}
+
+function openDetailPanel(n) {{
+  const panel = document.getElementById("detail-panel");
+
+  // Title
+  document.getElementById("detail-panel-title").textContent = n.label;
+
+  // Type badge
+  const typeBadge = `<span class="detail-badge ${{n.type}}">${{n.type}}</span>`;
+  document.getElementById("dp-type").innerHTML = typeBadge;
+
+  // Path row (file/folder nodes only)
   const path = (n.metadata && n.metadata.path) || (n.type !== "tag" ? n.id.replace(/^file::/, "") : null);
-  if (!path) return;
+  if (path && n.type !== "tag") {{
+    document.getElementById("dp-path").textContent = path;
+    document.getElementById("dp-path-row").style.display = "";
+  }} else {{
+    document.getElementById("dp-path-row").style.display = "none";
+  }}
+
+  // Tags (for file/folder nodes)
+  const tags = (n.metadata && n.metadata.tags) || [];
+  if (tags.length > 0) {{
+    document.getElementById("dp-tags").innerHTML = tags.map(t =>
+      `<span class="detail-badge tag">${{t}}</span>`
+    ).join(" ");
+    document.getElementById("dp-tags-row").style.display = "";
+  }} else if (n.type === "tag") {{
+    document.getElementById("dp-tags-row").style.display = "none";
+  }}
+
+  // File list (for tag nodes)
+  const files = (n.metadata && n.metadata.files) || [];
+  const fc = (n.metadata && n.metadata.file_count) || files.length;
+  if (n.type === "tag" && fc > 0) {{
+    document.getElementById("dp-files-count").textContent = fc + " file(s)";
+    const list = document.getElementById("dp-files-list");
+    list.innerHTML = files.map(fp => {{
+      const name = fp.split(/[\\/]/).pop();
+      return `<div class="dp-file-item">
+        <span class="dp-file-name" title="${{fp}}">${{name}}</span>
+        <button class="dp-file-open" onclick="openFilePath('${{fp.replace(/'/g, "\\'")}}')">Open</button>
+      </div>`;
+    }}).join("");
+    document.getElementById("dp-files-row").style.display = "";
+  }} else {{
+    document.getElementById("dp-files-row").style.display = "none";
+  }}
+
+  // Cluster
+  const cl = (n.metadata && n.metadata.cluster_id != null) ? "Cluster " + n.metadata.cluster_id : "–";
+  document.getElementById("dp-cluster").textContent = cl;
+
+  // Connections count from current graph data
+  const gd = graph ? graph.graphData() : null;
+  let connCount = 0;
+  if (gd) {{
+    connCount = gd.links.filter(l => {{
+      const src = typeof l.source === "object" ? l.source.id : l.source;
+      const tgt = typeof l.target === "object" ? l.target.id : l.target;
+      return src === n.id || tgt === n.id;
+    }}).length;
+  }}
+  document.getElementById("dp-connections").textContent = connCount + " edge(s)";
+
+  // Load saved comment
+  const saved = localStorage.getItem("tm_comment_" + n.id) || "";
+  document.getElementById("detail-comment-area").value = saved;
+  document.getElementById("comment-saved-msg").style.display = "none";
+
+  panel.classList.add("open");
+}}
+
+function closeDetailPanel() {{
+  document.getElementById("detail-panel").classList.remove("open");
+  _detailNode = null;
+}}
+
+function openDetailNode() {{
+  if (!_detailNode) return;
+  const path = (_detailNode.metadata && _detailNode.metadata.path) ||
+    (_detailNode.type !== "tag" ? _detailNode.id.replace(/^file::/, "") : null);
+  if (path) openFilePath(path);
+}}
+
+function openFilePath(path) {{
   if (SERVER_PORT) {{
     fetch("http://127.0.0.1:" + SERVER_PORT + "/open?path=" + encodeURIComponent(path))
       .catch(() => copyPath(path));
   }} else {{
     copyPath(path);
   }}
+}}
+
+function saveComment() {{
+  if (!_detailNode) return;
+  const text = document.getElementById("detail-comment-area").value;
+  localStorage.setItem("tm_comment_" + _detailNode.id, text);
+  const msg = document.getElementById("comment-saved-msg");
+  msg.style.display = "inline";
+  setTimeout(() => {{ msg.style.display = "none"; }}, 2000);
 }}
 
 function copyPath(path) {{
@@ -543,24 +768,8 @@ function resetFilters() {{
   applyFilters();
 }}
 
-// ── SpriteText shim for 3D labels (loaded lazily) ────────────────────────────
-let SpriteText = class {{
-  constructor(text) {{
-    this.text = text;
-    this.color = "#fff";
-    this.textHeight = 8;
-    // minimal three.js object stub so it doesn't crash when 3D lib tries to add it
-    this.position = {{ set() {{}} }};
-    this.scale = {{ set() {{}} }};
-  }}
-}};
-// Try to load the real SpriteText
-(function() {{
-  const s = document.createElement("script");
-  s.src = "https://unpkg.com/three-spritetext@1.6.5/dist/three-spritetext.min.js";
-  s.onload = () => {{ if (window.SpriteText) SpriteText = window.SpriteText; }};
-  document.head.appendChild(s);
-}})();
+// ── SpriteText (loaded synchronously in <head>) ───────────────────────────────
+const SpriteText = window.SpriteText;
 
 // ── init ──────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {{

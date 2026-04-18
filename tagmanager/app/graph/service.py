@@ -104,6 +104,12 @@ def build_tag_graph(min_weight: int = 1) -> dict:
 
     max_freq = max(tag_freq.values()) if tag_freq else 1
 
+    # Inverted index: tag → list of file paths
+    tag_to_files: Dict[str, List[str]] = defaultdict(list)
+    for path, tags in data.items():
+        for t in tags:
+            tag_to_files[t.lower()].append(path)
+
     nodes: List[GraphNode] = []
     for tag, freq in tag_freq.items():
         group = tag_to_cluster.get(tag, len(_CLUSTER_COLORS) - 1)
@@ -120,6 +126,7 @@ def build_tag_graph(min_weight: int = 1) -> dict:
                 "cluster_name": list(cluster_result.get("clusters", {}).keys())[group]
                 if cluster_result.get("success") and group < len(cluster_result.get("clusters", {}))
                 else None,
+                "files": tag_to_files.get(tag, []),
             },
         ))
 
