@@ -36,6 +36,7 @@ class TestAddHandler(unittest.TestCase):
             apply_aliases=True,
             auto_tag=True,
             content_tag=True,
+            dry_run=False,
         )
 
 

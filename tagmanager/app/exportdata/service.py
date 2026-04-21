@@ -1,3 +1,4 @@
+import copy
 import csv
 import json
 import os
@@ -43,13 +44,20 @@ def export_tags_csv(output_path: str) -> Dict:
         return {"success": False, "path": output_path, "message": str(e)}
 
 
-def import_tags(input_path: str, replace: bool = False) -> Dict:
+def import_tags(
+    input_path: str,
+    replace: bool = False,
+    merge_strategy: str = "union",
+    strict_paths: bool = False,
+    dry_run: bool = False,
+) -> Dict:
     """
     Import tag data from a JSON or CSV file.
 
-    :param input_path: Path to the import file (.json or .csv).
-    :param replace: If True, replace the entire database. If False, merge (new wins on conflict).
-    :return: Result dict with success status and counts.
+    :param replace: If True, replace the entire database (ignores merge_strategy).
+    :param merge_strategy: ``union`` (default), ``incoming_wins``, or ``keep_existing``.
+    :param strict_paths: Skip paths that do not exist on disk.
+    :param dry_run: Compute merge result without saving or writing the journal.
     """
     if not os.path.exists(input_path):
         return {"success": False, "message": f"File not found: {input_path}"}
@@ -59,49 +67,101 @@ def import_tags(input_path: str, replace: bool = False) -> Dict:
     try:
         if ext == ".json":
             with open(input_path, "r", encoding="utf-8") as f:
-                imported: Dict[str, List[str]] = json.load(f)
-            if not isinstance(imported, dict):
+                raw_imported: Dict[str, List[str]] = json.load(f)
+            if not isinstance(raw_imported, dict):
                 return {"success": False, "message": "Invalid JSON format: expected an object"}
         elif ext == ".csv":
-            imported = {}
+            raw_imported = {}
             with open(input_path, "r", newline="", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     path = row.get("file_path", "").strip()
                     tags_raw = row.get("tags", "").strip()
                     if path:
-                        imported[path] = [t.strip() for t in tags_raw.split(",") if t.strip()]
+                        raw_imported[path] = [t.strip() for t in tags_raw.split(",") if t.strip()]
         else:
             return {"success": False, "message": f"Unsupported format '{ext}'. Use .json or .csv"}
     except (json.JSONDecodeError, KeyError, csv.Error) as e:
         return {"success": False, "message": f"Failed to parse file: {e}"}
 
+    imported: Dict[str, List[str]] = {}
+    skipped_strict = 0
+    for path, tags in raw_imported.items():
+        if not isinstance(path, str):
+            continue
+        path = path.strip()
+        if not path:
+            continue
+        if not isinstance(tags, list):
+            tags = [tags]  # type: ignore[list-item]
+        norm_tags = [str(t).strip() for t in tags if str(t).strip()]
+        if strict_paths and not os.path.exists(path):
+            skipped_strict += 1
+            continue
+        imported[path] = norm_tags
+
+    if not imported:
+        return {"success": False, "message": "No valid rows to import."}
+
+    full_before = copy.deepcopy(load_tags())
+    ms = (merge_strategy or "union").lower().strip()
+
     if replace:
-        existing = {}
+        existing: Dict[str, List[str]] = {k: list(v) for k, v in imported.items()}
+        conflicts = 0
     else:
         existing = load_tags()
+        conflicts = 0
+        for path, tags in imported.items():
+            if path in existing:
+                if ms == "incoming_wins":
+                    if set(tags) != set(existing[path]):
+                        conflicts += 1
+                    existing[path] = list(tags)
+                elif ms == "keep_existing":
+                    continue
+                else:
+                    merged = list(set(existing[path]) | set(tags))
+                    if set(merged) != set(existing.get(path, [])):
+                        conflicts += 1
+                    existing[path] = merged
+            else:
+                existing[path] = list(tags)
 
-    conflicts = 0
-    for path, tags in imported.items():
-        if path in existing and not replace:
-            # Merge: union of tag sets
-            merged = list(set(existing[path]) | set(tags))
-            if set(merged) != set(existing.get(path, [])):
-                conflicts += 1
-            existing[path] = merged
-        else:
-            existing[path] = tags
+    msg_parts = [
+        f"Imported {len(imported)} file(s).",
+        f" {conflicts} path(s) touched in merge. " if conflicts else "",
+        f" Total: {len(existing)} file(s).",
+    ]
+    if skipped_strict:
+        msg_parts.append(f" Skipped {skipped_strict} missing path(s) (--strict-paths).")
 
-    save_tags(existing)
+    if dry_run:
+        return {
+            "success": True,
+            "dry_run": True,
+            "imported": len(imported),
+            "conflicts_merged": conflicts,
+            "total_files": len(existing),
+            "skipped_paths": skipped_strict,
+            "message": "[dry-run] " + "".join(msg_parts),
+        }
+
+    if not save_tags(existing):
+        return {"success": False, "message": "Failed to save tags after import."}
+
+    try:
+        from ..journal.service import append_entry
+
+        append_entry("import_tags", {"type": "full_replace", "before": full_before})
+    except Exception:
+        pass
 
     return {
         "success": True,
         "imported": len(imported),
         "conflicts_merged": conflicts,
         "total_files": len(existing),
-        "message": (
-            f"Imported {len(imported)} file(s). "
-            + (f"{conflicts} merged with existing tags. " if conflicts else "")
-            + f"Total: {len(existing)} file(s) in database."
-        ),
+        "skipped_paths": skipped_strict,
+        "message": "".join(msg_parts),
     }

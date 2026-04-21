@@ -76,7 +76,12 @@ def bulk_add_tags(
     backup_if_configured()
     # Load existing tags
     data = load_tags()
+    before_snap = {}
+    for file_path in matching_files:
+        np = os.path.normpath(file_path)
+        before_snap[np] = list(data[np]) if np in data else None
     files_modified = 0
+    changed_paths = []
 
     # Add tags to each matching file
     for file_path in matching_files:
@@ -96,6 +101,7 @@ def bulk_add_tags(
         if len(updated_tags) > len(existing_tags):
             data[normalized_path] = updated_tags
             files_modified += 1
+            changed_paths.append(normalized_path)
 
     # Save updated tags
     if files_modified > 0:
@@ -108,6 +114,14 @@ def bulk_add_tags(
                 "files_found": matching_files,
                 "dry_run": False,
             }
+        try:
+            from ..journal.service import append_entry
+
+            inv = {np: before_snap[np] for np in changed_paths}
+            if inv:
+                append_entry("bulk_add", {"paths": inv})
+        except Exception:
+            pass
 
     return {
         "success": True,

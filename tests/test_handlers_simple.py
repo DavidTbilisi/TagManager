@@ -36,6 +36,7 @@ class TestHandlers(unittest.TestCase):
             apply_aliases=True,
             auto_tag=True,
             content_tag=True,
+            dry_run=False,
         )
 
     def test_remove_handler_exists(self):

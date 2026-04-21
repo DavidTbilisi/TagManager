@@ -17,4 +17,5 @@ def handle_add_command(args):
         apply_aliases=apply_aliases,
         auto_tag=auto_tag,
         content_tag=content_tag,
+        dry_run=_cli_bool(args, "dry_run"),
     )

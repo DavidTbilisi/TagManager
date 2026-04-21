@@ -1,5 +1,6 @@
+import copy
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ..helpers import load_tags, save_tags
 
@@ -10,6 +11,7 @@ def add_tags(
     apply_aliases: bool = True,
     auto_tag: bool = True,
     content_tag: bool = True,
+    dry_run: bool = False,
 ) -> bool:
     """
     Takes an existing file path and adds tags to it.
@@ -19,6 +21,7 @@ def add_tags(
     :param apply_aliases: whether to resolve tag aliases before saving
     :param auto_tag: whether to merge extension-based auto-tags
     :param content_tag: when auto_tag is on, also apply content keyword/regex rules
+    :param dry_run: if True, show outcome without saving (no journal entry)
     :return: True if successful, False otherwise
     """
     tags = [t for t in tags if t.strip()]
@@ -52,10 +55,36 @@ def add_tags(
             pass
 
     existing_tags = load_tags()
-    existing_tags[file_path] = list(
-        set(existing_tags.get(file_path, [])).union(set(tags))
+    before_val: Optional[List[str]] = (
+        copy.deepcopy(existing_tags[file_path])
+        if file_path in existing_tags
+        else None
     )
+    merged = list(set(existing_tags.get(file_path, [])).union(set(tags)))
+    if dry_run:
+        try:
+            print(
+                f"[dry-run] Would set tags on '{file_path}' to "
+                f"{sorted(merged)} (was {before_val or 'absent'})"
+            )
+        except UnicodeEncodeError:
+            pass
+        return True
+
+    existing_tags[file_path] = merged
     is_saved = save_tags(existing_tags)
+
+    if is_saved:
+        try:
+            from ..journal.service import append_entry
+
+            if sorted(before_val or []) != sorted(merged):
+                append_entry(
+                    "add_tags",
+                    {"paths": {file_path: before_val}},
+                )
+        except Exception:
+            pass
 
     if is_saved:
         try:
@@ -74,6 +103,7 @@ def add_tags_recursive(
     apply_aliases: bool = True,
     auto_tag: bool = True,
     content_tag: bool = True,
+    dry_run: bool = False,
 ) -> Dict[str, Any]:
     """
     Recursively tag every file under ``dir_path`` using the same rules as
@@ -96,8 +126,13 @@ def add_tags_recursive(
         return {"success": False, "files_tagged": 0, "total_files": 0}
 
     data = load_tags()
+    work = copy.deepcopy(data) if dry_run else data
+    before_snap = {
+        fp: (copy.deepcopy(data[fp]) if fp in data else None) for fp in files
+    }
     base = [t for t in tags if t.strip()]
     files_tagged = 0
+    touched: List[str] = []
 
     for fp in files:
         merged = list(base)
@@ -117,11 +152,12 @@ def add_tags_recursive(
                 merged = _apply(merged)
             except Exception:
                 pass
-        prev = set(data.get(fp, []))
+        prev = set(work.get(fp, []))
         new_set = prev.union(set(merged))
         if new_set != prev:
-            data[fp] = list(new_set)
+            work[fp] = list(new_set)
             files_tagged += 1
+            touched.append(fp)
 
     if files_tagged == 0:
         print(
@@ -134,9 +170,32 @@ def add_tags_recursive(
             "total_files": len(files),
         }
 
-    if not save_tags(data):
+    if dry_run:
+        try:
+            print(
+                f"[dry-run] Would update {files_tagged} file(s) under '{dir_path}' "
+                f"(of {len(files)} scanned)."
+            )
+        except UnicodeEncodeError:
+            pass
+        return {
+            "success": True,
+            "files_tagged": files_tagged,
+            "total_files": len(files),
+            "dry_run": True,
+        }
+
+    if not save_tags(work):
         print("Error: Failed to save tags")
         return {"success": False, "files_tagged": 0, "total_files": len(files)}
+
+    try:
+        from ..journal.service import append_entry
+
+        inv_paths = {fp: before_snap[fp] for fp in touched}
+        append_entry("add_tags_recursive", {"paths": inv_paths})
+    except Exception:
+        pass
 
     try:
         print(f"Tags applied to {files_tagged} file(s) under '{dir_path}'")

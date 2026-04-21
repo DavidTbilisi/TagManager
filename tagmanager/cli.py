@@ -74,6 +74,9 @@ from .app.move.service import move_path, clean_missing
 from .app.graph.handler import handle_graph_command
 from .app.watch.handler import handle_watch_command
 from .app.exportdata.service import export_tags_json, export_tags_csv, import_tags
+from .app.http_api import run_server as run_http_server
+from .app.journal.service import journal_enabled, journal_path_for_display, undo_last
+from tagmanager import runtime
 
 
 try:
@@ -145,6 +148,24 @@ app = typer.Typer(
 )
 
 
+@app.callback()
+def _global_options(
+    ctx: typer.Context,
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="More diagnostic output"),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Less console output"),
+    log_file: Optional[str] = typer.Option(
+        None, "--log-file", help="Append structured logs to this file"
+    ),
+    json_out: bool = typer.Option(
+        False,
+        "--json",
+        help="Machine-readable JSON on supported commands (also TM_JSON=1)",
+    ),
+):
+    """Global options (apply to all subcommands)."""
+    runtime.init_cli(verbose=verbose, quiet=quiet, log_file=log_file, json_output=json_out)
+
+
 # ---------------------------------------------------------------------------
 # Core commands
 # ---------------------------------------------------------------------------
@@ -178,6 +199,11 @@ def add(
         help="Skip content keyword/regex rules (still uses extension map unless --no-auto)",
     ),
     no_aliases: bool = typer.Option(False, "--no-aliases", help="Skip alias resolution"),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Show what would change without saving (no journal entry)",
+    ),
 ):
     """Add tags to a file (with optional preset and auto-tagging)"""
     flat: List[str] = []
@@ -210,18 +236,22 @@ def add(
             apply_aliases=not no_aliases,
             auto_tag=not no_auto,
             content_tag=not no_content,
+            dry_run=dry_run,
         )
         if not result.get("success"):
             raise typer.Exit(1)
         return
 
-    add_tags(
+    ok = add_tags(
         file,
         flat or [""],
         apply_aliases=not no_aliases,
         auto_tag=not no_auto,
         content_tag=not no_content,
+        dry_run=dry_run,
     )
+    if not ok:
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -277,11 +307,10 @@ def path(
         result = fuzzy_search_path(filepath)
     else:
         result = path_tags(filepath)
-    if json_out:
-        print(json.dumps(result, indent=2, ensure_ascii=False))
+    if runtime.json_mode():
+        runtime.emit_json(result)
     else:
         print(result)
-    json_out: bool = typer.Option(False, "--json", help="Output results as JSON"),
 
 
 @app.command()
@@ -304,15 +333,15 @@ def tags(
         open_list_files_by_tag_result(search_files_by_tag(search, exact))
     elif search:
         result = search_files_by_tag(search, exact)
-        if json_out:
-            print(json.dumps(result, indent=2, ensure_ascii=False))
+        if runtime.json_mode():
+            runtime.emit_json({"files": result})
         else:
             for i, file in enumerate(result, start=1):
                 print(f"{i}. {file}")
     else:
         tags_list = list_all_tags()
-        if json_out:
-            print(json.dumps(tags_list, indent=2, ensure_ascii=False))
+        if runtime.json_mode():
+            runtime.emit_json({"tags": tags_list})
         else:
             for i, tag in enumerate(tags_list, start=1):
                 print(f"{i}. {tag}")
@@ -380,7 +409,9 @@ def search_main(
         typer.echo("  tm search run q1-work", err=False)
         raise typer.Exit(0)
 
-    if result:
+    if runtime.json_mode():
+        runtime.emit_json({"files": list(result) if result else []})
+    elif result:
         for i, file in enumerate(result, start=1):
             print(f"{i}. {file}")
         print()
@@ -473,7 +504,9 @@ def search_run(
     if err:
         typer.echo(f"Error: {err}", err=True)
         raise typer.Exit(1)
-    if result:
+    if runtime.json_mode():
+        runtime.emit_json({"files": list(result) if result else []})
+    elif result:
         for i, file in enumerate(result, start=1):
             print(f"{i}. {file}")
         print()
@@ -897,12 +930,87 @@ def import_data(
         "--replace",
         help="Replace the entire database instead of merging",
     ),
+    merge_strategy: str = typer.Option(
+        "union",
+        "--merge-strategy",
+        help="When merging: union | incoming_wins | keep_existing",
+    ),
+    strict_paths: bool = typer.Option(
+        False,
+        "--strict-paths",
+        help="Skip import rows whose file path does not exist on disk",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Validate and show outcome without saving",
+    ),
 ):
     """Import tag data from a JSON or CSV file (merges with existing data by default)"""
-    result = import_tags(input_file, replace=replace)
-    typer.echo(result["message"])
+    result = import_tags(
+        input_file,
+        replace=replace,
+        merge_strategy=merge_strategy,
+        strict_paths=strict_paths,
+        dry_run=dry_run,
+    )
+    if runtime.json_mode():
+        runtime.emit_json(result)
+    else:
+        typer.echo(result["message"])
     if not result["success"]:
         raise typer.Exit(1)
+
+
+@app.command()
+def undo(
+    count: int = typer.Option(
+        1,
+        "--count",
+        "-n",
+        min=1,
+        help="How many journal operations to roll back (most recent first)",
+    ),
+):
+    """Undo recent mutating operations (requires journal: TAGMANAGER_JOURNAL=1 or journal.enabled)."""
+    if not journal_enabled():
+        msg = (
+            "Journal is disabled. Set TAGMANAGER_JOURNAL=1 or journal.enabled in config."
+        )
+        if runtime.json_mode():
+            runtime.emit_json({"ok": False, "message": msg})
+        else:
+            typer.echo(msg, err=True)
+        raise typer.Exit(1)
+    ok, msg, n = undo_last(count)
+    payload = {
+        "ok": ok,
+        "message": msg,
+        "undone": n,
+        "journal_path": journal_path_for_display(),
+    }
+    if runtime.json_mode():
+        runtime.emit_json(payload)
+    else:
+        typer.echo(msg)
+    raise typer.Exit(0 if ok else 1)
+
+
+@app.command("serve")
+def serve(
+    host: str = typer.Option("127.0.0.1", "--host", help="Bind address"),
+    port: int = typer.Option(8765, "--port", "-p", help="TCP port"),
+):
+    """Run local HTTP + JSON-RPC helper for scripts (tags list, search)."""
+    run_http_server(host, port)
+
+
+@app.command("mcp")
+def mcp_stdio():
+    """Run Model Context Protocol server on stdio (Cursor / MCP clients). Requires [mcp] extra."""
+    from .mcp_stdio import run_stdio_server
+
+    run_stdio_server()
 
 
 # ---------------------------------------------------------------------------
