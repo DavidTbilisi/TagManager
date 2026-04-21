@@ -204,6 +204,27 @@ def add(
         "--dry-run",
         help="Show what would change without saving (no journal entry)",
     ),
+    include: Optional[List[str]] = typer.Option(
+        None,
+        "--include",
+        help="With --recursive: only files matching a glob (repeat or comma-separated)",
+    ),
+    exclude: Optional[List[str]] = typer.Option(
+        None,
+        "--exclude",
+        "-x",
+        help="With --recursive: skip files matching any glob (repeat or comma-separated)",
+    ),
+    auto_include: Optional[List[str]] = typer.Option(
+        None,
+        "--auto-include",
+        help="With --recursive: auto-tag only files matching a glob (explicit tags still apply)",
+    ),
+    auto_exclude: Optional[List[str]] = typer.Option(
+        None,
+        "--auto-exclude",
+        help="With --recursive: skip auto-tags for files matching any glob",
+    ),
 ):
     """Add tags to a file (with optional preset and auto-tagging)"""
     flat: List[str] = []
@@ -223,6 +244,17 @@ def add(
         typer.echo("Error: no tags provided.")
         raise typer.Exit(1)
 
+    def _split_globs(items: Optional[List[str]]) -> Optional[List[str]]:
+        if not items:
+            return None
+        out: List[str] = []
+        for item in items:
+            for part in str(item).split(","):
+                p = part.strip()
+                if p:
+                    out.append(p)
+        return out or None
+
     abs_target = os.path.abspath(os.path.join(os.getcwd(), file))
     if recursive:
         if not os.path.isdir(abs_target):
@@ -237,6 +269,10 @@ def add(
             auto_tag=not no_auto,
             content_tag=not no_content,
             dry_run=dry_run,
+            include_globs=_split_globs(include),
+            exclude_globs=_split_globs(exclude),
+            auto_include_globs=_split_globs(auto_include),
+            auto_exclude_globs=_split_globs(auto_exclude),
         )
         if not result.get("success"):
             raise typer.Exit(1)
@@ -846,12 +882,44 @@ def preset_apply(
         help="Skip content keyword/regex rules when auto-tagging",
     ),
     no_aliases: bool = typer.Option(False, "--no-aliases", help="Skip alias resolution"),
+    include: Optional[List[str]] = typer.Option(
+        None,
+        "--include",
+        help="With --recursive: only files matching a glob (repeat or comma-separated)",
+    ),
+    exclude: Optional[List[str]] = typer.Option(
+        None,
+        "--exclude",
+        "-x",
+        help="With --recursive: skip files matching any glob",
+    ),
+    auto_include: Optional[List[str]] = typer.Option(
+        None,
+        "--auto-include",
+        help="With --recursive: auto-tag only files matching a glob",
+    ),
+    auto_exclude: Optional[List[str]] = typer.Option(
+        None,
+        "--auto-exclude",
+        help="With --recursive: skip auto-tags for files matching any glob",
+    ),
 ):
     """Apply a preset's tags to a file"""
     preset_tags = get_preset(name)
     if preset_tags is None:
         typer.echo(f"Error: preset '{name}' not found.")
         raise typer.Exit(1)
+    def _split_globs_preset(items: Optional[List[str]]) -> Optional[List[str]]:
+        if not items:
+            return None
+        out: List[str] = []
+        for item in items:
+            for part in str(item).split(","):
+                p = part.strip()
+                if p:
+                    out.append(p)
+        return out or None
+
     abs_target = os.path.abspath(os.path.join(os.getcwd(), file))
     if recursive:
         if not os.path.isdir(abs_target):
@@ -865,6 +933,10 @@ def preset_apply(
             apply_aliases=not no_aliases,
             auto_tag=not no_auto,
             content_tag=not no_content,
+            include_globs=_split_globs_preset(include),
+            exclude_globs=_split_globs_preset(exclude),
+            auto_include_globs=_split_globs_preset(auto_include),
+            auto_exclude_globs=_split_globs_preset(auto_exclude),
         )
         if not result.get("success"):
             raise typer.Exit(1)

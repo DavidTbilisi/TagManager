@@ -451,6 +451,66 @@ class TestAddService(unittest.TestCase):
         self.assertIn("proj", saved[p])
         self.assertIn("python", saved[p])
 
+    @patch("tagmanager.app.autotag.service.iter_files_recursive")
+    @patch(
+        "tagmanager.app.autotag.service.suggest_tags_for_file",
+        return_value=["from_auto"],
+    )
+    def test_add_tags_recursive_auto_exclude_glob(self, mock_suggest, mock_iter):
+        from tagmanager.app.add.service import add_tags_recursive
+
+        f_py = os.path.join(self.test_dir, "a.py")
+        f_log = os.path.join(self.test_dir, "b.log")
+        open(f_py, "w").close()
+        open(f_log, "w").close()
+        mock_iter.return_value = [os.path.abspath(f_py), os.path.abspath(f_log)]
+        self.mock_load_tags.return_value = {}
+
+        result = add_tags_recursive(
+            self.test_dir,
+            ["manual"],
+            apply_aliases=False,
+            auto_tag=True,
+            auto_exclude_globs=["*.log"],
+        )
+
+        self.assertTrue(result["success"])
+        self.assertEqual(mock_suggest.call_count, 1)
+        saved = self.mock_save_tags.call_args[0][0]
+        apy, alog = os.path.abspath(f_py), os.path.abspath(f_log)
+        self.assertIn("from_auto", saved[apy])
+        self.assertIn("manual", saved[alog])
+        self.assertNotIn("from_auto", saved[alog])
+
+    @patch("tagmanager.app.autotag.service.iter_files_recursive")
+    @patch(
+        "tagmanager.app.autotag.service.suggest_tags_for_file",
+        return_value=["auto"],
+    )
+    def test_add_tags_recursive_include_glob(self, mock_suggest, mock_iter):
+        from tagmanager.app.add.service import add_tags_recursive
+
+        f_py = os.path.join(self.test_dir, "a.py")
+        f_js = os.path.join(self.test_dir, "b.js")
+        open(f_py, "w").close()
+        open(f_js, "w").close()
+        mock_iter.return_value = [os.path.abspath(f_py), os.path.abspath(f_js)]
+        self.mock_load_tags.return_value = {}
+
+        result = add_tags_recursive(
+            self.test_dir,
+            ["m"],
+            apply_aliases=False,
+            auto_tag=True,
+            include_globs=["*.py"],
+        )
+
+        self.assertTrue(result["success"])
+        self.assertEqual(mock_suggest.call_count, 1)
+        saved = self.mock_save_tags.call_args[0][0]
+        self.assertIn(os.path.abspath(f_py), saved)
+        self.assertNotIn(os.path.abspath(f_js), saved)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

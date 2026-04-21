@@ -1,6 +1,6 @@
 import copy
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 from ..helpers import load_tags, save_tags
 
@@ -104,12 +104,22 @@ def add_tags_recursive(
     auto_tag: bool = True,
     content_tag: bool = True,
     dry_run: bool = False,
+    include_globs: Optional[Sequence[str]] = None,
+    exclude_globs: Optional[Sequence[str]] = None,
+    auto_include_globs: Optional[Sequence[str]] = None,
+    auto_exclude_globs: Optional[Sequence[str]] = None,
 ) -> Dict[str, Any]:
     """
     Recursively tag every file under ``dir_path`` using the same rules as
     ``add_tags`` (explicit tags + extension map + optional aliases).
     Uses a single load/save for efficiency.
+
+    :param include_globs: If set, only files matching at least one glob are considered.
+    :param exclude_globs: Files matching any glob are skipped entirely.
+    :param auto_include_globs: When set, extension/content auto-tags apply only to matching files.
+    :param auto_exclude_globs: Files matching any glob get explicit tags only (no auto-tags).
     """
+    from ..autotag.path_filters import filter_walk_files, should_apply_autotag_for_path
     from ..autotag.service import iter_files_recursive, suggest_tags_for_file
 
     dir_path = os.path.abspath(os.path.join(os.getcwd(), dir_path))
@@ -120,10 +130,23 @@ def add_tags_recursive(
         )
         return {"success": False, "files_tagged": 0, "total_files": 0}
 
-    files = iter_files_recursive(dir_path)
-    if not files:
+    raw_files = iter_files_recursive(dir_path)
+    if not raw_files:
         print(f"Error: No files found under '{dir_path}'.")
         return {"success": False, "files_tagged": 0, "total_files": 0}
+
+    files = filter_walk_files(raw_files, dir_path, include_globs, exclude_globs)
+    if not files:
+        print(
+            f"No files matched filters under '{dir_path}' "
+            f"({len(raw_files)} scanned). Adjust --include / --exclude."
+        )
+        return {
+            "success": True,
+            "files_tagged": 0,
+            "total_files": 0,
+            "scanned_files": len(raw_files),
+        }
 
     data = load_tags()
     work = copy.deepcopy(data) if dry_run else data
@@ -136,7 +159,9 @@ def add_tags_recursive(
 
     for fp in files:
         merged = list(base)
-        if auto_tag:
+        if auto_tag and should_apply_autotag_for_path(
+            fp, dir_path, auto_include_globs, auto_exclude_globs
+        ):
             try:
                 for t in suggest_tags_for_file(fp, include_content=content_tag):
                     if t not in merged:
