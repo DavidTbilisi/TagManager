@@ -1,7 +1,27 @@
 import os
-from typing import Dict, List
+from typing import Dict, FrozenSet, List
 
 from ...config_manager import get_config_manager
+
+# Directory names skipped when walking a tree for recursive auto-tagging.
+DEFAULT_RECURSIVE_SKIP_DIRS: FrozenSet[str] = frozenset(
+    {
+        ".git",
+        ".hg",
+        ".svn",
+        "__pycache__",
+        "node_modules",
+        ".venv",
+        "venv",
+        ".tox",
+        "dist",
+        "build",
+        ".mypy_cache",
+        ".eggs",
+        ".idea",
+        ".nox",
+    }
+)
 
 DEFAULT_EXTENSION_TAGS: Dict[str, List[str]] = {
     ".py": ["python"],
@@ -57,6 +77,47 @@ DEFAULT_EXTENSION_TAGS: Dict[str, List[str]] = {
     ".dockerfile": ["docker"],
     ".tf": ["terraform", "infrastructure"],
 }
+
+
+def get_recursive_skip_dir_names() -> FrozenSet[str]:
+    """Names of directories to skip when recursing (defaults + config extras)."""
+    mgr = get_config_manager()
+    extra = mgr.get("autotag.recursive_skip_dirs") or []
+    if not isinstance(extra, (list, tuple)):
+        return DEFAULT_RECURSIVE_SKIP_DIRS
+    return DEFAULT_RECURSIVE_SKIP_DIRS | frozenset(str(x) for x in extra)
+
+
+def iter_files_recursive(root_dir: str) -> List[str]:
+    """
+    List all regular files under root_dir (recursive, rule-based — no AI).
+
+    Honors ``files.follow_symlinks``, ``files.include_hidden_files`` (via
+    ``files.include_hidden``), and ``autotag.recursive_skip_dirs`` from config.
+    """
+    root_dir = os.path.abspath(os.path.join(os.getcwd(), root_dir))
+    if not os.path.isdir(root_dir):
+        return []
+
+    mgr = get_config_manager()
+    follow_links = bool(mgr.get("files.follow_symlinks", False))
+    include_hidden = bool(mgr.get("files.include_hidden", False))
+    skip_dirs = get_recursive_skip_dir_names()
+
+    out: List[str] = []
+    for dirpath, dirnames, filenames in os.walk(root_dir, followlinks=follow_links):
+        dirnames[:] = [
+            d
+            for d in dirnames
+            if d not in skip_dirs and (include_hidden or not d.startswith("."))
+        ]
+        for name in filenames:
+            if not include_hidden and name.startswith("."):
+                continue
+            fp = os.path.join(dirpath, name)
+            if os.path.isfile(fp):
+                out.append(fp)
+    return out
 
 
 def get_extension_tags_map() -> Dict[str, List[str]]:

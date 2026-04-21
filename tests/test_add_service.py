@@ -413,6 +413,44 @@ class TestAddService(unittest.TestCase):
         self.assertEqual(set(saved_data[expected_path]), set(case_tags))
         self.assertEqual(len(saved_data[expected_path]), 4)  # All different
 
+    @patch("tagmanager.app.autotag.service.suggest_tags_for_file", return_value=["autox"])
+    def test_add_tags_autotag_when_no_explicit_tags(self, _mock_suggest):
+        """Extension-only tagging is allowed when auto_tag is enabled."""
+        from tagmanager.app.add.service import add_tags
+
+        self.mock_load_tags.return_value = {}
+        result = add_tags(self.test_file, [])
+        self.assertTrue(result)
+        saved = self.mock_save_tags.call_args[0][0]
+        expected_path = os.path.abspath(self.test_file)
+        self.assertIn("autox", saved[expected_path])
+
+    @patch("tagmanager.app.autotag.service.iter_files_recursive")
+    @patch("tagmanager.app.autotag.service.suggest_tags_for_file", return_value=["python"])
+    def test_add_tags_recursive_merges_per_file(self, mock_suggest, mock_iter):
+        from tagmanager.app.add.service import add_tags_recursive
+
+        sub = os.path.join(self.test_dir, "sub")
+        os.makedirs(sub, exist_ok=True)
+        f1 = os.path.join(sub, "a.py")
+        with open(f1, "w", encoding="utf-8"):
+            pass
+        mock_iter.return_value = [os.path.abspath(f1)]
+        self.mock_load_tags.return_value = {}
+
+        result = add_tags_recursive(
+            self.test_dir, ["proj"], apply_aliases=False, auto_tag=True
+        )
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["files_tagged"], 1)
+        self.mock_save_tags.assert_called_once()
+        saved = self.mock_save_tags.call_args[0][0]
+        p = os.path.abspath(f1)
+        self.assertIn(p, saved)
+        self.assertIn("proj", saved[p])
+        self.assertIn("python", saved[p])
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

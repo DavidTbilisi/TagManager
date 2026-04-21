@@ -9,7 +9,7 @@ from typing import List, Optional
 
 import typer
 
-from .app.add.service import add_tags
+from .app.add.service import add_tags, add_tags_recursive
 from .app.bulk.handler import handle_bulk_add, handle_bulk_remove, handle_bulk_retag
 from .app.filter.handler import (
     handle_filter_duplicates,
@@ -120,7 +120,10 @@ app = typer.Typer(
 
 @app.command()
 def add(
-    file: str = typer.Argument(..., help="Path to the file"),
+    file: str = typer.Argument(
+        ...,
+        help="Path to a file, or a directory when using --recursive",
+    ),
     tags: List[str] = typer.Option(
         None, "-t", "--tags",
         help="Tags to add (comma-separated or multiple --tags)",
@@ -130,6 +133,12 @@ def add(
         None, "--preset", "-P",
         help="Apply a saved preset of tags",
         autocompletion=_complete_preset_names,
+    ),
+    recursive: bool = typer.Option(
+        False,
+        "-r",
+        "--recursive",
+        help="If path is a directory, tag every file under it (rule-based extension tags per file)",
     ),
     no_auto: bool = typer.Option(False, "--no-auto", help="Skip extension-based auto-tagging"),
     no_aliases: bool = typer.Option(False, "--no-aliases", help="Skip alias resolution"),
@@ -151,6 +160,23 @@ def add(
     if not flat and no_auto:
         typer.echo("Error: no tags provided.")
         raise typer.Exit(1)
+
+    abs_target = os.path.abspath(os.path.join(os.getcwd(), file))
+    if recursive:
+        if not os.path.isdir(abs_target):
+            typer.echo(
+                f"Error: --recursive requires a directory; '{abs_target}' is not a directory."
+            )
+            raise typer.Exit(1)
+        result = add_tags_recursive(
+            file,
+            flat,
+            apply_aliases=not no_aliases,
+            auto_tag=not no_auto,
+        )
+        if not result.get("success"):
+            raise typer.Exit(1)
+        return
 
     add_tags(file, flat or [""], apply_aliases=not no_aliases, auto_tag=not no_auto)
 
@@ -612,7 +638,13 @@ def preset_list():
 @preset_app.command("apply")
 def preset_apply(
     name: str = typer.Argument(..., help="Preset name to apply", autocompletion=_complete_preset_names),
-    file: str = typer.Argument(..., help="File to tag"),
+    file: str = typer.Argument(..., help="File or directory (with --recursive) to tag"),
+    recursive: bool = typer.Option(
+        False,
+        "-r",
+        "--recursive",
+        help="If path is a directory, apply preset (+ auto-tags) to all files under it",
+    ),
     no_auto: bool = typer.Option(False, "--no-auto", help="Skip extension-based auto-tagging"),
     no_aliases: bool = typer.Option(False, "--no-aliases", help="Skip alias resolution"),
 ):
@@ -621,6 +653,22 @@ def preset_apply(
     if preset_tags is None:
         typer.echo(f"Error: preset '{name}' not found.")
         raise typer.Exit(1)
+    abs_target = os.path.abspath(os.path.join(os.getcwd(), file))
+    if recursive:
+        if not os.path.isdir(abs_target):
+            typer.echo(
+                f"Error: --recursive requires a directory; '{abs_target}' is not a directory."
+            )
+            raise typer.Exit(1)
+        result = add_tags_recursive(
+            file,
+            list(preset_tags),
+            apply_aliases=not no_aliases,
+            auto_tag=not no_auto,
+        )
+        if not result.get("success"):
+            raise typer.Exit(1)
+        return
     add_tags(file, preset_tags, apply_aliases=not no_aliases, auto_tag=not no_auto)
 
 

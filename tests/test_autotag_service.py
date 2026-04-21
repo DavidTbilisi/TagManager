@@ -1,17 +1,28 @@
+import os
+import shutil
+import tempfile
 import unittest
 from unittest.mock import patch, MagicMock
 
 
 class TestAutotagService(unittest.TestCase):
 
-    def _make_mgr(self, enabled=True, overrides=None):
+    def _make_mgr(self, enabled=True, overrides=None, recursive_skip=None):
         mgr = MagicMock()
+
         def get_side(key, default=None):
             if key == "autotag.enabled":
                 return enabled
             if key == "autotag.extension_tags":
                 return overrides or {}
+            if key == "autotag.recursive_skip_dirs":
+                return recursive_skip if recursive_skip is not None else []
+            if key == "files.follow_symlinks":
+                return False
+            if key == "files.include_hidden":
+                return False
             return default
+
         mgr.get.side_effect = get_side
         return mgr
 
@@ -145,6 +156,48 @@ class TestAutotagService(unittest.TestCase):
             set_extension_tags("py", ["python"])
         ext_tags = captured["autotag"]["extension_tags"]
         self.assertIn(".py", ext_tags)
+
+    # --- recursive walk ---
+
+    def test_get_recursive_skip_dir_names_extra(self):
+        from tagmanager.app.autotag.service import get_recursive_skip_dir_names
+
+        with patch(
+            "tagmanager.app.autotag.service.get_config_manager",
+            return_value=self._make_mgr(recursive_skip=["vendor"]),
+        ):
+            names = get_recursive_skip_dir_names()
+        self.assertIn("node_modules", names)
+        self.assertIn("vendor", names)
+
+    def test_iter_files_recursive_skips_ignored_dirs(self):
+        from tagmanager.app.autotag.service import iter_files_recursive
+
+        root = tempfile.mkdtemp()
+        try:
+            os.makedirs(os.path.join(root, "src"))
+            os.makedirs(os.path.join(root, "node_modules", "pkg"))
+            open(os.path.join(root, "src", "a.py"), "w", encoding="utf-8").close()
+            open(os.path.join(root, "node_modules", "pkg", "b.js"), "w", encoding="utf-8").close()
+            with patch(
+                "tagmanager.app.autotag.service.get_config_manager",
+                return_value=self._make_mgr(),
+            ):
+                paths = iter_files_recursive(root)
+            self.assertEqual(len(paths), 1)
+            self.assertTrue(paths[0].endswith(f"src{os.sep}a.py"))
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_iter_files_recursive_not_a_dir(self):
+        from tagmanager.app.autotag.service import iter_files_recursive
+
+        fd, path = tempfile.mkstemp(suffix=".txt")
+        os.close(fd)
+        try:
+            self.assertEqual(iter_files_recursive(path), [])
+        finally:
+            os.remove(path)
 
 
 if __name__ == "__main__":
