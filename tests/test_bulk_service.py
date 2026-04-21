@@ -30,7 +30,7 @@ class TestBulkService(unittest.TestCase):
         self.test_tag_file = os.path.join(self.test_dir, "test_tags.json")
         
         # Patch the TAG_FILE to use our test file
-        self.tag_file_patcher = patch('tagmanager.app.helpers.TAG_FILE', self.test_tag_file)
+        self.tag_file_patcher = patch('tagmanager.app.helpers.get_tag_file_path', return_value=self.test_tag_file)
         self.tag_file_patcher.start()
         
         # Clear any existing tag data before each test

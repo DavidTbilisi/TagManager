@@ -2,6 +2,28 @@ from ..helpers import load_tags, save_tags
 import os
 
 
+def remove_all_tags(file_path: str) -> dict:
+    """
+    Clear all tags from a file while keeping the file entry in the database.
+    Returns a result dict so callers can give feedback without printing directly.
+    """
+    path = os.path.normpath(os.path.abspath(file_path))
+    tags = load_tags()
+
+    if path not in tags:
+        return {"success": False, "path": path, "message": f"'{path}' not found in TagManager"}
+
+    previous = tags[path]
+    tags[path] = []
+    save_tags(tags)
+    return {
+        "success": True,
+        "path": path,
+        "cleared": previous,
+        "message": f"Cleared {len(previous)} tag(s) from '{path}'",
+    }
+
+
 def remove_path(file_path: str) -> None:
     """
     Remove a file path from the tags file
@@ -9,8 +31,7 @@ def remove_path(file_path: str) -> None:
     :return: None
     """
 
-    #
-    path = os.path.abspath(file_path)
+    path = os.path.normpath(os.path.abspath(file_path))
     tags = load_tags()
     popped_tags = tags.pop(path, None)
     if popped_tags is None:

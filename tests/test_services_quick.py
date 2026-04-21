@@ -119,7 +119,7 @@ class TestServicesQuick(unittest.TestCase):
         self.assertIsInstance(results, list)
         print("✅ Search service: basic functionality works")
     
-    @patch('tagmanager.app.helpers.load_tags')
+    @patch('tagmanager.app.tags.service.load_tags')
     def test_tags_service_functionality(self, mock_load):
         """Test basic tags functionality"""
         from tagmanager.app.tags.service import list_all_tags, search_files_by_tag

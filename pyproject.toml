@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tagmanager-cli"
-version = "1.3.3"
+version = "1.4.0"
 description = "The Ultimate Command-Line File Tagging System - Transform chaos into order with intelligent file organization"
 readme = "README.md"
 license = {text = "MIT"}
@@ -51,6 +51,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+watch = [
+    "watchdog>=2.0.0"
+]
 test = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0"
@@ -59,7 +62,8 @@ dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "black>=22.0.0",
-    "flake8>=5.0.0"
+    "flake8>=5.0.0",
+    "watchdog>=2.0.0"
 ]
 
 
@@ -76,11 +80,14 @@ tm = "tagmanager.cli:main"
 tagmanager = "tagmanager.cli:main"
 
 [tool.setuptools]
-packages = ["tagmanager", "tagmanager.app", "tagmanager.app.add", "tagmanager.app.bulk", 
-           "tagmanager.app.config", "tagmanager.app.filter", "tagmanager.app.list_all", 
-           "tagmanager.app.paths", "tagmanager.app.remove", "tagmanager.app.search", 
-           "tagmanager.app.stats", "tagmanager.app.storage", "tagmanager.app.tags", 
-           "tagmanager.app.visualization"]
+packages = ["tagmanager", "tagmanager.app", "tagmanager.app.add", "tagmanager.app.alias",
+           "tagmanager.app.autotag", "tagmanager.app.bulk",
+           "tagmanager.app.config", "tagmanager.app.filter", "tagmanager.app.list_all",
+           "tagmanager.app.move", "tagmanager.app.paths", "tagmanager.app.preset",
+           "tagmanager.app.remove", "tagmanager.app.search",
+           "tagmanager.app.stats", "tagmanager.app.storage", "tagmanager.app.tags",
+           "tagmanager.app.visualization", "tagmanager.app.graph", "tagmanager.app.watch",
+           "tagmanager.app.exportdata"]
 
 [tool.setuptools.package-data]
 tagmanager = ["*.ini", "*.json"]

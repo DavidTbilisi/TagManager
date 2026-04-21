@@ -33,10 +33,15 @@ class TestAddService(unittest.TestCase):
         # Mock the helpers module
         self.helpers_patcher = patch('tagmanager.app.add.service.load_tags')
         self.save_tags_patcher = patch('tagmanager.app.add.service.save_tags')
-        
+        self.autotag_patcher = patch(
+            'tagmanager.app.autotag.service.suggest_tags_for_file',
+            return_value=[]
+        )
+
         self.mock_load_tags = self.helpers_patcher.start()
         self.mock_save_tags = self.save_tags_patcher.start()
-        
+        self.autotag_patcher.start()
+
         # Default mock behavior
         self.mock_load_tags.return_value = {}
         self.mock_save_tags.return_value = True  # save_tags should return True on success
@@ -45,6 +50,7 @@ class TestAddService(unittest.TestCase):
         """Clean up after each test"""
         self.helpers_patcher.stop()
         self.save_tags_patcher.stop()
+        self.autotag_patcher.stop()
         shutil.rmtree(self.test_dir, ignore_errors=True)
     
     def test_add_tags_existing_file_new_tags(self):
@@ -120,21 +126,15 @@ class TestAddService(unittest.TestCase):
         self.assertEqual(set(saved_data[existing_path]), expected_tags)
     
     def test_add_tags_empty_tags_list(self):
-        """Test adding empty tags list"""
+        """Test that an empty tags list returns False without saving"""
         from tagmanager.app.add.service import add_tags
-        
+
         self.mock_load_tags.return_value = {}
-        
-        # Execute with empty tags
+
         result = add_tags(self.test_file, [])
-        
-        # Verify
-        self.assertTrue(result)
-        
-        # Check saved data
-        saved_data = self.mock_save_tags.call_args[0][0]
-        expected_path = os.path.abspath(self.test_file)
-        self.assertEqual(saved_data[expected_path], [])
+
+        self.assertFalse(result)
+        self.mock_save_tags.assert_not_called()
     
     def test_add_tags_nonexistent_file_creates_file(self):
         """Test adding tags to non-existent file returns False (conservative behavior)"""
@@ -171,7 +171,7 @@ class TestAddService(unittest.TestCase):
         # Verify error message was printed and function returned False
         self.assertFalse(result)
         expected_path = os.path.abspath(nonexistent_file)
-        mock_print.assert_any_call(f"Error: The file '{expected_path}' does not exist Disk full.")
+        mock_print.assert_any_call(f"Error: The file '{expected_path}' does not exist.")
     
     @patch('builtins.print')
     def test_add_tags_success_message(self, mock_print):
@@ -213,25 +213,18 @@ class TestAddService(unittest.TestCase):
         error_messages = [msg for msg in print_calls if "does not exist" in msg]
         self.assertTrue(len(error_messages) > 0)
     
-    @patch('builtins.open', side_effect=OSError("Disk full"))
+    @patch('tagmanager.app.add.service.save_tags', return_value=False)
     @patch('builtins.print')
-    def test_add_tags_file_creation_os_error(self, mock_print, mock_open):
-        """Test handling of OS error when creating file"""
+    def test_add_tags_file_creation_os_error(self, mock_print, mock_save):
+        """Test handling of save failure"""
         from tagmanager.app.add.service import add_tags
-        
-        nonexistent_file = "/tmp/test_file.txt"
-        self.mock_load_tags.return_value = {}
-        
-        # Execute
-        result = add_tags(nonexistent_file, ["tag"])
-        
-        # Verify
+
+        result = add_tags(self.test_file, ["tag"])
+
         self.assertFalse(result)
         mock_print.assert_called()
-        
-        # Check error message was printed
-        print_calls = [call[0][0] for call in mock_print.call_args_list]
-        error_messages = [msg for msg in print_calls if "Error" in msg and "Disk full" in msg]
+        print_calls = [str(call[0][0]) for call in mock_print.call_args_list]
+        error_messages = [msg for msg in print_calls if "Error" in msg]
         self.assertTrue(len(error_messages) > 0)
     
     @patch('builtins.print', side_effect=UnicodeEncodeError('utf-8', '', 0, 1, 'test'))
@@ -337,44 +330,49 @@ class TestAddService(unittest.TestCase):
         self.assertEqual(set(saved_data[expected_path]), set(long_tag_list))
     
     def test_add_tags_empty_string_tags(self):
-        """Test handling of empty string tags"""
+        """Test that empty string tags are filtered out before saving"""
         from tagmanager.app.add.service import add_tags
-        
+
         self.mock_load_tags.return_value = {}
-        
-        # Tags including empty strings
+
         tags_with_empty = ["python", "", "test", "", "demo"]
-        
-        # Execute
+
         result = add_tags(self.test_file, tags_with_empty)
-        
-        # Verify
+
         self.assertTrue(result)
         saved_data = self.mock_save_tags.call_args[0][0]
         expected_path = os.path.abspath(self.test_file)
-        
-        # Empty strings should be included (current behavior)
-        self.assertEqual(set(saved_data[expected_path]), set(tags_with_empty))
-    
+
+        # Empty strings must be stripped before saving
+        self.assertEqual(set(saved_data[expected_path]), {"python", "test", "demo"})
+
     def test_add_tags_whitespace_only_tags(self):
-        """Test handling of whitespace-only tags"""
+        """Test that whitespace-only tags are filtered out before saving"""
         from tagmanager.app.add.service import add_tags
-        
+
         self.mock_load_tags.return_value = {}
-        
-        # Tags with whitespace
+
         whitespace_tags = ["python", "   ", "\t", "\n", "test"]
-        
-        # Execute
+
         result = add_tags(self.test_file, whitespace_tags)
-        
-        # Verify
+
         self.assertTrue(result)
         saved_data = self.mock_save_tags.call_args[0][0]
         expected_path = os.path.abspath(self.test_file)
-        
-        # Whitespace tags should be included (current behavior)
-        self.assertEqual(set(saved_data[expected_path]), set(whitespace_tags))
+
+        # Whitespace-only tags must be stripped before saving
+        self.assertEqual(set(saved_data[expected_path]), {"python", "test"})
+
+    def test_add_tags_all_empty_returns_false(self):
+        """Test that providing only empty/whitespace tags returns False"""
+        from tagmanager.app.add.service import add_tags
+
+        self.mock_load_tags.return_value = {}
+
+        result = add_tags(self.test_file, ["", "   ", "\t"])
+
+        self.assertFalse(result)
+        self.mock_save_tags.assert_not_called()
     
     @patch('tagmanager.app.add.service.load_tags', side_effect=Exception("Load error"))
     def test_add_tags_load_tags_exception(self, mock_load):

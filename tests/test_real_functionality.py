@@ -29,7 +29,7 @@ class TestRealFunctionality(unittest.TestCase):
         
         # Patch the TAG_FILE to use our test file
         from unittest.mock import patch
-        self.tag_file_patcher = patch('tagmanager.app.helpers.TAG_FILE', self.test_tag_file)
+        self.tag_file_patcher = patch('tagmanager.app.helpers.get_tag_file_path', return_value=self.test_tag_file)
         self.tag_file_patcher.start()
         
         # Clear any existing tag data before each test

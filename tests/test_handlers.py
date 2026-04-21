@@ -36,8 +36,8 @@ class TestAddHandler(unittest.TestCase):
 class TestRemoveHandler(unittest.TestCase):
     """Test remove handler functions"""
 
-    @patch('tagmanager.app.remove.service.remove_path')
-    @patch('tagmanager.app.remove.service.remove_invalid_paths')
+    @patch('tagmanager.app.remove.handler.remove_path')
+    @patch('tagmanager.app.remove.handler.remove_invalid_paths')
     def test_handle_remove_command_path(self, mock_remove_invalid, mock_remove_path):
         """Test handle_remove_command with path argument"""
         from tagmanager.app.remove.handler import handle_remove_command
@@ -55,8 +55,8 @@ class TestRemoveHandler(unittest.TestCase):
         mock_remove_invalid.assert_not_called()
         self.assertIsNone(result)
 
-    @patch('tagmanager.app.remove.service.remove_path')
-    @patch('tagmanager.app.remove.service.remove_invalid_paths')
+    @patch('tagmanager.app.remove.handler.remove_path')
+    @patch('tagmanager.app.remove.handler.remove_invalid_paths')
     def test_handle_remove_command_invalid(self, mock_remove_invalid, mock_remove_path):
         """Test handle_remove_command with invalid flag"""
         from tagmanager.app.remove.handler import handle_remove_command
@@ -75,8 +75,8 @@ class TestRemoveHandler(unittest.TestCase):
         self.assertIsNone(result)
 
     @patch('builtins.print')
-    @patch('tagmanager.app.remove.service.remove_path')
-    @patch('tagmanager.app.remove.service.remove_invalid_paths')
+    @patch('tagmanager.app.remove.handler.remove_path')
+    @patch('tagmanager.app.remove.handler.remove_invalid_paths')
     def test_handle_remove_command_no_args(self, mock_remove_invalid, mock_remove_path, mock_print):
         """Test handle_remove_command with no arguments"""
         from tagmanager.app.remove.handler import handle_remove_command
@@ -100,7 +100,7 @@ class TestSearchHandler(unittest.TestCase):
     """Test search handler functions"""
 
     @patch('builtins.print')
-    @patch('tagmanager.app.search.service.search_files_by_tags')
+    @patch('tagmanager.app.search.handler.search_files_by_tags')
     def test_handle_search_command_tags_only(self, mock_search, mock_print):
         """Test search by tags only"""
         from tagmanager.app.search.handler import handle_search_command
@@ -166,7 +166,7 @@ class TestTagsHandler(unittest.TestCase):
         self.assertTrue(mock_print.called)
 
     @patch('builtins.print')
-    @patch('tagmanager.app.tags.service.search_files_by_tag')
+    @patch('tagmanager.app.tags.handler.search_files_by_tag')
     def test_handle_tags_command_search(self, mock_search_by_tag, mock_print):
         """Test searching files by specific tag"""
         from tagmanager.app.tags.handler import handle_tags_command

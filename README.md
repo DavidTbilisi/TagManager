@@ -6,16 +6,13 @@
 
 _Transform chaos into order with intelligent file organization_
 
+[![PyPI](https://img.shields.io/pypi/v/tagmanager-cli.svg)](https://pypi.org/project/tagmanager-cli/)
 [![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](README.md)
+[![Tests](https://img.shields.io/badge/Tests-406%20passed-brightgreen.svg)](tests/)
 
-[![Tests](https://img.shields.io/badge/Tests-270%20passed-brightgreen.svg)](tests/)
-[![Test Suite](https://img.shields.io/badge/Test%20Suite-98.5%25%20success-brightgreen.svg)](tests/)
-[![Coverage](https://img.shields.io/badge/Coverage-61%25-yellow.svg)](tests/)
-[![Test Files](https://img.shields.io/badge/Test%20Files-15-blue.svg)](tests/)
-
-[Features](#-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Examples](#-examples)
+[Features](#-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Commands](#-commands) • [Examples](#-examples)
 
 </div>
 
@@ -23,398 +20,330 @@ _Transform chaos into order with intelligent file organization_
 
 ## 🌟 Why TagManager?
 
-Ever lost a file in the digital maze of your computer? Tired of endless folder hierarchies that never quite fit your workflow? **TagManager** revolutionizes file organization with a powerful, flexible tagging system that adapts to how you actually work.
+Folder hierarchies force you to put a file in one place. Tags let a file belong to everything it actually is.
 
 ```bash
-# Transform this chaos...
-Documents/Projects/Work/Client_A/2024/Reports/Q1/final_v2_FINAL.pdf
-
-# Into this simplicity...
-tm add final_report.pdf --tags work client-a q1 2024 final
-tm search --tags work q1  # Instantly find what you need!
+# One command to tag — one command to find
+tm add report.pdf --tags work client-a q1 2024 final
+tm search --tags work q1        # instantly surface it
 ```
+
+TagManager stores tags in a lightweight JSON sidecar (`~/file_tags.json`) — no database, no daemon required — and ships a full command set for search, bulk operations, smart filtering, an interactive network graph, and a file-system watcher that tags new files automatically.
+
+---
 
 ## ✨ Features
 
-### 🎯 **Core Operations**
+| Category | What you get |
+|---|---|
+| **Core** | Add/remove/search tags, fuzzy path search, list & tree views |
+| **Bulk** | Mass-tag with glob patterns, retag, bulk-remove — all with `--dry-run` |
+| **Auto-tag** | Extension-based tag suggestions (60+ file types built-in) |
+| **Aliases** | Normalize tag variants: `py → python`, `js → javascript` |
+| **Presets** | Save named tag bundles and apply them in one flag |
+| **Filters** | Duplicate sets, orphans, similarity (Jaccard), clusters, isolated files |
+| **Stats** | Tag frequency, co-occurrence, ASCII bar charts & histograms |
+| **Visualizer** | Interactive 2D/3D network graph in your browser — click to open files |
+| **Watch mode** | Auto-tag files the moment they land in a directory |
+| **Move tracking** | `tm mv` keeps tag records in sync when you rename files |
+| **Config** | Full dot-notation config system with export/import |
+| **Shell completion** | Tab-complete tag names, presets, and alias names |
 
-- **🏷️ Smart Tagging**: Add multiple tags to any file with intelligent suggestions
-- **🔍 Powerful Search**: Find files by tags, paths, or combinations with fuzzy matching
-- **📊 Rich Analytics**: Comprehensive statistics and insights about your tag usage
-- **🗂️ Bulk Operations**: Mass tag operations with pattern matching and dry-run previews
-
-### 🎨 **Beautiful Visualizations**
-
-- **🌳 Tree View**: Gorgeous directory trees showing your tagged files
-- **☁️ Tag Clouds**: Visual tag frequency representations
-- **📈 ASCII Charts**: Professional statistical charts right in your terminal
-
-### 🔧 **Smart Filtering**
-
-- **🔄 Duplicate Detection**: Find files with identical tag sets
-- **🏚️ Orphan Finder**: Locate untagged files that need attention
-- **🔗 Similarity Analysis**: Discover related files through intelligent tag matching
-- **🎯 Cluster Analysis**: Identify tag usage patterns and file groupings
-
-### 🚀 **Advanced Features**
-
-- **⚡ Lightning Fast**: Optimized for large file collections
-- **🎭 Flexible Patterns**: Support for glob patterns and regex matching
-- **🛡️ Safe Operations**: Dry-run mode for all destructive operations
-- **🎨 Rich Output**: Beautiful, colorful terminal interface with emojis
-- **🔧 Configurable**: Customizable display options and behavior
+---
 
 ## 🚀 Installation
-
-### 📦 **Install from PyPI (Recommended)**
 
 ```bash
 pip install tagmanager-cli
 ```
 
-That's it! TagManager is now available as `tm` or `tagmanager` command.
+Commands are available as both `tm` (short) and `tagmanager` (long form).
 
-> **📝 Note**: The package name is `tagmanager-cli` but the commands are `tm` and `tagmanager`.
+### Optional: Watch mode
 
-### 🔧 **Install from Source**
+Watch mode requires [watchdog](https://pypi.org/project/watchdog/):
+
+```bash
+pip install tagmanager-cli[watch]
+# or separately
+pip install watchdog
+```
+
+### Install from source
 
 ```bash
 git clone https://github.com/davidtbilisi/TagManager.git
 cd TagManager
-pip install .
+pip install -e .
 ```
 
-### 📋 **Requirements**
-
-- **Python 3.7+** (Python 3.8+ recommended)
-- **UTF-8 compatible terminal** (most modern terminals)
-- **Dependencies**: `typer` and `rich` (automatically installed)
+---
 
 ## ⚡ Quick Start
 
 ```bash
-# Add tags to files
-tm add document.pdf --tags work important project-x
+# Tag a file (auto-tags by extension too)
+tm add main.py --tags backend core
 
-# Search for files
-tm search --tags work project-x
+# Tag everything matching a glob
+tm bulk add "src/**/*.py" --tags python
 
-# View all files in a beautiful tree
+# Find files
+tm search --tags backend core     # either tag
+tm search --tags backend --match-all core  # both tags
+
+# Visual overview
 tm ls --tree
-
-# See your tag usage patterns
 tm tags --cloud
-
-# Get comprehensive statistics
 tm stats --chart
 
-# Find similar files
-tm filter similar document.pdf
+# Interactive network graph (opens in browser)
+tm graph
 
-# Bulk operations with dry-run
-tm bulk add "*.py" --tags python code --dry-run
+# Watch a directory — auto-tag as files arrive
+tm watch ~/Downloads --tags inbox
 ```
 
-## 📖 Documentation
+---
 
-### Basic Commands
+## 📖 Commands
 
-| Command     | Description              | Example                              |
-| ----------- | ------------------------ | ------------------------------------ |
-| `tm add`    | Add tags to a file       | `tm add file.txt --tags work urgent` |
-| `tm remove` | Remove files or clean up | `tm remove --path file.txt`          |
-| `tm search` | Find files by tags/path  | `tm search --tags python --exact`    |
-| `tm ls`     | List all tagged files    | `tm ls --tree`                       |
-| `tm tags`   | Show all tags            | `tm tags --cloud`                    |
-| `tm stats`  | Show statistics          | `tm stats --chart`                   |
-
-### Advanced Operations
-
-#### 🔍 **Smart Search**
+### `tm add` — Tag files
 
 ```bash
-# Boolean search with multiple tags
-tm search --tags python web --match-all    # Files with BOTH tags
-tm search --tags python web               # Files with EITHER tag
-
-# Combined tag and path search
-tm search --tags python --path /projects/
-
-# Exact vs fuzzy matching
-tm search --tags "web-dev" --exact        # Exact match only
-tm search --tags web                      # Fuzzy matching (finds "web-dev", "webapp", etc.)
+tm add <file> --tags <tag> [<tag>...]   # basic
+tm add <file> --tags python --preset webproject  # combine with preset
+tm add <file> --no-auto                 # skip extension-based auto-tags
+tm add <file> --no-aliases              # skip alias resolution
 ```
 
-#### 🎯 **Bulk Operations**
+### `tm search` — Find files
 
 ```bash
-# Mass tagging with patterns
-tm bulk add "*.py" --tags python code
-tm bulk add "**/*.md" --tags documentation
-
-# Safe operations with dry-run
-tm bulk retag --from old-tag --to new-tag --dry-run
-
-# Bulk cleanup
-tm bulk remove --tag deprecated
+tm search --tags python web            # files with EITHER tag
+tm search --tags python --match-all    # files with ALL listed tags
+tm search --path /projects/            # by path fragment
+tm search --tags python --exact        # exact tag match (no fuzzy)
 ```
 
-#### 🔧 **Smart Filtering**
+### `tm ls` — List tagged files
 
 ```bash
-# Find duplicate tag sets
-tm filter duplicates
-
-# Locate untagged files
-tm filter orphans
-
-# Find similar files (30% similarity threshold)
-tm filter similar important-doc.pdf
-
-# Discover tag clusters
-tm filter clusters --min-size 3
-
-# Find isolated files
-tm filter isolated --max-shared 1
+tm ls           # flat table
+tm ls --tree    # directory tree with inline tags
 ```
 
-#### ⚙️ **Configuration Management**
+### `tm tags` — Explore tags
 
 ```bash
-# View all configuration options
-tagmanager config list --show-defaults
-
-# Customize display settings
-tagmanager config set display.emojis false
-tagmanager config set display.max_items 200
-
-# Configure search behavior
-tagmanager config set search.fuzzy_threshold 0.8
-
-# Export/import settings
-tagmanager config export --file my_settings.json
-tagmanager config import team_settings.json
-
-# View settings by category
-tagmanager config list --category performance
+tm tags                  # list all tags
+tm tags --search py      # filter tags by name
+tm tags --cloud          # frequency cloud
+tm tags --where python   # which files carry this tag
 ```
+
+### `tm stats` — Analytics
+
+```bash
+tm stats              # summary
+tm stats --chart      # ASCII bar charts
+tm stats --tag python # deep-dive on one tag (co-occurrence, file types)
+```
+
+### `tm graph` — Interactive network visualizer
+
+Opens a self-contained HTML graph in your default browser.
+
+```bash
+tm graph                        # tag co-occurrence graph, 2D
+tm graph --3d                   # start in 3D (toggle button in UI too)
+tm graph --mode file            # file similarity graph (Jaccard)
+tm graph --mode mixed           # bipartite file↔tag graph
+tm graph --export gexf          # also export tag_network.gexf (Gephi)
+tm graph --export graphml       # for Cytoscape / yEd
+tm graph --min-weight 2         # only show edges with ≥2 co-occurrences
+tm graph --output ~/graph.html  # save to a specific path
+```
+
+**In the browser UI:**
+- Sidebar with 10 live filters (search, tag/extension multi-select, weight & degree sliders, cluster highlight, color-by)
+- 2D / 3D toggle — WebGL via Three.js, handles thousands of nodes
+- Click any file node → opens it in your OS file explorer
+- Download GEXF / GraphML buttons (embedded, no server needed)
+
+### `tm watch` — Auto-tag new files
+
+Monitors a directory with [watchdog](https://pypi.org/project/watchdog/) and tags files as they arrive.
+
+```bash
+tm watch                         # watch current dir
+tm watch ~/Downloads             # watch a specific dir
+tm watch . --tags inbox          # always add "inbox" to every new file
+tm watch . --preset webproject   # apply a saved preset
+tm watch . --no-auto             # skip extension auto-tagging
+tm watch . --clean-on-delete     # remove tag entry when file is deleted
+tm watch . --no-recursive        # top-level only
+tm watch . --ignore "*.log"      # extra ignore patterns
+tm watch . --plain               # plain text output (no Rich live display)
+```
+
+Rich live display shows a colour-coded event log (`✚ created`, `→ moved`, `✖ deleted`) with resolved tags. Press **Ctrl+C** to stop.
+
+### `tm filter` — Smart analysis
+
+```bash
+tm filter duplicates             # files with identical tag sets
+tm filter orphans                # files with no tags
+tm filter similar <file>         # files similar to this one (Jaccard)
+tm filter clusters               # group files by shared tag
+tm filter isolated               # files that share few tags with others
+```
+
+### `tm bulk` — Mass operations
+
+```bash
+tm bulk add "*.py" --tags python          # tag by glob
+tm bulk remove --tag deprecated           # remove a tag from all files
+tm bulk retag --from js --to javascript   # rename a tag everywhere
+# All bulk commands support --dry-run
+```
+
+### Aliases, Presets, Move tracking
+
+```bash
+# Aliases — normalize tag variants
+tm alias add py python
+tm alias list
+tm alias remove py
+
+# Presets — named tag bundles
+tm preset save webproject --tags python django web
+tm preset apply webproject app.py
+tm preset list
+
+# Move tracking — keep the DB in sync
+tm mv old/path.py new/path.py
+tm clean             # remove entries for deleted files
+tm clean --dry-run   # preview
+```
+
+### Config
+
+```bash
+tm config list                         # all settings
+tm config set display.emojis false
+tm config set search.fuzzy_threshold 0.8
+tm config export --file settings.json
+tm config import team_settings.json
+tm config reset                        # back to defaults
+```
+
+---
 
 ## 🎨 Examples
 
-### Beautiful Tree View
+### Network graph
 
 ```
-🌳 Tagged Files Tree View
-==================================================
-
-└── 📁 Projects/
-    ├── 📁 WebApp/
-    │   ├── 📄 app.py 🏷️  [python, web, main]
-    │   ├── 📄 config.py 🏷️  [python, config]
-    │   └── 📄 README.md 🏷️  [documentation, web]
-    └── 📁 Scripts/
-        └── 📄 backup.sh 🏷️  [bash, automation, backup]
-
-📊 Total files: 4
+Tag co-occurrence network — 42 nodes, 180 edges
+Sidebar filters: search · tag multiselect · min-weight slider · degree range
+                 color-by cluster · highlight cluster · show/hide node types
+2D ↔ 3D toggle  |  Download GEXF  |  Download GraphML
+Click file node → opens in Finder/Explorer
 ```
 
-### Tag Cloud Visualization
+### Watch mode output
+
+```
+Watching: /home/user/Downloads
+  Recursive: True | Auto-tag: True | Clean-on-delete: False
+  Always add tags: ['inbox']
+Press Ctrl+C to stop.
+
+[14:02:11] ✚ created ✓  report_q1.pdf  [inbox, pdf, document]
+[14:02:45] ✚ created ✓  script.py      [inbox, python]
+[14:03:10] → moved   ✓  script.py  →  processed/script.py
+```
+
+### Tag cloud
 
 ```
 ☁️  Tag Cloud
-==================================================
-Legend: ★ Most frequent  ◆ Very frequent  ● Frequent  • Less frequent  · Least frequent
-
-★ python(15)  ◆ web(8)  ● documentation(5)  • config(3)  · backup(1)  · automation(1)
-
-📊 Total unique tags: 6
-📊 Total tag instances: 33
+★ python(15)  ◆ web(8)  ● documentation(5)  • config(3)  · backup(1)
 ```
 
-### Statistical Charts
+### Tree view
 
 ```
-📊 TagManager Statistics Charts
-==================================================
-
-📈 Files by Tag Count
-====================
-3 tags │██████████████████████████████████████████████████ 12 (60.0%)
-2 tags │████████████████████████████ 6 (30.0%)
-1 tag  │██████████████ 2 (10.0%)
-
-🏷️  Top 10 Most Used Tags
-=========================
-python        │██████████████████████████████████████████████████ 15 (25.4%)
-web           │████████████████████████████ 8 (13.6%)
-documentation │████████████████ 5 (8.5%)
-config        │██████████ 3 (5.1%)
+└── 📁 projects/
+    ├── 📁 backend/
+    │   └── 📄 api.py 🏷️  [python, web, api, core]
+    └── 📁 docs/
+        └── 📄 README.md 🏷️  [docs, markdown]
 ```
+
+---
 
 ## 🏗️ Architecture
 
-TagManager follows a clean, modular architecture:
-
 ```
-TagManager/
-├── tm.py                 # Main CLI interface
-├── app/
-│   ├── add/             # File tagging operations
-│   ├── bulk/            # Bulk operations
-│   ├── filter/          # Smart filtering & analysis
-│   ├── search/          # Search functionality
-│   ├── stats/           # Statistics & analytics
-│   ├── visualization/   # Tree views, charts, clouds
-│   └── helpers.py       # Core utilities
-├── tests/               # Comprehensive test suite
-└── config.ini          # Configuration settings
+tagmanager/
+├── cli.py                  # Typer CLI — all commands registered here
+└── app/
+    ├── add/                # tm add
+    ├── bulk/               # tm bulk
+    ├── filter/             # tm filter
+    ├── search/             # tm search
+    ├── stats/              # tm stats
+    ├── graph/              # tm graph  (HTML generator, GEXF/GraphML export)
+    ├── watch/              # tm watch  (watchdog integration)
+    ├── alias/              # tm alias
+    ├── preset/             # tm preset
+    ├── autotag/            # extension → tag mappings
+    ├── move/               # tm mv / tm clean
+    ├── visualization/      # tree, cloud, ASCII charts
+    ├── config/             # tm config
+    └── helpers.py          # load_tags() / save_tags() — atomic JSON I/O
 ```
 
-## 🧪 Testing & Quality Assurance
+Storage: `~/file_tags.json` (path configurable). Plain JSON — easy to inspect, back up, or version-control.
 
-TagManager maintains **professional-grade code quality** with comprehensive testing:
+---
 
-### 📊 **Test Coverage Metrics**
-
-| Component            | Coverage | Tests     | Status               |
-| -------------------- | -------- | --------- | -------------------- |
-| **Overall Coverage** | **61%**  | 270 tests | ✅ Industry Standard |
-| **Add Service**      | 91%      | 32 tests  | ✅ Excellent         |
-| **Remove Service**   | 100%     | 25 tests  | ✅ Perfect           |
-| **Stats Service**    | 99%      | 18 tests  | ✅ Excellent         |
-| **Visualization**    | 98%      | 35 tests  | ✅ Excellent         |
-| **Bulk Operations**  | 96%      | 22 tests  | ✅ Excellent         |
-| **Filter Service**   | 90%      | 33 tests  | ✅ Excellent         |
-
-### 🎯 **Test Categories**
-
-- **✅ Unit Tests**: Individual function testing with mocking
-- **✅ Integration Tests**: Real workflow testing with temporary files
-- **✅ Service Tests**: Business logic validation
-- **✅ Handler Tests**: CLI command testing
-- **✅ Error Handling**: Exception and edge case coverage
-- **✅ Cross-Platform**: Windows, macOS, and Linux compatibility
-
-### 🚀 **Quality Metrics**
-
-- **270+ Passing Tests** with 98.5% success rate
-- **Professional Test Isolation** with proper setup/teardown
-- **Comprehensive Mocking** for external dependencies
-- **Edge Case Coverage** for robust error handling
-- **Real Functionality Testing** with actual file operations
+## 🧪 Testing
 
 ```bash
-# Run the complete test suite
-pytest tests/ -v
-
-# Generate coverage report
-pytest tests/ --cov=tagmanager --cov-report=html
-
-# Run specific test categories
-pytest tests/test_*_service.py -v  # Service tests
-pytest tests/test_handlers.py -v   # Handler tests
+pytest tests/ -v                           # full suite (406 tests)
+pytest tests/ --cov=tagmanager             # with coverage
+pytest tests/test_graph_service.py -v      # graph module only
+pytest tests/test_watch_service.py -v      # watch module only
 ```
+
+406 tests across 21 test files. Watch mode integration tests require `pip install watchdog`.
+
+---
 
 ## 🤝 Contributing
 
-We love contributions! Here's how you can help:
+1. Fork the repo
+2. Create a feature branch
+3. Add tests
+4. Open a PR
 
-1. **🐛 Report Bugs**: Found an issue? [Create an issue](https://github.com/davidtbilisi/TagManager/issues)
-2. **💡 Suggest Features**: Have ideas? We'd love to hear them!
-3. **🔧 Submit PRs**: Fork, code, test, and submit a pull request
-4. **📖 Improve Docs**: Help make our documentation even better
+Bug reports and feature requests: [GitHub Issues](https://github.com/davidtbilisi/TagManager/issues)
 
-### Development Setup
-
-```bash
-git clone https://github.com/davidtbilisi/TagManager.git
-cd TagManager
-python -m unittest tests.py -v  # Run tests
-```
-
-## 📊 Stats & Performance
-
-- **⚡ Lightning Fast**: Handles 10,000+ files effortlessly
-- **💾 Lightweight**: Minimal memory footprint
-- **🔧 Efficient**: Optimized algorithms for large datasets
-- **🛡️ Reliable**: Comprehensive error handling and data validation
-- **🧪 Well-Tested**: 270+ tests with 98.5% success rate and 61% code coverage
-- **🏆 Professional Quality**: Industry-standard testing practices and CI/CD ready
-
-## 🎯 Use Cases
-
-### 👨‍💻 **Developers**
-
-```bash
-# Organize code projects
-tm add src/main.py --tags python backend api core
-tm search --tags python api  # Find all Python API files
-```
-
-### 📚 **Researchers**
-
-```bash
-# Manage research papers
-tm add paper.pdf --tags machine-learning nlp 2024 important
-tm filter similar paper.pdf  # Find related papers
-```
-
-### 🎨 **Content Creators**
-
-```bash
-# Organize media files
-tm add video.mp4 --tags tutorial python beginner
-tm bulk add "*.jpg" --tags photography portfolio
-```
-
-### 🏢 **Project Managers**
-
-```bash
-# Track project documents
-tm add requirements.pdf --tags project-x requirements client-a
-tm stats --chart  # Visualize project file distribution
-```
-
-## 🌟 What Users Say
-
-> _"TagManager transformed how I organize my 10,000+ research papers. The similarity search is pure magic!"_  
-> — Dr. Sarah Chen, Research Scientist
-
-> _"Finally, a tagging system that actually works! The tree view and tag clouds make everything so visual."_  
-> — Mike Rodriguez, Software Developer
-
-> _"The bulk operations saved me hours of manual work. Dry-run mode gives me confidence to make big changes."_  
-> — Lisa Park, Data Analyst
-
-## 📚 **Complete Documentation**
-
-All detailed documentation has been organized in the **[📖 docs/ folder](docs/)**:
-
-- **[📋 Installation Guide](docs/INSTALLATION.md)** - Complete installation instructions
-- **[⚙️ Configuration Guide](docs/CONFIGURATION_GUIDE.md)** - Comprehensive configuration management
-- **[🧪 Testing Documentation](docs/COMPREHENSIVE_TESTS_SUMMARY.md)** - 110+ comprehensive test cases
-- **[🤖 Automation Guide](docs/AUTOMATION_GUIDE.md)** - Version management and publishing
-- **[🔧 Windows Compatibility](docs/WINDOWS_COMPATIBILITY.md)** - Windows-specific features and fixes
-- **[📝 All Documentation Index](docs/README.md)** - Complete documentation overview
+---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **David Chincharashvili** - _Original Creator_ - [@DavidTbilisi](https://github.com/davidtbilisi)
-- Built with ❤️ using [Typer](https://typer.tiangolo.com/) for the beautiful CLI interface
-- Inspired by the need for better file organization in the digital age
+MIT — see [LICENSE](LICENSE).
 
 ---
 
 <div align="center">
 
-**⭐ Star this repo if TagManager helps you stay organized! ⭐**
+**⭐ Star this repo if TagManager helps you stay organized!**
 
-[Report Bug](https://github.com/davidtbilisi/TagManager/issues) • [Request Feature](https://github.com/davidtbilisi/TagManager/issues) • [Contribute](CONTRIBUTING.md)
-
-Made with 🏷️ by developers, for developers
+Made by [David Chincharashvili](https://github.com/DavidTbilisi) • Built with [Typer](https://typer.tiangolo.com/) and [Rich](https://github.com/Textualize/rich)
 
 </div>
