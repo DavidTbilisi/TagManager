@@ -1,5 +1,5 @@
-from typing import Dict, List, Tuple, Optional
-from collections import Counter
+from typing import Any, DefaultDict, Dict, List, Tuple, Optional, Set
+from collections import Counter, defaultdict
 import os
 from datetime import datetime
 
@@ -151,6 +151,67 @@ def get_file_count_distribution() -> Dict:
         "distribution_summary": dict(file_count_distribution),
         "total_tags": len(tag_file_counts),
     }
+
+
+def get_namespace_statistics() -> Dict[str, Any]:
+    """
+    Group tags that contain ``:`` by namespace (text before the first colon).
+
+    Tags without ``:`` are listed under ``flat_tags``.
+    Counts are numbers of **files** that carry each tag.
+    """
+    data = load_tags()
+    per_tag_files: DefaultDict[str, Set[str]] = defaultdict(set)
+    for fp, tgs in data.items():
+        for t in tgs:
+            if isinstance(t, str) and t.strip():
+                per_tag_files[t].add(fp)
+
+    namespaces: Dict[str, Dict[str, int]] = {}
+    flat: Dict[str, int] = {}
+    for tag, files in per_tag_files.items():
+        c = len(files)
+        if ":" in tag:
+            ns, _rest = tag.split(":", 1)
+            if ns not in namespaces:
+                namespaces[ns] = {}
+            namespaces[ns][tag] = c
+        else:
+            flat[tag] = c
+
+    sorted_ns = {
+        ns: dict(sorted(tags.items(), key=lambda x: (-x[1], x[0].lower())))
+        for ns, tags in sorted(namespaces.items(), key=lambda x: x[0].lower())
+    }
+    sorted_flat = dict(sorted(flat.items(), key=lambda x: (-x[1], x[0].lower())))
+    return {"namespaces": sorted_ns, "flat_tags": sorted_flat}
+
+
+def format_namespace_statistics(stats: Dict[str, Any]) -> str:
+    """Format namespace-grouped tag counts."""
+    lines: List[str] = []
+    lines.append("📂 Tags by namespace (prefix before first ':')")
+    lines.append("=" * 50)
+    lines.append("")
+
+    ns = stats.get("namespaces") or {}
+    if ns:
+        for nspace, tag_counts in ns.items():
+            lines.append(f"Namespace: {nspace}")
+            for tag, cnt in tag_counts.items():
+                lines.append(f"   {tag}  —  {cnt} file(s)")
+            lines.append("")
+    else:
+        lines.append("(No namespaced tags — none contain ':')")
+        lines.append("")
+
+    flat = stats.get("flat_tags") or {}
+    if flat:
+        lines.append("Flat tags (no namespace):")
+        for tag, cnt in flat.items():
+            lines.append(f"   {tag}  —  {cnt} file(s)")
+
+    return "\n".join(lines).rstrip() + "\n"
 
 
 def format_overall_statistics(stats: Dict) -> str:

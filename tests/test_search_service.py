@@ -435,6 +435,33 @@ class TestSearchService(unittest.TestCase):
         self.assertEqual(results2, results3)
         self.assertEqual(len(results1), 3)
 
+    def test_filter_paths_by_exclude_tags(self):
+        from tagmanager.app.search.service import filter_paths_by_exclude_tags
+
+        self.mock_load_tags.return_value = {
+            "/a.py": ["work"],
+            "/b.py": ["work", "archived"],
+            "/c.py": ["play"],
+        }
+        out = filter_paths_by_exclude_tags(["/a.py", "/b.py", "/c.py"], ["archived"])
+        self.assertEqual(set(out), {"/a.py", "/c.py"})
+
+    def test_combined_search_path_only_with_exclude(self):
+        from tagmanager.app.search.service import combined_search
+
+        self.mock_load_tags.return_value = {
+            "/proj/a.py": ["work"],
+            "/proj/b.py": ["work", "archived"],
+            "/other/c.py": ["work"],
+        }
+        out = combined_search(
+            tags=None,
+            path_query="proj",
+            match_all_tags=False,
+            exclude_tags=["archived"],
+        )
+        self.assertEqual(set(out), {"/proj/a.py"})
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

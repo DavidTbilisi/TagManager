@@ -23,8 +23,16 @@ from .app.paths.service import path_tags, fuzzy_search_path
 from .app.remove.service import remove_path, remove_invalid_paths, remove_all_tags
 from .app.search.service import (
     combined_search,
+    filter_paths_by_exclude_tags,
     search_files_by_path,
     search_files_by_tags,
+)
+from .app.saved_search.service import (
+    delete_saved_search,
+    get_saved_search,
+    list_saved_search_names,
+    run_saved_search,
+    save_saved_search,
 )
 from .app.stats.handler import handle_stats_command
 from .app.storage.service import show_storage_location, open_storage_location
@@ -80,9 +88,32 @@ except AttributeError:
 # ---------------------------------------------------------------------------
 
 def _complete_tags(incomplete: str) -> List[str]:
-    """Return existing tag names that start with the incomplete string."""
+    """Return tag names and ``namespace:`` prefixes matching the incomplete string."""
     try:
-        return [t for t in list_all_tags() if t.lower().startswith(incomplete.lower())]
+        tags = list_all_tags()
+        inc = incomplete.lower()
+        by_name = [t for t in tags if t.lower().startswith(inc)]
+        prefixes = sorted(
+            {
+                t.split(":", 1)[0] + ":"
+                for t in tags
+                if ":" in t and (t.split(":", 1)[0] + ":").lower().startswith(inc)
+            }
+        )
+        out: List[str] = []
+        seen = set()
+        for item in by_name + prefixes:
+            if item not in seen:
+                seen.add(item)
+                out.append(item)
+        return sorted(out, key=str.lower)
+    except Exception:
+        return []
+
+
+def _complete_saved_search_names(incomplete: str) -> List[str]:
+    try:
+        return [n for n in list_saved_search_names() if n.lower().startswith(incomplete.lower())]
     except Exception:
         return []
 
@@ -298,39 +329,56 @@ def storage(
         print(show_storage_location())
 
 
-@app.command()
-def search(
+search_app = typer.Typer(
+    help="Search by tags or path; save and re-run named queries",
+    invoke_without_command=True,
+)
+
+
+@search_app.callback()
+def search_main(
+    ctx: typer.Context,
     tags: Optional[List[str]] = typer.Option(
-        None, "-t", "--tags", help="Tags to search for (OR by default, AND with --match-all)",
+        None,
+        "-t",
+        "--tags",
+        help="Tags to search for (OR by default, AND with --match-all)",
         autocompletion=_complete_tags,
     ),
-    path: Optional[str] = typer.Option(
-        None, "-p", "--path", help="Path query to search for"
-    ),
+    path: Optional[str] = typer.Option(None, "-p", "--path", help="Path query to search for"),
     match_all: bool = typer.Option(
         False, "-a", "--match-all", help="Require ALL listed tags (AND)"
     ),
     exclude: Optional[List[str]] = typer.Option(
-        None, "-x", "--exclude", help="Exclude files that have ANY of these tags (NOT)",
+        None,
+        "-x",
+        "--exclude",
+        help="Exclude files that have ANY of these tags (NOT)",
         autocompletion=_complete_tags,
     ),
     exact: bool = typer.Option(False, "-e", "--exact", help="Exact tag match (no fuzzy)"),
-    open: bool = typer.Option(False, "-o", "--open", help="Open the matched file(s)"),
+    open: bool = typer.Option(False, "-o", "--open", help="Reserved for opening results"),
 ):
-    """Search files by tags or path. Supports AND (--match-all) and NOT (--exclude)."""
+    """Search files by tags or path (default when no subcommand)."""
+    if ctx.invoked_subcommand is not None:
+        return
     if tags and path:
         result = combined_search(tags, path, match_all, exclude_tags=exclude)
     elif tags:
         result = search_files_by_tags(tags, match_all, exact, exclude_tags=exclude)
     elif path:
         result = search_files_by_path(path)
+        if exclude:
+            result = filter_paths_by_exclude_tags(result, exclude)
     else:
-        typer.echo("No search criteria provided.")
-        typer.echo("Examples:")
-        typer.echo("  tm search -t python                   # files tagged python")
-        typer.echo("  tm search -t python -t web --match-all # both tags")
-        typer.echo("  tm search -t python --exclude legacy   # python but not legacy")
-        return
+        typer.echo(ctx.get_help(), err=False)
+        typer.echo("Examples:", err=False)
+        typer.echo("  tm search -t python", err=False)
+        typer.echo("  tm search -t python -t web --match-all", err=False)
+        typer.echo("  tm search -t work -x archived        # work, not archived", err=False)
+        typer.echo("  tm search save q1-work -t work -x archived", err=False)
+        typer.echo("  tm search run q1-work", err=False)
+        raise typer.Exit(0)
 
     if result:
         for i, file in enumerate(result, start=1):
@@ -338,6 +386,102 @@ def search(
         print()
     else:
         print("No files found matching the criteria.")
+
+
+@search_app.command("save")
+def search_save(
+    name: str = typer.Argument(..., help="Name for this saved query"),
+    tags: Optional[List[str]] = typer.Option(
+        None,
+        "-t",
+        "--tags",
+        help="Tags (repeat or comma-separated)",
+        autocompletion=_complete_tags,
+    ),
+    path: Optional[str] = typer.Option(None, "-p", "--path", help="Path substring"),
+    match_all: bool = typer.Option(False, "-a", "--match-all", help="AND all tags"),
+    exclude: Optional[List[str]] = typer.Option(
+        None,
+        "-x",
+        "--exclude",
+        help="Exclude files having any of these tags",
+        autocompletion=_complete_tags,
+    ),
+    exact: bool = typer.Option(False, "-e", "--exact", help="Exact tag match when running"),
+):
+    """Save the current search flags as a named query."""
+    ok, err = save_saved_search(
+        name,
+        tags=tags,
+        path=path,
+        match_all=match_all,
+        exact=exact,
+        exclude=exclude,
+    )
+    if not ok:
+        typer.echo(f"Error: {err}", err=True)
+        raise typer.Exit(1)
+    typer.echo(f"Saved search '{name.strip().lower()}'.")
+
+
+@search_app.command("list")
+def search_list():
+    """List saved search names."""
+    names = list_saved_search_names()
+    if not names:
+        typer.echo("No saved searches. Use: tm search save NAME -t ...")
+        return
+    for n in names:
+        typer.echo(f"  {n}")
+
+
+@search_app.command("show")
+def search_show(
+    name: str = typer.Argument(..., autocompletion=_complete_saved_search_names),
+):
+    """Show how a saved search is defined."""
+    spec = get_saved_search(name)
+    if not spec:
+        typer.echo(f"Error: saved search '{name}' not found.", err=True)
+        raise typer.Exit(1)
+    typer.echo(f"Saved search: {name.strip().lower()}")
+    typer.echo(f"  tags: {spec.get('tags') or []}")
+    typer.echo(f"  path: {spec.get('path')}")
+    typer.echo(f"  match_all: {spec.get('match_all', False)}")
+    typer.echo(f"  exact: {spec.get('exact', False)}")
+    typer.echo(f"  exclude: {spec.get('exclude') or []}")
+
+
+@search_app.command("delete")
+def search_delete(
+    name: str = typer.Argument(..., autocompletion=_complete_saved_search_names),
+):
+    """Delete a saved search by name."""
+    if delete_saved_search(name):
+        typer.echo(f"Deleted saved search '{name.strip().lower()}'.")
+    else:
+        typer.echo(f"Error: saved search '{name}' not found.", err=True)
+        raise typer.Exit(1)
+
+
+@search_app.command("run")
+def search_run(
+    name: str = typer.Argument(..., autocompletion=_complete_saved_search_names),
+):
+    """Run a saved search by name."""
+    result, err = run_saved_search(name)
+    if err:
+        typer.echo(f"Error: {err}", err=True)
+        raise typer.Exit(1)
+    if result:
+        for i, file in enumerate(result, start=1):
+            print(f"{i}. {file}")
+        print()
+    else:
+        print("No files found matching the criteria.")
+
+
+app.add_typer(search_app, name="search")
 
 
 @app.command("mv")
@@ -377,6 +521,11 @@ def stats(
     file_count: bool = typer.Option(
         False, "--file-count", help="Show files per tag distribution"
     ),
+    namespaces: bool = typer.Option(
+        False,
+        "--namespaces",
+        help="Group tags by prefix before ':' (e.g. area:backend)",
+    ),
     chart: bool = typer.Option(
         False, "--chart", help="Display statistics as ASCII charts"
     ),
@@ -385,7 +534,7 @@ def stats(
     if chart:
         handle_stats_charts()
     else:
-        handle_stats_command(tag=tag, file_count=file_count)
+        handle_stats_command(tag=tag, file_count=file_count, namespaces=namespaces)
 
 
 # ---------------------------------------------------------------------------

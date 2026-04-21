@@ -413,6 +413,29 @@ class TestStatsService(unittest.TestCase):
         self.assertIn("Files per Tag Distribution", output)
         self.assertIn("No tags found", output)
 
+    def test_get_namespace_statistics(self):
+        from tagmanager.app.helpers import save_tags
+        from tagmanager.app.stats.service import (
+            format_namespace_statistics,
+            get_namespace_statistics,
+        )
+
+        save_tags(
+            {
+                "/a.py": ["area:backend", "python"],
+                "/b.py": ["area:web", "area:backend"],
+                "/c.py": ["python"],
+            }
+        )
+        stats = get_namespace_statistics()
+        self.assertIn("area", stats["namespaces"])
+        self.assertIn("area:backend", stats["namespaces"]["area"])
+        self.assertEqual(stats["namespaces"]["area"]["area:backend"], 2)
+        self.assertIn("python", stats["flat_tags"])
+        text = format_namespace_statistics(stats)
+        self.assertIn("area:backend", text)
+        self.assertIn("Namespace: area", text)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

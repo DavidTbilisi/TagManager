@@ -120,12 +120,15 @@ class TestSearchHandler(unittest.TestCase):
         mock_args.path = None
         mock_args.match_all = False
         mock_args.exact = False
+        mock_args.exclude = None
         
         # Execute
         handle_search_command(mock_args)
         
         # Verify
-        mock_search.assert_called_once_with(["python"], False, False)
+        mock_search.assert_called_once_with(
+            ["python"], False, False, exclude_tags=None
+        )
         # Check that results were printed
         self.assertTrue(mock_print.called)
 

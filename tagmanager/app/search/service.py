@@ -82,6 +82,26 @@ def search_files_by_path(query: str) -> List[str]:
     return [file for file in data if query.lower() in file.lower()]
 
 
+def filter_paths_by_exclude_tags(
+    paths: List[str], exclude_tags: Optional[List[str]]
+) -> List[str]:
+    """Drop paths whose tag set matches any exclude tag (same rules as tag search NOT)."""
+    if not exclude_tags:
+        return paths
+    data = load_tags()
+
+    def excluded(file_tags: List[str]) -> bool:
+        return any(
+            any(
+                exc.lower() == ft.lower() or exc.lower() in ft.lower()
+                for ft in file_tags
+            )
+            for exc in exclude_tags
+        )
+
+    return [p for p in paths if not excluded(data.get(p, []))]
+
+
 def combined_search(
     tags: Optional[List[str]] = None,
     path_query: Optional[str] = None,
@@ -106,9 +126,14 @@ def combined_search(
     tag_matched_files = (
         set(search_files_by_tags(tags, match_all_tags, exclude_tags=exclude_tags)) if tags else all_files
     )
-    path_matched_files = (
-        set(search_files_by_path(path_query)) if path_query else all_files
+    raw_path = (
+        search_files_by_path(path_query) if path_query else list(all_files)
     )
+    path_matched_files = set(raw_path)
+    if path_query and exclude_tags:
+        path_matched_files = set(
+            filter_paths_by_exclude_tags(list(path_matched_files), exclude_tags)
+        )
 
     return list(tag_matched_files & path_matched_files)
 

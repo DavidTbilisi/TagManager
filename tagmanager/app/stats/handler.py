@@ -2,20 +2,29 @@ from .service import (
     get_overall_statistics,
     get_tag_statistics,
     get_file_count_distribution,
+    get_namespace_statistics,
     format_overall_statistics,
     format_tag_statistics,
     format_file_count_distribution,
+    format_namespace_statistics,
 )
 
 
-def handle_stats_command(tag: str = None, file_count: bool = False):
+def handle_stats_command(
+    tag: str = None,
+    file_count: bool = False,
+    namespaces: bool = False,
+):
     """
     Handle the stats command with different options.
 
     :param tag: Specific tag to analyze
     :param file_count: Whether to show file count distribution
     """
-    if tag:
+    if namespaces:
+        stats = get_namespace_statistics()
+        print(format_namespace_statistics(stats))
+    elif tag:
         # Show statistics for a specific tag
         stats = get_tag_statistics(tag)
         print(format_tag_statistics(stats))

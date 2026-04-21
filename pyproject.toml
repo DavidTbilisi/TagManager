@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tagmanager-cli"
-version = "1.4.1"
+version = "1.5.0"
 description = "The Ultimate Command-Line File Tagging System - Transform chaos into order with intelligent file organization"
 readme = "README.md"
 license = {text = "MIT"}
@@ -84,7 +84,7 @@ packages = ["tagmanager", "tagmanager.app", "tagmanager.app.add", "tagmanager.ap
            "tagmanager.app.autotag", "tagmanager.app.bulk",
            "tagmanager.app.config", "tagmanager.app.filter", "tagmanager.app.list_all",
            "tagmanager.app.move", "tagmanager.app.paths", "tagmanager.app.preset",
-           "tagmanager.app.remove", "tagmanager.app.search",
+           "tagmanager.app.remove", "tagmanager.app.saved_search", "tagmanager.app.search",
            "tagmanager.app.stats", "tagmanager.app.storage", "tagmanager.app.tags",
            "tagmanager.app.visualization", "tagmanager.app.graph", "tagmanager.app.watch",
            "tagmanager.app.exportdata"]
