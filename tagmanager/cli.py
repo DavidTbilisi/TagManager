@@ -1085,6 +1085,43 @@ def mcp_stdio():
     run_stdio_server()
 
 
+windows_shell = typer.Typer(
+    help="Windows Explorer context menu (per-user registry, no admin)",
+)
+
+
+@windows_shell.command("install-context-menu")
+def windows_install_context_menu():
+    """Register TagManager entries on right-click for files and folders (HKCU)."""
+    from .win_context_menu import install_context_menu, launcher_dir_for_docs
+
+    code, msg = install_context_menu()
+    if runtime.json_mode():
+        runtime.emit_json({"ok": code == 0, "message": msg, "launcher_dir": launcher_dir_for_docs()})
+    else:
+        typer.echo(msg)
+        if code == 0:
+            typer.echo(f"Launcher scripts: {launcher_dir_for_docs()}")
+            typer.echo("Restart Explorer or sign out if menus do not appear immediately.")
+    raise typer.Exit(code)
+
+
+@windows_shell.command("uninstall-context-menu")
+def windows_uninstall_context_menu():
+    """Remove TagManager context menu entries installed for the current user."""
+    from .win_context_menu import uninstall_context_menu
+
+    code, msg = uninstall_context_menu()
+    if runtime.json_mode():
+        runtime.emit_json({"ok": code == 0, "message": msg})
+    else:
+        typer.echo(msg)
+    raise typer.Exit(code)
+
+
+app.add_typer(windows_shell, name="windows")
+
+
 # ---------------------------------------------------------------------------
 # Watch mode
 # ---------------------------------------------------------------------------
