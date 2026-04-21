@@ -32,6 +32,7 @@ def tag_file_silently(
     extra_tags: List[str],
     preset_name: Optional[str],
     auto_tag: bool,
+    content_tag: bool = True,
 ) -> Dict:
     """
     Tag a file without any print output. Returns a result dict.
@@ -47,7 +48,7 @@ def tag_file_silently(
         tags.extend(_get_preset_safe(preset_name))
 
     if auto_tag:
-        suggested = suggest_tags_for_file(abs_path)
+        suggested = suggest_tags_for_file(abs_path, include_content=content_tag)
         for t in suggested:
             if t not in tags:
                 tags.append(t)
@@ -107,6 +108,7 @@ class _TagManagerHandler(_Base):  # type: ignore[misc]
         extra_tags: List[str],
         preset_name: Optional[str],
         auto_tag: bool,
+        content_tag: bool,
         on_delete_clean: bool,
         ignore_patterns: List[str],
         on_event: Callable[[WatchEvent], None],
@@ -116,6 +118,7 @@ class _TagManagerHandler(_Base):  # type: ignore[misc]
         self.extra_tags = extra_tags
         self.preset_name = preset_name
         self.auto_tag = auto_tag
+        self.content_tag = content_tag
         self.on_delete_clean = on_delete_clean
         self.ignore_patterns = ignore_patterns
         self.on_event = on_event
@@ -137,6 +140,7 @@ class _TagManagerHandler(_Base):  # type: ignore[misc]
                 self.extra_tags,
                 self.preset_name,
                 self.auto_tag,
+                self.content_tag,
             )
         self.on_event(WatchEvent(
             kind="created",
@@ -182,6 +186,7 @@ def start_watching(
     extra_tags: List[str],
     preset_name: Optional[str],
     auto_tag: bool,
+    content_tag: bool,
     on_delete_clean: bool,
     ignore_patterns: List[str],
     on_event: Callable[[WatchEvent], None],
@@ -198,6 +203,7 @@ def start_watching(
         extra_tags=extra_tags,
         preset_name=preset_name,
         auto_tag=auto_tag,
+        content_tag=content_tag,
         on_delete_clean=on_delete_clean,
         ignore_patterns=ignore_patterns,
         on_event=on_event,

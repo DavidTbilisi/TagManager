@@ -26,6 +26,40 @@ class TestAutotagService(unittest.TestCase):
         mgr.get.side_effect = get_side
         return mgr
 
+    def _make_mgr_content(
+        self,
+        rules,
+        *,
+        content_enabled=True,
+        autotag_enabled=True,
+        content_use_defaults=True,
+    ):
+        mgr = MagicMock()
+
+        def get_side(key, default=None):
+            if key == "autotag.enabled":
+                return autotag_enabled
+            if key == "autotag.extension_tags":
+                return {}
+            if key == "autotag.content_enabled":
+                return content_enabled
+            if key == "autotag.content_rules":
+                return rules
+            if key == "autotag.content_use_defaults":
+                return content_use_defaults
+            if key == "autotag.content_max_bytes":
+                return 65536
+            if key == "autotag.recursive_skip_dirs":
+                return []
+            if key == "files.follow_symlinks":
+                return False
+            if key == "files.include_hidden":
+                return False
+            return default
+
+        mgr.get.side_effect = get_side
+        return mgr
+
     # --- suggest_tags_for_file ---
 
     def test_python_file(self):
@@ -156,6 +190,145 @@ class TestAutotagService(unittest.TestCase):
             set_extension_tags("py", ["python"])
         ext_tags = captured["autotag"]["extension_tags"]
         self.assertIn(".py", ext_tags)
+
+    def test_set_extension_tags_preserves_content_config(self):
+        from tagmanager.app.autotag.service import set_extension_tags
+
+        base = {
+            "enabled": True,
+            "content_enabled": True,
+            "content_rules": [{"contains": "pytest", "tags": ["testing"]}],
+            "extension_tags": {".js": ["javascript"]},
+        }
+        mgr = MagicMock()
+        mgr.get.side_effect = lambda key, default=None: dict(base) if key == "autotag" else default
+        captured: dict = {}
+        mgr.set_raw.side_effect = lambda k, v: captured.update({k: v})
+        with patch("tagmanager.app.autotag.service.get_config_manager", return_value=mgr):
+            set_extension_tags(".ts", ["typescript"])
+        out = captured["autotag"]
+        self.assertTrue(out["content_enabled"])
+        self.assertEqual(len(out["content_rules"]), 1)
+        self.assertEqual(out["extension_tags"][".ts"], ["typescript"])
+        self.assertEqual(out["extension_tags"][".js"], ["javascript"])
+
+    # --- content rules ---
+
+    def test_suggest_tags_merges_extension_and_content(self):
+        from tagmanager.app.autotag.service import suggest_tags_for_file
+
+        root = tempfile.mkdtemp()
+        try:
+            path = os.path.join(root, "app.py")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("import django\n")
+            mgr = self._make_mgr_content([{"contains": "django", "tags": ["django-app"]}])
+            with patch("tagmanager.app.autotag.service.get_config_manager", return_value=mgr):
+                tags = suggest_tags_for_file(path)
+            self.assertIn("python", tags)
+            self.assertIn("django-app", tags)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_content_regex_rule(self):
+        from tagmanager.app.autotag.service import suggest_tags_for_file
+
+        root = tempfile.mkdtemp()
+        try:
+            path = os.path.join(root, "x.py")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("from fastapi import APIRouter\n")
+            mgr = self._make_mgr_content(
+                [{"pattern": r"\bfastapi\b", "tags": ["fastapi"], "case_sensitive": False}]
+            )
+            with patch("tagmanager.app.autotag.service.get_config_manager", return_value=mgr):
+                tags = suggest_tags_for_file(path)
+            self.assertIn("fastapi", tags)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_include_content_false_skips_content_scan(self):
+        from tagmanager.app.autotag.service import suggest_tags_for_file
+
+        with patch(
+            "tagmanager.app.autotag.service.get_config_manager",
+            return_value=self._make_mgr_content([{"contains": "unique", "tags": ["hit"]}]),
+        ):
+            with patch("tagmanager.app.autotag.service.suggest_tags_from_content") as mock_c:
+                tags = suggest_tags_for_file("anything.py", include_content=False)
+            mock_c.assert_not_called()
+        self.assertIn("python", tags)
+
+    def test_content_disabled_no_extra_tags(self):
+        from tagmanager.app.autotag.service import suggest_tags_for_file
+
+        root = tempfile.mkdtemp()
+        try:
+            path = os.path.join(root, "app.py")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("import django\n")
+            mgr = self._make_mgr_content(
+                [{"contains": "django", "tags": ["django-app"]}], content_enabled=False
+            )
+            with patch("tagmanager.app.autotag.service.get_config_manager", return_value=mgr):
+                tags = suggest_tags_for_file(path)
+            self.assertIn("python", tags)
+            self.assertNotIn("django-app", tags)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_default_content_rules_without_user_rules(self):
+        from tagmanager.app.autotag.service import suggest_tags_for_file
+
+        root = tempfile.mkdtemp()
+        try:
+            path = os.path.join(root, "test_x.py")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("import pytest\n")
+            mgr = self._make_mgr_content([], content_enabled=True)
+            with patch("tagmanager.app.autotag.service.get_config_manager", return_value=mgr):
+                tags = suggest_tags_for_file(path)
+            self.assertIn("python", tags)
+            self.assertIn("pytest", tags)
+            self.assertIn("testing", tags)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_get_merged_content_rules_defaults_plus_user(self):
+        from tagmanager.app.autotag.service import (
+            DEFAULT_CONTENT_RULES,
+            get_merged_content_rules,
+        )
+
+        mgr = self._make_mgr_content(
+            [{"contains": "unique_xyz_123", "tags": ["custom"]}],
+            content_enabled=True,
+        )
+        with patch("tagmanager.app.autotag.service.get_config_manager", return_value=mgr):
+            merged = get_merged_content_rules()
+        self.assertGreaterEqual(len(merged), len(DEFAULT_CONTENT_RULES) + 1)
+        self.assertIs(merged[0], DEFAULT_CONTENT_RULES[0])
+        self.assertEqual(merged[-1]["contains"], "unique_xyz_123")
+
+    def test_content_use_defaults_false_uses_only_user_rules(self):
+        from tagmanager.app.autotag.service import suggest_tags_for_file
+
+        root = tempfile.mkdtemp()
+        try:
+            path = os.path.join(root, "test_x.py")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("import pytest\n")
+            mgr = self._make_mgr_content(
+                [],
+                content_enabled=True,
+                content_use_defaults=False,
+            )
+            with patch("tagmanager.app.autotag.service.get_config_manager", return_value=mgr):
+                tags = suggest_tags_for_file(path)
+            self.assertIn("python", tags)
+            self.assertNotIn("pytest", tags)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
 
     # --- recursive walk ---
 

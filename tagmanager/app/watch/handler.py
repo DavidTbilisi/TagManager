@@ -52,6 +52,7 @@ def _try_rich_live(
     extra_tags: List[str],
     preset_name: Optional[str],
     auto_tag: bool,
+    content_tag: bool,
     on_delete_clean: bool,
     ignore_patterns: List[str],
 ) -> None:
@@ -78,6 +79,7 @@ def _try_rich_live(
         extra_tags=extra_tags,
         preset_name=preset_name,
         auto_tag=auto_tag,
+        content_tag=content_tag,
         on_delete_clean=on_delete_clean,
         ignore_patterns=ignore_patterns,
         on_event=on_event,
@@ -138,6 +140,7 @@ def _fallback_plain(
     extra_tags: List[str],
     preset_name: Optional[str],
     auto_tag: bool,
+    content_tag: bool,
     on_delete_clean: bool,
     ignore_patterns: List[str],
 ) -> None:
@@ -155,6 +158,7 @@ def _fallback_plain(
         extra_tags=extra_tags,
         preset_name=preset_name,
         auto_tag=auto_tag,
+        content_tag=content_tag,
         on_delete_clean=on_delete_clean,
         ignore_patterns=ignore_patterns,
         on_event=on_event,
@@ -177,6 +181,7 @@ def handle_watch_command(
     extra_tags: List[str],
     preset_name: Optional[str],
     auto_tag: bool,
+    content_tag: bool,
     on_delete_clean: bool,
     ignore_patterns: List[str],
     plain: bool,
@@ -199,7 +204,7 @@ def handle_watch_command(
     typer.echo(f"Watching: {abs_path}")
     typer.echo(
         f"  Recursive: {recursive} | Auto-tag: {auto_tag} | "
-        f"Clean-on-delete: {on_delete_clean}"
+        f"Content rules: {content_tag} | Clean-on-delete: {on_delete_clean}"
     )
     if extra_tags:
         typer.echo(f"  Always add tags: {extra_tags}")
@@ -216,6 +221,7 @@ def handle_watch_command(
         extra_tags=extra_tags,
         preset_name=preset_name,
         auto_tag=auto_tag,
+        content_tag=content_tag,
         on_delete_clean=on_delete_clean,
         ignore_patterns=ignore_patterns,
     )

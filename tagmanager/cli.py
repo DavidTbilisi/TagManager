@@ -141,6 +141,11 @@ def add(
         help="If path is a directory, tag every file under it (rule-based extension tags per file)",
     ),
     no_auto: bool = typer.Option(False, "--no-auto", help="Skip extension-based auto-tagging"),
+    no_content: bool = typer.Option(
+        False,
+        "--no-content",
+        help="Skip content keyword/regex rules (still uses extension map unless --no-auto)",
+    ),
     no_aliases: bool = typer.Option(False, "--no-aliases", help="Skip alias resolution"),
 ):
     """Add tags to a file (with optional preset and auto-tagging)"""
@@ -173,12 +178,19 @@ def add(
             flat,
             apply_aliases=not no_aliases,
             auto_tag=not no_auto,
+            content_tag=not no_content,
         )
         if not result.get("success"):
             raise typer.Exit(1)
         return
 
-    add_tags(file, flat or [""], apply_aliases=not no_aliases, auto_tag=not no_auto)
+    add_tags(
+        file,
+        flat or [""],
+        apply_aliases=not no_aliases,
+        auto_tag=not no_auto,
+        content_tag=not no_content,
+    )
 
 
 @app.command()
@@ -646,6 +658,11 @@ def preset_apply(
         help="If path is a directory, apply preset (+ auto-tags) to all files under it",
     ),
     no_auto: bool = typer.Option(False, "--no-auto", help="Skip extension-based auto-tagging"),
+    no_content: bool = typer.Option(
+        False,
+        "--no-content",
+        help="Skip content keyword/regex rules when auto-tagging",
+    ),
     no_aliases: bool = typer.Option(False, "--no-aliases", help="Skip alias resolution"),
 ):
     """Apply a preset's tags to a file"""
@@ -665,11 +682,18 @@ def preset_apply(
             list(preset_tags),
             apply_aliases=not no_aliases,
             auto_tag=not no_auto,
+            content_tag=not no_content,
         )
         if not result.get("success"):
             raise typer.Exit(1)
         return
-    add_tags(file, preset_tags, apply_aliases=not no_aliases, auto_tag=not no_auto)
+    add_tags(
+        file,
+        preset_tags,
+        apply_aliases=not no_aliases,
+        auto_tag=not no_auto,
+        content_tag=not no_content,
+    )
 
 
 @preset_app.command("delete")
@@ -765,6 +789,11 @@ def watch(
         "--no-auto",
         help="Disable extension-based auto-tagging",
     ),
+    no_content: bool = typer.Option(
+        False,
+        "--no-content",
+        help="Skip reading files for content keyword/regex rules",
+    ),
     clean_on_delete: bool = typer.Option(
         False,
         "--clean-on-delete",
@@ -789,6 +818,7 @@ def watch(
         extra_tags=list(tags) if tags else [],
         preset_name=preset,
         auto_tag=not no_auto,
+        content_tag=not no_content,
         on_delete_clean=clean_on_delete,
         ignore_patterns=ignore_patterns,
         plain=plain,

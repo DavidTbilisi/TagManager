@@ -4,7 +4,13 @@ from typing import Any, Dict, List
 from ..helpers import load_tags, save_tags
 
 
-def add_tags(file_path: str, tags: list, apply_aliases: bool = True, auto_tag: bool = True) -> bool:
+def add_tags(
+    file_path: str,
+    tags: list,
+    apply_aliases: bool = True,
+    auto_tag: bool = True,
+    content_tag: bool = True,
+) -> bool:
     """
     Takes an existing file path and adds tags to it.
 
@@ -12,6 +18,7 @@ def add_tags(file_path: str, tags: list, apply_aliases: bool = True, auto_tag: b
     :param tags: tags to add (may be empty if ``auto_tag`` supplies extension tags)
     :param apply_aliases: whether to resolve tag aliases before saving
     :param auto_tag: whether to merge extension-based auto-tags
+    :param content_tag: when auto_tag is on, also apply content keyword/regex rules
     :return: True if successful, False otherwise
     """
     tags = [t for t in tags if t.strip()]
@@ -26,7 +33,7 @@ def add_tags(file_path: str, tags: list, apply_aliases: bool = True, auto_tag: b
         try:
             from ..autotag.service import suggest_tags_for_file
 
-            ext_tags = suggest_tags_for_file(file_path)
+            ext_tags = suggest_tags_for_file(file_path, include_content=content_tag)
             for t in ext_tags:
                 if t not in tags:
                     tags.append(t)
@@ -66,6 +73,7 @@ def add_tags_recursive(
     tags: List[str],
     apply_aliases: bool = True,
     auto_tag: bool = True,
+    content_tag: bool = True,
 ) -> Dict[str, Any]:
     """
     Recursively tag every file under ``dir_path`` using the same rules as
@@ -95,7 +103,7 @@ def add_tags_recursive(
         merged = list(base)
         if auto_tag:
             try:
-                for t in suggest_tags_for_file(fp):
+                for t in suggest_tags_for_file(fp, include_content=content_tag):
                     if t not in merged:
                         merged.append(t)
             except Exception:

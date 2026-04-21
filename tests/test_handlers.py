@@ -30,7 +30,13 @@ class TestAddHandler(unittest.TestCase):
         handle_add_command(mock_args)
         
         # Verify
-        mock_add_tags.assert_called_once_with("/path/to/file.txt", ["python", "test"])
+        mock_add_tags.assert_called_once_with(
+            "/path/to/file.txt",
+            ["python", "test"],
+            apply_aliases=True,
+            auto_tag=True,
+            content_tag=True,
+        )
 
 
 class TestRemoveHandler(unittest.TestCase):

@@ -1,5 +1,6 @@
 import os
-from typing import Dict, FrozenSet, List
+import re
+from typing import Any, Dict, FrozenSet, List, Optional, Set
 
 from ...config_manager import get_config_manager
 
@@ -78,6 +79,77 @@ DEFAULT_EXTENSION_TAGS: Dict[str, List[str]] = {
     ".tf": ["terraform", "infrastructure"],
 }
 
+# Built-in substring/regex → tags when ``autotag.content_enabled`` is true.
+# Merged with ``autotag.content_rules`` (user rules after defaults). Disable
+# defaults with ``autotag.content_use_defaults``: false.
+DEFAULT_CONTENT_RULES: List[Dict[str, Any]] = [
+    # Python web
+    {"contains": "django.", "tags": ["django", "web"]},
+    {"contains": "from django", "tags": ["django", "web"]},
+    {"contains": "from flask", "tags": ["flask", "web"]},
+    {"contains": "import flask", "tags": ["flask", "web"]},
+    {"contains": "fastapi", "tags": ["fastapi", "web"]},
+    {"contains": "starlette", "tags": ["starlette", "web"]},
+    {"contains": "uvicorn", "tags": ["uvicorn", "server"]},
+    {"contains": "gunicorn", "tags": ["gunicorn", "server"]},
+    {"contains": "tornado.", "tags": ["tornado", "web"]},
+    {"contains": "sanic", "tags": ["sanic", "web"]},
+    # Data / ML
+    {"contains": "import pandas", "tags": ["pandas", "data"]},
+    {"contains": "import numpy", "tags": ["numpy", "data"]},
+    {"pattern": r"\bimport\s+torch\b", "tags": ["pytorch", "ml"]},
+    {"contains": "tensorflow", "tags": ["tensorflow", "ml"]},
+    {"contains": "sklearn", "tags": ["scikit-learn", "ml"]},
+    {"contains": "polars", "tags": ["polars", "data"]},
+    # ORM / DB tooling
+    {"contains": "sqlalchemy", "tags": ["sqlalchemy", "database"]},
+    {"contains": "pydantic", "tags": ["pydantic"]},
+    {"contains": "prisma", "tags": ["prisma", "database"]},
+    # Async / messaging
+    {"contains": "celery", "tags": ["celery", "async"]},
+    {"contains": "kafka", "tags": ["kafka", "messaging"]},
+    {"contains": "rabbitmq", "tags": ["rabbitmq", "messaging"]},
+    # Testing
+    {"contains": "pytest", "tags": ["pytest", "testing"]},
+    {"pattern": r"\bjest\b", "tags": ["jest", "testing"]},
+    {"contains": "mocha", "tags": ["mocha", "testing"]},
+    # CLI frameworks
+    {"contains": "import typer", "tags": ["typer", "cli"]},
+    {"contains": "import click", "tags": ["click", "cli"]},
+    # JS / TS UI
+    {"contains": "from \"react\"", "tags": ["react", "frontend"]},
+    {"contains": "from 'react'", "tags": ["react", "frontend"]},
+    {"contains": "from \"vue\"", "tags": ["vue", "frontend"]},
+    {"contains": "from 'vue'", "tags": ["vue", "frontend"]},
+    {"pattern": r"@angular/", "tags": ["angular", "frontend"]},
+    {"contains": "svelte", "tags": ["svelte", "frontend"]},
+    # Bundlers / lint
+    {"contains": "eslint", "tags": ["eslint", "lint"]},
+    {"contains": "webpack", "tags": ["webpack", "bundler"]},
+    {"pattern": r"\bvite\b", "tags": ["vite", "bundler"]},
+    {"contains": "rollup", "tags": ["rollup", "bundler"]},
+    # Rust ecosystem
+    {"contains": "tokio::", "tags": ["tokio", "async", "rust"]},
+    {"contains": "serde::", "tags": ["serde", "rust"]},
+    # Containers (Dockerfile)
+    {"pattern": r"(?m)^FROM\s+\S+", "tags": ["docker", "container"]},
+    # Infra
+    {"contains": "terraform", "tags": ["terraform", "infra"]},
+    {"contains": "kubernetes", "tags": ["kubernetes", "infra"]},
+    {"contains": "helm", "tags": ["helm", "kubernetes", "infra"]},
+]
+
+
+def get_merged_content_rules() -> List[Dict[str, Any]]:
+    """Defaults plus ``autotag.content_rules``, unless ``content_use_defaults`` is false."""
+    mgr = get_config_manager()
+    extra = mgr.get("autotag.content_rules") or []
+    if not isinstance(extra, list):
+        extra = []
+    if not mgr.get("autotag.content_use_defaults", True):
+        return list(extra)
+    return list(DEFAULT_CONTENT_RULES) + list(extra)
+
 
 def get_recursive_skip_dir_names() -> FrozenSet[str]:
     """Names of directories to skip when recursing (defaults + config extras)."""
@@ -129,10 +201,94 @@ def get_extension_tags_map() -> Dict[str, List[str]]:
     return merged
 
 
-def suggest_tags_for_file(file_path: str) -> List[str]:
+def _read_file_snippet(file_path: str, max_bytes: int) -> Optional[str]:
+    """Read up to max_bytes for content rules; None if unreadable or likely binary."""
+    if not os.path.isfile(file_path):
+        return None
+    max_bytes = max(256, min(int(max_bytes), 2_000_000))
+    try:
+        with open(file_path, "rb") as fh:
+            raw = fh.read(max_bytes)
+    except (OSError, PermissionError):
+        return None
+    if not raw:
+        return ""
+    if b"\x00" in raw[: min(8192, len(raw))]:
+        return None
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw.decode("latin-1", errors="replace")
+
+
+def suggest_tags_from_content(file_path: str) -> List[str]:
     """
-    Return suggested tags based on the file extension.
-    Returns [] if no mapping exists or auto-tagging is disabled.
+    Apply built-in and configured content rules to a file prefix.
+
+    Opt-in via ``autotag.content_enabled``. Built-ins are
+    ``DEFAULT_CONTENT_RULES`` unless ``autotag.content_use_defaults`` is false.
+    Not semantic AI — substring / pattern matching only.
+    """
+    mgr = get_config_manager()
+    if not mgr.get("autotag.content_enabled", False):
+        return []
+
+    rules = get_merged_content_rules()
+    if not rules:
+        return []
+
+    max_bytes = int(mgr.get("autotag.content_max_bytes", 65536) or 65536)
+    snippet = _read_file_snippet(file_path, max_bytes)
+    if snippet is None:
+        return []
+
+    hay_lower = snippet.lower()
+    out: List[str] = []
+
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        raw_tags = rule.get("tags")
+        if not isinstance(raw_tags, list):
+            continue
+        tag_list = [t for t in raw_tags if isinstance(t, str) and t.strip()]
+        if not tag_list:
+            continue
+
+        pattern = rule.get("pattern")
+        if isinstance(pattern, str) and pattern.strip():
+            try:
+                flags = 0 if rule.get("case_sensitive") else re.IGNORECASE
+                if re.search(pattern, snippet, flags):
+                    out.extend(tag_list)
+            except re.error:
+                continue
+            continue
+
+        needle = rule.get("contains")
+        if not isinstance(needle, str) or not needle.strip():
+            continue
+        if rule.get("case_sensitive"):
+            if needle in snippet:
+                out.extend(tag_list)
+        else:
+            if needle.lower() in hay_lower:
+                out.extend(tag_list)
+
+    seen: Set[str] = set()
+    deduped: List[str] = []
+    for t in out:
+        if t not in seen:
+            seen.add(t)
+            deduped.append(t)
+    return deduped
+
+
+def suggest_tags_for_file(file_path: str, *, include_content: bool = True) -> List[str]:
+    """
+    Suggested tags: file extension map, optionally plus content rules
+    (``DEFAULT_CONTENT_RULES`` merged with ``autotag.content_rules`` when
+    ``autotag.content_enabled``). Disabled when ``autotag.enabled`` is false.
     """
     mgr = get_config_manager()
     if not mgr.get("autotag.enabled", True):
@@ -140,7 +296,18 @@ def suggest_tags_for_file(file_path: str) -> List[str]:
 
     ext = os.path.splitext(file_path)[1].lower()
     mapping = get_extension_tags_map()
-    return list(mapping.get(ext, []))
+    out: List[str] = list(mapping.get(ext, []))
+
+    if include_content:
+        out.extend(suggest_tags_from_content(file_path))
+
+    seen: Set[str] = set()
+    deduped: List[str] = []
+    for t in out:
+        if t not in seen:
+            seen.add(t)
+            deduped.append(t)
+    return deduped
 
 
 def set_extension_tags(extension: str, tags: List[str]) -> None:
@@ -149,6 +316,10 @@ def set_extension_tags(extension: str, tags: List[str]) -> None:
         extension = "." + extension
     extension = extension.lower()
     mgr = get_config_manager()
-    overrides = mgr.get("autotag.extension_tags", {}) or {}
+    block_raw: Any = mgr.get("autotag")
+    block: Dict[str, Any] = dict(block_raw) if isinstance(block_raw, dict) else {}
+    overrides = dict(block.get("extension_tags") or {})
     overrides[extension] = tags
-    mgr.set_raw("autotag", {"enabled": mgr.get("autotag.enabled", True), "extension_tags": overrides})
+    block["extension_tags"] = overrides
+    block.setdefault("enabled", True)
+    mgr.set_raw("autotag", block)
