@@ -62,7 +62,7 @@ class _TagManagerHandler(BaseHTTPRequestHandler):
         if parsed.path == "/gui":
             _html_response(self, 200, _read_gui_html())
             return
-        if parsed.path == "/api/v1/gui/path-tags":
+        if parsed.path in ("/api/v1/gui/path-tags", "/api/v1/files/tags"):
             qs = urllib.parse.parse_qs(parsed.query)
             path = (qs.get("path") or [""])[0]
             if not path.strip():
@@ -103,6 +103,7 @@ class _TagManagerHandler(BaseHTTPRequestHandler):
                         "GET /api/v1/tags",
                         "GET /api/v1/search?tags=a,b&match_all=0",
                         "GET /api/v1/gui/path-tags?path=",
+                        "GET /api/v1/files/tags?path=",
                     ],
                     "rpc": "POST /api/v1/rpc  body: {jsonrpc, method, params, id}",
                     "gui_post": [

@@ -4,7 +4,7 @@ import json
 import os
 from typing import Dict, List, Optional
 
-from ..helpers import load_tags, save_tags
+from ..helpers import get_tag_file_path, load_tags, save_tags
 
 
 def _export_path_key(
@@ -213,3 +213,34 @@ def import_tags(
         "skipped_paths": skipped_strict,
         "message": "".join(msg_parts),
     }
+
+
+def default_tag_backup_path() -> str:
+    """JSON path next to the live tag file (``file_tags.backup.json`` in the same directory)."""
+    tf = os.path.normpath(os.path.abspath(os.path.expanduser(get_tag_file_path())))
+    parent = os.path.dirname(tf) or "."
+    return os.path.join(parent, "file_tags.backup.json")
+
+
+def backup_tag_database(output_path: Optional[str] = None) -> Dict:
+    """Write a full JSON export; default path from :func:`default_tag_backup_path`."""
+    out = output_path or default_tag_backup_path()
+    return export_tags_json(out)
+
+
+def restore_tag_database(
+    input_path: Optional[str] = None,
+    replace: bool = False,
+    merge_strategy: str = "union",
+    strict_paths: bool = False,
+    dry_run: bool = False,
+) -> Dict:
+    """Merge or replace from a JSON/CSV backup; default file from :func:`default_tag_backup_path`."""
+    src = input_path or default_tag_backup_path()
+    return import_tags(
+        src,
+        replace=replace,
+        merge_strategy=merge_strategy,
+        strict_paths=strict_paths,
+        dry_run=dry_run,
+    )

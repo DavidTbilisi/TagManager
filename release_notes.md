@@ -13,7 +13,7 @@ Release date: 2026-04-24
 - **`tm watch` + `--json`** — NDJSON event stream for automation.
 - **Fish completions** — `completions/tm.fish`.
 - **Recipes** — `tasks/recipes/` (CI, `uvx`, pre-commit sample).
-- **High-ROI backlog** — Completed items archived under `tasks/archive/`; BDD specs for thin GUI under `tasks/todo_bdd/`.
+- **High-ROI backlog** — Completed items archived under `tasks/archive/`; implemented BDD under `tasks/archive/bdd_implemented_2026-04/`; remaining backlog in `tasks/todo_bdd/README.md`.
 
 ## Install
 

@@ -8,14 +8,29 @@ def remove_all_tags(file_path: str) -> dict:
     """
     Clear all tags from a file while keeping the file entry in the database.
     Returns a result dict so callers can give feedback without printing directly.
+
+    Idempotent: unknown paths or paths that already have no tags succeed with a clear message.
     """
     path = os.path.normpath(os.path.abspath(file_path))
     tags = load_tags()
 
     if path not in tags:
-        return {"success": False, "path": path, "message": f"'{path}' not found in TagManager"}
+        return {
+            "success": True,
+            "path": path,
+            "cleared": [],
+            "message": f"No tags to clear (path not in database): '{path}'",
+        }
 
-    previous = tags[path]
+    previous = list(tags[path])
+    if not previous:
+        return {
+            "success": True,
+            "path": path,
+            "cleared": [],
+            "message": f"No tags on file (already empty): '{path}'",
+        }
+
     tags[path] = []
     save_tags(tags)
     return {

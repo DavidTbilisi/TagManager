@@ -8,7 +8,7 @@ Completed work through **2026-04** is archived: [`archive/todo_high_roi_complete
 
 ## Thin GUI
 
-- [x] **Thin browser GUI** — `tm gui` (default `127.0.0.1:8844`), `/gui` + JSON API in `http_api.py` / `gui_handlers.py` / `thin_gui.html`. BDD: [`todo_bdd/thin_gui.feature`](todo_bdd/thin_gui.feature), [`todo_bdd/thin_gui_nonfunctional.feature`](todo_bdd/thin_gui_nonfunctional.feature).
+- [x] **Thin browser GUI** — `tm gui` (default `127.0.0.1:8844`), `/gui` + JSON API in `http_api.py` / `gui_handlers.py` / `thin_gui.html`. BDD (archived): [`archive/bdd_implemented_2026-04/thin_gui.feature`](archive/bdd_implemented_2026-04/thin_gui.feature), [`archive/bdd_implemented_2026-04/thin_gui_nonfunctional.feature`](archive/bdd_implemented_2026-04/thin_gui_nonfunctional.feature).
 
 ## Session log (optional)
 

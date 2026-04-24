@@ -15,7 +15,7 @@ Feature: Composability and Unix philosophy for CLI
     And it includes all relevant data for further processing
 
   Scenario: Quiet mode for automation
-    Given I run a TagManager command with --silent
+    Given I run a TagManager command with --silent or --quiet
     Then only essential output or errors are shown
     And no extra formatting or prompts appear
 

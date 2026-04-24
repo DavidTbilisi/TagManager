@@ -73,7 +73,13 @@ from .app.preset.service import (
 from .app.move.service import move_path, clean_missing
 from .app.graph.handler import handle_graph_command
 from .app.watch.handler import handle_watch_command
-from .app.exportdata.service import export_tags_json, export_tags_csv, import_tags
+from .app.exportdata.service import (
+    backup_tag_database,
+    export_tags_csv,
+    export_tags_json,
+    import_tags,
+    restore_tag_database,
+)
 from .app.http_api import run_gui_server, run_server as run_http_server
 from .app.journal.service import journal_enabled, journal_path_for_display, undo_last
 from tagmanager import runtime
@@ -153,6 +159,11 @@ def _global_options(
     ctx: typer.Context,
     verbose: bool = typer.Option(False, "--verbose", "-v", help="More diagnostic output"),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Less console output"),
+    silent: bool = typer.Option(
+        False,
+        "--silent",
+        help="Alias for --quiet (automation / composability)",
+    ),
     log_file: Optional[str] = typer.Option(
         None, "--log-file", help="Append structured logs to this file"
     ),
@@ -163,7 +174,12 @@ def _global_options(
     ),
 ):
     """Global options (apply to all subcommands)."""
-    runtime.init_cli(verbose=verbose, quiet=quiet, log_file=log_file, json_output=json_out)
+    runtime.init_cli(
+        verbose=verbose,
+        quiet=quiet or silent,
+        log_file=log_file,
+        json_output=json_out,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1027,6 +1043,70 @@ def export_data(
         result = export_tags_json(
             output, relative_to=relative_to, strip_prefix=strip_prefix
         )
+    if runtime.json_mode():
+        runtime.emit_json(result)
+    else:
+        typer.echo(result["message"])
+    if not result["success"]:
+        raise typer.Exit(1)
+
+
+@app.command()
+def backup(
+    output: Optional[str] = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Backup JSON path (default: file_tags.backup.json next to your tag DB)",
+    ),
+):
+    """Write a full JSON snapshot of the tag database (same format as ``tm export``)."""
+    result = backup_tag_database(output)
+    if runtime.json_mode():
+        runtime.emit_json(result)
+    else:
+        typer.echo(result["message"])
+    if not result["success"]:
+        raise typer.Exit(1)
+
+
+@app.command()
+def restore(
+    input_file: Optional[str] = typer.Option(
+        None,
+        "--input",
+        "-i",
+        help="Backup JSON/CSV path (default: same default as ``tm backup``)",
+    ),
+    replace: bool = typer.Option(
+        False,
+        "--replace",
+        help="Replace the entire database instead of merging",
+    ),
+    merge_strategy: str = typer.Option(
+        "union",
+        "--merge-strategy",
+        help="When merging: union | incoming_wins | keep_existing",
+    ),
+    strict_paths: bool = typer.Option(
+        False,
+        "--strict-paths",
+        help="Skip import rows whose file path does not exist on disk",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Validate and show outcome without saving",
+    ),
+):
+    """Restore tag data from a backup file (merges by default; same rules as ``tm import``)."""
+    result = restore_tag_database(
+        input_file,
+        replace=replace,
+        merge_strategy=merge_strategy,
+        strict_paths=strict_paths,
+        dry_run=dry_run,
+    )
     if runtime.json_mode():
         runtime.emit_json(result)
     else:

@@ -75,6 +75,29 @@ class TestThinGuiHttp(unittest.TestCase):
         self.assertTrue(data.get("ok"))
         self.assertEqual(data.get("tags"), ["p"])
 
+    def test_files_tags_alias_matches_path_tags(self):
+        self._start()
+        self.test_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.test_dir, ignore_errors=True)
+        tf = os.path.join(self.test_dir, "a.txt")
+        open(tf, "w", encoding="utf-8").write("x")
+        tag_file = os.path.join(self.test_dir, "tags.json")
+        import json as _json
+
+        with open(tag_file, "w", encoding="utf-8") as fh:
+            _json.dump({os.path.abspath(tf): ["p"]}, fh)
+
+        from unittest.mock import patch
+
+        with patch("tagmanager.app.helpers.get_tag_file_path", return_value=tag_file):
+            status, raw = self._get(
+                "/api/v1/files/tags?path=" + urllib.parse.quote(tf, safe="")
+            )
+        self.assertEqual(status, 200)
+        data = json.loads(raw.decode("utf-8"))
+        self.assertTrue(data.get("ok"))
+        self.assertEqual(data.get("tags"), ["p"])
+
     def test_gui_root_blocks_path(self):
         self.test_dir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.test_dir, ignore_errors=True)
