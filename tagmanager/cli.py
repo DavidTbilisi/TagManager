@@ -1035,6 +1035,26 @@ def import_data(
 
 
 @app.command()
+def doctor(
+    max_paths: int = typer.Option(
+        500,
+        "--max-paths",
+        min=1,
+        help="How many DB paths to probe for missing files on disk",
+    ),
+):
+    """Check tag file, config, journal, CLI resolution, and a sample of paths on disk."""
+    from .app.doctor.service import run_doctor
+
+    report = run_doctor(max_path_checks=max_paths)
+    if runtime.json_mode():
+        runtime.emit_json(report)
+    else:
+        typer.echo(report["message"])
+    raise typer.Exit(0 if report["ok"] else 1)
+
+
+@app.command()
 def undo(
     count: int = typer.Option(
         1,

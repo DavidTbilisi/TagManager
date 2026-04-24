@@ -92,7 +92,7 @@ packages = ["tagmanager", "tagmanager.app", "tagmanager.app.add", "tagmanager.ap
            "tagmanager.app.remove", "tagmanager.app.saved_search", "tagmanager.app.search",
            "tagmanager.app.stats", "tagmanager.app.storage", "tagmanager.app.tags",
            "tagmanager.app.visualization", "tagmanager.app.graph", "tagmanager.app.watch",
-           "tagmanager.app.exportdata", "tagmanager.app.journal"]
+           "tagmanager.app.exportdata", "tagmanager.app.journal", "tagmanager.app.doctor"]
 
 [tool.setuptools.package-data]
 tagmanager = ["*.ini", "*.json"]
