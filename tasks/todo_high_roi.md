@@ -6,13 +6,16 @@ Completed work through **2026-04** is archived: [`archive/todo_high_roi_complete
 
 - [ ] **Large-DB performance** — Deferred until real profiling: index or lazy path materialization for search when data shows need.
 
-## Thin GUI (optional product)
+## Thin GUI
 
-BDD specifications (Gherkin):
+- [x] **Thin browser GUI** — `tm gui` (default `127.0.0.1:8844`), `/gui` + JSON API in `http_api.py` / `gui_handlers.py` / `thin_gui.html`. BDD: [`todo_bdd/thin_gui.feature`](todo_bdd/thin_gui.feature), [`todo_bdd/thin_gui_nonfunctional.feature`](todo_bdd/thin_gui_nonfunctional.feature).
 
-- [`todo_bdd/thin_gui.feature`](todo_bdd/thin_gui.feature) — user-visible behaviour and boundaries.
-- [`todo_bdd/thin_gui_nonfunctional.feature`](todo_bdd/thin_gui_nonfunctional.feature) — security, packaging, and parity with CLI.
+## Session log (optional)
+
+| Date | Item | Notes |
+|------|------|-------|
+| 2026-04-24 | Thin browser GUI | `tm gui`, `gui_handlers.py`, `thin_gui.html`, `tests/test_gui_http.py` |
 
 ## Suggested next pick
 
-- Implement scenarios in `thin_gui*.feature`, or continue **Large-DB** after profiling.
+- **Large-DB** after profiling, or extend GUI (presets, journal-aware undo button).

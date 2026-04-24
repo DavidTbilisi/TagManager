@@ -4,7 +4,7 @@
 
 complete -c tm -f
 
-set -l __tm_cmds add remove ls path tags storage search bulk filter config alias preset export import doctor undo watch graph mcp serve windows mv clean stats
+set -l __tm_cmds add remove ls path tags storage search bulk filter config alias preset export import doctor undo watch graph mcp serve gui windows mv clean stats
 
 complete -c tm -n '__fish_use_subcommand' -a "$__tm_cmds"
 

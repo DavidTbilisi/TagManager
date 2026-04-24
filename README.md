@@ -47,6 +47,7 @@ TagManager stores tags in a lightweight JSON sidecar (`~/file_tags.json`) — no
 | **Watch mode** | Auto-tag files the moment they land in a directory |
 | **Move tracking** | `tm mv` keeps tag records in sync when you rename files |
 | **Config** | Full dot-notation config system with export/import |
+| **Thin GUI** | `tm gui` — local browser UI for tags + search (`/gui`, same DB as CLI) |
 | **Shell completion** | Typer/bash/zsh tab-complete tags, presets, aliases; **Fish:** [completions/tm.fish](completions/tm.fish) |
 
 ---
@@ -224,7 +225,19 @@ tm watch ~/Downloads --tags inbox
 
 # Portable export (paths relative to project root)
 tm export -o tags.json --relative-to .
+
+# Thin browser GUI (localhost; opens browser — same tag DB as CLI)
+tm gui
+# tm gui --no-browser --port 8844
+# Optional path jail: TAGMANAGER_GUI_ROOT=C:\your\project
 ```
+
+### Thin browser GUI (`tm gui`)
+
+- Serves a small HTML UI at **`/gui`** on the same stdlib HTTP stack as **`tm serve`** (default **`127.0.0.1:8844`** for `tm gui`).
+- Mutations use **`add_tags`**, **`remove_path`**, **`remove_all_tags`**, and the same **`load_tags` / `save_tags`** as the CLI (see `tagmanager/app/gui_handlers.py`).
+- Set **`TAGMANAGER_GUI_ROOT`** to an absolute directory to reject paths outside that tree (optional safety rail).
+- Do not bind on **`0.0.0.0`** on untrusted networks; there is **no authentication**.
 
 ---
 

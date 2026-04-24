@@ -74,7 +74,7 @@ from .app.move.service import move_path, clean_missing
 from .app.graph.handler import handle_graph_command
 from .app.watch.handler import handle_watch_command
 from .app.exportdata.service import export_tags_json, export_tags_csv, import_tags
-from .app.http_api import run_server as run_http_server
+from .app.http_api import run_gui_server, run_server as run_http_server
 from .app.journal.service import journal_enabled, journal_path_for_display, undo_last
 from tagmanager import runtime
 
@@ -1136,6 +1136,24 @@ def serve(
 ):
     """Run local HTTP + JSON-RPC helper for scripts (tags list, search)."""
     run_http_server(host, port)
+
+
+@app.command("gui")
+def gui(
+    host: str = typer.Option(
+        "127.0.0.1",
+        "--host",
+        help="Bind address (default loopback; avoid exposing on untrusted networks)",
+    ),
+    port: int = typer.Option(8844, "--port", "-p", help="TCP port"),
+    no_browser: bool = typer.Option(
+        False,
+        "--no-browser",
+        help="Do not open the default browser automatically",
+    ),
+):
+    """Open the thin browser UI for tagging and search (same tag DB as the CLI)."""
+    run_gui_server(host, port, open_browser=not no_browser)
 
 
 @app.command("mcp")

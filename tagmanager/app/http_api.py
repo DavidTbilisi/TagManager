@@ -1,12 +1,15 @@
-"""Minimal local HTTP + JSON-RPC for automation (read-heavy, bind localhost)."""
+"""Minimal local HTTP + JSON-RPC for automation; thin browser GUI at ``/gui``."""
 
 from __future__ import annotations
 
 import json
+import os
+import threading
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Dict
 
+from . import gui_handlers
 from .helpers import load_tags
 from .search.service import combined_search, search_files_by_tags
 
@@ -20,15 +23,54 @@ def _json_response(handler: BaseHTTPRequestHandler, status: int, body: Any) -> N
     handler.wfile.write(raw)
 
 
+def _html_response(handler: BaseHTTPRequestHandler, status: int, body: bytes) -> None:
+    handler.send_response(status)
+    handler.send_header("Content-Type", "text/html; charset=utf-8")
+    handler.send_header("Content-Length", str(len(body)))
+    handler.end_headers()
+    handler.wfile.write(body)
+
+
+def _read_gui_html() -> bytes:
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "thin_gui.html")
+    try:
+        with open(path, "rb") as fh:
+            return fh.read()
+    except OSError:
+        return b"<!DOCTYPE html><html><body><p>GUI asset missing.</p></body></html>"
+
+
+def _read_post_json(handler: BaseHTTPRequestHandler) -> Dict[str, Any]:
+    length = int(handler.headers.get("Content-Length", "0") or 0)
+    raw = handler.rfile.read(length) if length > 0 else b"{}"
+    try:
+        data = json.loads(raw.decode("utf-8"))
+        return data if isinstance(data, dict) else {}
+    except json.JSONDecodeError:
+        return {}
+
+
 class _TagManagerHandler(BaseHTTPRequestHandler):
     server_version = "TagManagerHTTP/1.0"
 
     def log_message(self, fmt: str, *args: Any) -> None:
-        # quieter default
+        # quieter default (no path/tag logging at INFO)
         pass
 
     def do_GET(self) -> None:  # noqa: N802
         parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == "/gui":
+            _html_response(self, 200, _read_gui_html())
+            return
+        if parsed.path == "/api/v1/gui/path-tags":
+            qs = urllib.parse.parse_qs(parsed.query)
+            path = (qs.get("path") or [""])[0]
+            if not path.strip():
+                _json_response(self, 400, {"ok": False, "error": "path required", "tags": []})
+                return
+            out = gui_handlers.get_path_tags(path)
+            _json_response(self, 200 if out.get("ok") else 400, out)
+            return
         if parsed.path == "/api/v1/tags":
             _json_response(self, 200, load_tags())
             return
@@ -55,8 +97,18 @@ class _TagManagerHandler(BaseHTTPRequestHandler):
                 200,
                 {
                     "service": "tagmanager-cli",
-                    "endpoints": ["GET /api/v1/tags", "GET /api/v1/search?tags=a,b&match_all=0"],
+                    "gui": "/gui",
+                    "endpoints": [
+                        "GET /gui",
+                        "GET /api/v1/tags",
+                        "GET /api/v1/search?tags=a,b&match_all=0",
+                        "GET /api/v1/gui/path-tags?path=",
+                    ],
                     "rpc": "POST /api/v1/rpc  body: {jsonrpc, method, params, id}",
+                    "gui_post": [
+                        "POST /api/v1/gui/add-tags",
+                        "POST /api/v1/gui/remove",
+                    ],
                 },
             )
             return
@@ -64,6 +116,32 @@ class _TagManagerHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == "/api/v1/gui/add-tags":
+            body = _read_post_json(self)
+            path = str(body.get("path") or "")
+            tags = body.get("tags") or []
+            if not isinstance(tags, list):
+                tags = []
+            out = gui_handlers.post_add_tags(
+                path,
+                [str(t) for t in tags],
+                dry_run=bool(body.get("dry_run")),
+                no_auto=bool(body.get("no_auto")),
+                no_aliases=bool(body.get("no_aliases")),
+                no_content=bool(body.get("no_content")),
+            )
+            _json_response(self, 200 if out.get("ok") else 400, out)
+            return
+        if parsed.path == "/api/v1/gui/remove":
+            body = _read_post_json(self)
+            out = gui_handlers.post_remove(
+                str(body.get("path") or ""),
+                str(body.get("mode") or "path"),
+                tag=body.get("tag"),
+                dry_run=bool(body.get("dry_run")),
+            )
+            _json_response(self, 200 if out.get("ok") else 400, out)
+            return
         if parsed.path != "/api/v1/rpc":
             _json_response(self, 404, {"error": "not found"})
             return
@@ -72,7 +150,11 @@ class _TagManagerHandler(BaseHTTPRequestHandler):
         try:
             req = json.loads(raw.decode("utf-8"))
         except json.JSONDecodeError:
-            _json_response(self, 400, {"jsonrpc": "2.0", "error": {"code": -32700, "message": "parse error"}, "id": None})
+            _json_response(
+                self,
+                400,
+                {"jsonrpc": "2.0", "error": {"code": -32700, "message": "parse error"}, "id": None},
+            )
             return
         req_id = req.get("id")
         method = req.get("method")
@@ -103,7 +185,11 @@ class _TagManagerHandler(BaseHTTPRequestHandler):
             _json_response(
                 self,
                 200,
-                {"jsonrpc": "2.0", "error": {"code": -32601, "message": f"unknown method {method!r}"}, "id": req_id},
+                {
+                    "jsonrpc": "2.0",
+                    "error": {"code": -32601, "message": f"unknown method {method!r}"},
+                    "id": req_id,
+                },
             )
             return
         _json_response(self, 200, {"jsonrpc": "2.0", "result": result, "id": req_id})
@@ -112,9 +198,29 @@ class _TagManagerHandler(BaseHTTPRequestHandler):
 def run_server(host: str, port: int) -> None:
     httpd = ThreadingHTTPServer((host, port), _TagManagerHandler)
     print(f"TagManager HTTP listening on http://{host}:{port}/ (Ctrl+C to stop)")
+    print(f"Thin GUI: http://{host}:{port}/gui")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
         httpd.server_close()
+
+
+def run_gui_server(host: str, port: int, open_browser: bool = True) -> None:
+    """Serve HTTP + open ``/gui`` in the default browser unless ``open_browser`` is False."""
+    if open_browser:
+
+        def _open() -> None:
+            import webbrowser
+
+            webbrowser.open(f"http://{host}:{port}/gui")
+
+        threading.Timer(0.35, _open).start()
+    if host not in ("127.0.0.1", "localhost", "::1"):
+        print(
+            "Warning: binding outside loopback exposes the GUI on your network; "
+            "there is no authentication.",
+            flush=True,
+        )
+    run_server(host, port)

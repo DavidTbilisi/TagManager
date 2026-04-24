@@ -71,7 +71,6 @@ dev = [
 ]
 
 
-
 [project.urls]
 Homepage = "https://github.com/davidtbilisi/TagManager"
 Documentation = "https://github.com/davidtbilisi/TagManager#readme"
@@ -95,7 +94,8 @@ packages = ["tagmanager", "tagmanager.app", "tagmanager.app.add", "tagmanager.ap
            "tagmanager.app.exportdata", "tagmanager.app.journal", "tagmanager.app.doctor"]
 
 [tool.setuptools.package-data]
-tagmanager = ["*.ini", "*.json"]
+"tagmanager" = ["*.ini", "*.json"]
+"tagmanager.app" = ["thin_gui.html"]
 
 [tool.black]
 line-length = 88

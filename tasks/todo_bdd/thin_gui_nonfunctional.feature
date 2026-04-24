@@ -9,10 +9,10 @@ Feature: Thin GUI — non-functional requirements
     And documentation warns against exposing it on untrusted networks without authentication
 
   Scenario: Optional dependency boundary
-    Given a minimal TagManager install without GUI extras
+    Given a minimal TagManager install
     When I run only CLI commands
-    Then no GUI-only heavy dependencies are required for `tm` core commands
-    And GUI dependencies are grouped under an documented optional extra (e.g. `[gui]`)
+    Then no extra Python packages are required for `tm` core commands
+    And the thin GUI uses the same stdlib HTTP stack as `tm serve` (no separate GUI wheel)
 
   Scenario: Secrets and config
     Given the GUI reads configuration

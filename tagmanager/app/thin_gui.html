@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TagManager — thin GUI</title>
+  <style>
+    :root { font-family: system-ui, sans-serif; background: #0f1419; color: #e6edf3; }
+    body { max-width: 52rem; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.25rem; font-weight: 600; }
+    a { color: #58a6ff; }
+    fieldset { border: 1px solid #30363d; border-radius: 8px; margin: 1rem 0; padding: 1rem; }
+    legend { padding: 0 0.5rem; color: #8b949e; }
+    label { display: block; margin: 0.5rem 0 0.25rem; font-size: 0.85rem; color: #8b949e; }
+    input[type="text"], textarea { width: 100%; box-sizing: border-box; padding: 0.5rem;
+      background: #161b22; border: 1px solid #30363d; border-radius: 6px; color: inherit; }
+    button { margin: 0.35rem 0.35rem 0.35rem 0; padding: 0.45rem 0.9rem; border-radius: 6px;
+      border: 1px solid #30363d; background: #21262d; color: #e6edf3; cursor: pointer; }
+    button.primary { background: #238636; border-color: #238636; }
+    button.danger { background: #da3633; border-color: #f85149; }
+    .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.5rem 0; }
+    .tag { background: #21262d; border: 1px solid #30363d; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; }
+    #msg { min-height: 1.25rem; font-size: 0.9rem; margin-top: 0.5rem; }
+    .err { color: #f85149; }
+    .ok { color: #3fb950; }
+    ul.results { list-style: none; padding: 0; margin: 0.5rem 0 0; max-height: 14rem; overflow: auto; }
+    ul.results li { padding: 0.35rem 0; border-bottom: 1px solid #21262d; font-size: 0.85rem; word-break: break-all; }
+    .hint { font-size: 0.8rem; color: #8b949e; margin-top: 0.75rem; }
+  </style>
+</head>
+<body>
+  <h1>TagManager — thin GUI</h1>
+  <p>Local-only. Same tag database as the CLI. Set <code>TAGMANAGER_GUI_ROOT</code> to restrict paths.</p>
+
+  <fieldset>
+    <legend>File</legend>
+    <label for="fpath">Path (file)</label>
+    <input id="fpath" type="text" placeholder="C:\path\to\file.py or relative path" autocomplete="off" />
+    <div class="row" style="margin-top:0.5rem">
+      <label class="row"><input id="dry" type="checkbox" /> Dry-run (add / remove preview)</label>
+    </div>
+    <div class="row">
+      <button type="button" class="primary" id="btnLoad">Load tags</button>
+      <button type="button" id="btnAdd">Add tags</button>
+      <button type="button" id="btnRmTag">Remove one tag…</button>
+      <button type="button" class="danger" id="btnClear">Clear all tags on file</button>
+      <button type="button" class="danger" id="btnDrop">Remove file from DB</button>
+    </div>
+    <label for="newtags">Tags to add (comma-separated)</label>
+    <input id="newtags" type="text" placeholder="work, python" />
+    <div class="row" style="margin-top:0.35rem">
+      <label class="row"><input id="noauto" type="checkbox" /> No auto-tag</label>
+      <label class="row"><input id="noalias" type="checkbox" /> No aliases</label>
+      <label class="row"><input id="nocontent" type="checkbox" /> No content rules</label>
+    </div>
+    <div id="tags" class="tags"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Search</legend>
+    <label for="qtags">Tags (comma-separated)</label>
+    <input id="qtags" type="text" placeholder="python, docs" />
+    <div class="row">
+      <label class="row"><input id="matchall" type="checkbox" /> Match all (AND)</label>
+      <button type="button" class="primary" id="btnSearch">Search</button>
+    </div>
+    <ul id="results" class="results"></ul>
+  </fieldset>
+
+  <p id="msg"></p>
+  <p class="hint">API: <code>/api/v1/gui/path-tags</code>, <code>/api/v1/gui/add-tags</code> (POST JSON),
+    <code>/api/v1/gui/remove</code> (POST JSON). Stop server with Ctrl+C in the terminal.</p>
+
+  <script>
+(function () {
+  const msg = (t, ok) => { const el = document.getElementById("msg"); el.textContent = t || ""; el.className = ok ? "ok" : (t ? "err" : ""); };
+  const jpost = async (url, body) => {
+    const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.ok === false) throw new Error(j.error || j.message || "request failed");
+    return j;
+  };
+  const renderTags = (tags) => {
+    const el = document.getElementById("tags");
+    el.innerHTML = "";
+    (tags || []).forEach((t) => { const s = document.createElement("span"); s.className = "tag"; s.textContent = t; el.appendChild(s); });
+  };
+  document.getElementById("btnLoad").onclick = async () => {
+    msg("", true);
+    const path = document.getElementById("fpath").value.trim();
+    if (!path) { msg("Enter a path.", false); return; }
+    try {
+      const r = await fetch("/api/v1/gui/path-tags?path=" + encodeURIComponent(path));
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || "failed");
+      renderTags(j.tags);
+      document.getElementById("fpath").value = j.path;
+      msg("Loaded.", true);
+    } catch (e) { msg(String(e.message || e), false); }
+  };
+  document.getElementById("btnAdd").onclick = async () => {
+    msg("", true);
+    const path = document.getElementById("fpath").value.trim();
+    const tags = document.getElementById("newtags").value.split(",").map((s) => s.trim()).filter(Boolean);
+    const dry = document.getElementById("dry").checked;
+    if (!path) { msg("Enter a path.", false); return; }
+    try {
+      await jpost("/api/v1/gui/add-tags", {
+        path, tags, dry_run: dry,
+        no_auto: document.getElementById("noauto").checked,
+        no_aliases: document.getElementById("noalias").checked,
+        no_content: document.getElementById("nocontent").checked,
+      });
+      const r2 = await fetch("/api/v1/gui/path-tags?path=" + encodeURIComponent(path));
+      const j2 = await r2.json();
+      renderTags(j2.tags);
+      msg(dry ? "Dry-run OK (no save)." : "Tags updated.", true);
+    } catch (e) { msg(String(e.message || e), false); }
+  };
+  document.getElementById("btnRmTag").onclick = async () => {
+    const tag = prompt("Tag name to remove from this file:");
+    if (!tag) return;
+    const path = document.getElementById("fpath").value.trim();
+    const dry = document.getElementById("dry").checked;
+    try {
+      await jpost("/api/v1/gui/remove", { path, mode: "one_tag", tag: tag.trim(), dry_run: dry });
+      const r2 = await fetch("/api/v1/gui/path-tags?path=" + encodeURIComponent(path));
+      const j2 = await r2.json();
+      renderTags(j2.tags);
+      msg(dry ? "Dry-run OK." : "Tag removed.", true);
+    } catch (e) { msg(String(e.message || e), false); }
+  };
+  document.getElementById("btnClear").onclick = async () => {
+    if (!confirm("Clear all tags on this file (keeps DB entry)?")) return;
+    const path = document.getElementById("fpath").value.trim();
+    const dry = document.getElementById("dry").checked;
+    try {
+      await jpost("/api/v1/gui/remove", { path, mode: "clear_tags", dry_run: dry });
+      renderTags([]);
+      msg(dry ? "Dry-run OK." : "Cleared.", true);
+    } catch (e) { msg(String(e.message || e), false); }
+  };
+  document.getElementById("btnDrop").onclick = async () => {
+    if (!confirm("Remove this path from the tag database entirely?")) return;
+    const path = document.getElementById("fpath").value.trim();
+    const dry = document.getElementById("dry").checked;
+    try {
+      await jpost("/api/v1/gui/remove", { path, mode: "path", dry_run: dry });
+      renderTags([]);
+      msg(dry ? "Dry-run OK." : "Removed from DB.", true);
+    } catch (e) { msg(String(e.message || e), false); }
+  };
+  document.getElementById("btnSearch").onclick = async () => {
+    msg("", true);
+    const tags = document.getElementById("qtags").value.split(",").map((s) => s.trim()).filter(Boolean);
+    const ul = document.getElementById("results");
+    ul.innerHTML = "";
+    if (!tags.length) { msg("Enter tags to search.", false); return; }
+    const ma = document.getElementById("matchall").checked ? "1" : "0";
+    const q = "tags=" + encodeURIComponent(tags.join(",")) + "&match_all=" + ma;
+    try {
+      const r = await fetch("/api/v1/search?" + q);
+      const j = await r.json();
+      const files = j.files || [];
+      files.forEach((f) => { const li = document.createElement("li"); li.textContent = f; ul.appendChild(li); });
+      msg(files.length + " file(s).", true);
+    } catch (e) { msg(String(e.message || e), false); }
+  };
+})();
+  </script>
+</body>
+</html>
