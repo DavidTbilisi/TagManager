@@ -6,7 +6,7 @@ Work through in order unless dependencies say otherwise. Check off when done.
 
 - [x] **Atomic tag DB writes** — `save_tags` already writes to `*.tmp` then `os.replace` (`tagmanager/app/helpers.py`). Revisit only if we learn of edge cases (e.g. network FS).
 - [x] **`tm doctor`** — `tm doctor` / `tm doctor --json` / `--max-paths N`. See `tagmanager/app/doctor/service.py`.
-- [ ] **CI coverage gate** — `pytest` + `pytest-cov` with `--cov-fail-under` (start near current %, raise slowly).
+- [x] **CI coverage gate** — GitHub Actions `.github/workflows/tests.yml` runs `pytest --cov=tagmanager --cov-fail-under=57` on push/PR to `master`/`main`. Raise threshold slowly as coverage improves.
 
 ## Composability and automation
 
@@ -39,3 +39,8 @@ Work through in order unless dependencies say otherwise. Check off when done.
 | Date | Item | Notes |
 |------|------|-------|
 | 2026-04-21 | `tm doctor` | `run_doctor()`, tests in `tests/test_doctor_service.py` |
+| 2026-04-21 | CI coverage gate | `.github/workflows/tests.yml`, `--cov-fail-under=57` |
+
+## Suggested next pick
+
+- [ ] **`--json` on `bulk`** (or `remove`) — high script value, localized CLI change.
