@@ -538,3 +538,23 @@ def handle_config_validate() -> None:
         console.print(
             f"\n[yellow]Use 'tm config reset <key>' to fix invalid values[/yellow]"
         )
+
+
+def handle_config_tui() -> None:
+    """Interactive menu for essential settings (TTY only)."""
+    if runtime.json_mode():
+        runtime.emit_json(
+            {
+                "ok": False,
+                "error": "interactive_only",
+                "message": "tm config tui is not available with --json / TM_JSON",
+            }
+        )
+        raise typer.Exit(1)
+
+    from .tui import run_config_tui
+
+    try:
+        run_config_tui(console=console)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Interrupted.[/yellow]")

@@ -262,12 +262,36 @@ class ConfigManager:
             "advanced.debug_mode": self._defaults.debug_mode,
             "advanced.log_level": self._defaults.log_level,
             "advanced.plugin_directory": self._defaults.plugin_directory,
+            "autotag.enabled": True,
+            "autotag.content_enabled": False,
+            "autotag.content_use_defaults": True,
         }
 
         return key_mappings.get(key)
 
+    @staticmethod
+    def _coerce_autotag_content_pattern_groups(value: Any) -> Any:
+        """``None`` / missing after delete = all groups; ``[]`` = no built-in groups."""
+        if value is None:
+            return None
+        if isinstance(value, str):
+            s = value.strip()
+            if not s or s.lower() in ("null", "none"):
+                return None
+            value = json.loads(s)
+        if value is None:
+            return None
+        if not isinstance(value, (list, tuple)):
+            raise ValueError(
+                "autotag.content_pattern_groups must be a JSON list of group ids or null"
+            )
+        return [str(x) for x in value]
+
     def _validate_value(self, key: str, value: Any) -> Any:
         """Validate and convert configuration value"""
+        if key == "autotag.content_pattern_groups":
+            return self._coerce_autotag_content_pattern_groups(value)
+
         # Type validation based on key
         validations = {
             "display.emojis": bool,
@@ -297,6 +321,9 @@ class ConfigManager:
             "advanced.debug_mode": bool,
             "advanced.log_level": str,
             "advanced.plugin_directory": str,
+            "autotag.enabled": bool,
+            "autotag.content_enabled": bool,
+            "autotag.content_use_defaults": bool,
         }
 
         expected_type = validations.get(key)

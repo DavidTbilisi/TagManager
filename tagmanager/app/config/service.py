@@ -230,6 +230,11 @@ def _get_all_configuration_keys() -> List[str]:
         "advanced.debug_mode",
         "advanced.log_level",
         "advanced.plugin_directory",
+        # Autotag
+        "autotag.enabled",
+        "autotag.content_enabled",
+        "autotag.content_use_defaults",
+        "autotag.content_pattern_groups",
     ]
 
 
@@ -245,6 +250,7 @@ def _get_configuration_categories() -> List[str]:
         "backup",
         "storage",
         "advanced",
+        "autotag",
     ]
 
 
@@ -287,6 +293,13 @@ def _get_key_description(key: str) -> str:
         "advanced.debug_mode": "Enable debug mode with verbose output",
         "advanced.log_level": "Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
         "advanced.plugin_directory": "Directory for TagManager plugins",
+        "autotag.enabled": "Enable auto-tagging (extension map + optional content rules)",
+        "autotag.content_enabled": "Suggest tags from file content / name patterns",
+        "autotag.content_use_defaults": "Merge built-in content rules with autotag.content_rules",
+        "autotag.content_pattern_groups": (
+            "JSON list of built-in rule pack ids, null for all, [] for none "
+            "(see content_rule_groups.CONTENT_RULE_GROUPS)"
+        ),
     }
 
     return descriptions.get(key, "No description available")

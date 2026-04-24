@@ -310,6 +310,68 @@ class TestAutotagService(unittest.TestCase):
         self.assertIs(merged[0], DEFAULT_CONTENT_RULES[0])
         self.assertEqual(merged[-1]["contains"], "unique_xyz_123")
 
+    def test_content_pattern_groups_empty_list_skips_builtin_defaults(self):
+        from tagmanager.app.autotag.service import get_merged_content_rules
+
+        mgr = MagicMock()
+
+        def get_side(key, default=None):
+            if key == "autotag.content_rules":
+                return [{"contains": "x", "tags": ["custom"]}]
+            if key == "autotag.content_use_defaults":
+                return True
+            if key == "autotag.content_pattern_groups":
+                return []
+            return default
+
+        mgr.get.side_effect = get_side
+        with patch("tagmanager.app.autotag.service.get_config_manager", return_value=mgr):
+            merged = get_merged_content_rules()
+        self.assertEqual(len(merged), 1)
+        self.assertEqual(merged[0]["contains"], "x")
+
+    def test_content_pattern_groups_subset_python_web_only(self):
+        from tagmanager.app.autotag.content_rule_groups import CONTENT_RULE_GROUPS
+        from tagmanager.app.autotag.service import DEFAULT_CONTENT_RULES, get_merged_content_rules
+
+        mgr = MagicMock()
+
+        def get_side(key, default=None):
+            if key == "autotag.content_rules":
+                return []
+            if key == "autotag.content_use_defaults":
+                return True
+            if key == "autotag.content_pattern_groups":
+                return ["python_web"]
+            return default
+
+        mgr.get.side_effect = get_side
+        with patch("tagmanager.app.autotag.service.get_config_manager", return_value=mgr):
+            merged = get_merged_content_rules()
+        expected = [r for g in CONTENT_RULE_GROUPS if g["id"] == "python_web" for r in g["rules"]]
+        self.assertEqual(len(merged), len(expected))
+        self.assertIs(merged[0], expected[0])
+        self.assertLess(len(merged), len(DEFAULT_CONTENT_RULES))
+
+    def test_content_pattern_groups_unknown_ids_no_builtin_rules(self):
+        from tagmanager.app.autotag.service import get_merged_content_rules
+
+        mgr = MagicMock()
+
+        def get_side(key, default=None):
+            if key == "autotag.content_rules":
+                return []
+            if key == "autotag.content_use_defaults":
+                return True
+            if key == "autotag.content_pattern_groups":
+                return ["not_a_real_group_id"]
+            return default
+
+        mgr.get.side_effect = get_side
+        with patch("tagmanager.app.autotag.service.get_config_manager", return_value=mgr):
+            merged = get_merged_content_rules()
+        self.assertEqual(merged, [])
+
     def test_content_use_defaults_false_uses_only_user_rules(self):
         from tagmanager.app.autotag.service import suggest_tags_for_file
 
@@ -327,6 +389,83 @@ class TestAutotagService(unittest.TestCase):
                 tags = suggest_tags_for_file(path)
             self.assertIn("python", tags)
             self.assertNotIn("pytest", tags)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_title_pattern_rule(self):
+        from tagmanager.app.autotag.service import suggest_tags_for_file
+
+        root = tempfile.mkdtemp()
+        try:
+            path = os.path.join(root, "RFC 7231 notes.txt")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("plain notes\n")
+            mgr = self._make_mgr_content(
+                [{"title_pattern": r"(?i)\bRFC\s*\d+", "tags": ["rfc-hit"]}],
+                content_use_defaults=False,
+            )
+            with patch("tagmanager.app.autotag.service.get_config_manager", return_value=mgr):
+                tags = suggest_tags_for_file(path)
+            self.assertIn("rfc-hit", tags)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_filename_rule_when_snippet_unreadable(self):
+        from tagmanager.app.autotag.service import suggest_tags_from_content
+
+        root = tempfile.mkdtemp()
+        try:
+            path = os.path.join(root, "README.bin")
+            with open(path, "wb") as f:
+                f.write(b"\x00\x01binary")
+            mgr = self._make_mgr_content(
+                [{"filename_pattern": r"(?i)readme", "tags": ["from-filename"]}],
+                content_use_defaults=False,
+            )
+            with patch("tagmanager.app.autotag.service.get_config_manager", return_value=mgr):
+                tags = suggest_tags_from_content(path)
+            self.assertEqual(tags, ["from-filename"])
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_combined_title_and_content_requires_both(self):
+        from tagmanager.app.autotag.service import suggest_tags_for_file
+
+        root = tempfile.mkdtemp()
+        try:
+            path = os.path.join(root, "RFC 9999.txt")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("no magic token here\n")
+            rule = {
+                "title_pattern": r"(?i)\bRFC\s*\d+",
+                "contains": "MAGIC_TOKEN",
+                "tags": ["combo"],
+            }
+            mgr = self._make_mgr_content([rule], content_use_defaults=False)
+            with patch("tagmanager.app.autotag.service.get_config_manager", return_value=mgr):
+                tags = suggest_tags_for_file(path)
+            self.assertNotIn("combo", tags)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("MAGIC_TOKEN\n")
+            with patch("tagmanager.app.autotag.service.get_config_manager", return_value=mgr):
+                tags = suggest_tags_for_file(path)
+            self.assertIn("combo", tags)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_default_readme_filename_tags(self):
+        from tagmanager.app.autotag.service import suggest_tags_for_file
+
+        root = tempfile.mkdtemp()
+        try:
+            path = os.path.join(root, "README.md")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("# Hi\n")
+            mgr = self._make_mgr_content([], content_enabled=True)
+            with patch("tagmanager.app.autotag.service.get_config_manager", return_value=mgr):
+                tags = suggest_tags_for_file(path)
+            self.assertIn("readme", tags)
+            self.assertIn("docs", tags)
         finally:
             shutil.rmtree(root, ignore_errors=True)
 

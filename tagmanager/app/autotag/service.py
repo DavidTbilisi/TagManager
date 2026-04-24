@@ -4,6 +4,8 @@ from typing import Any, Dict, FrozenSet, List, Optional, Set
 
 from ...config_manager import get_config_manager
 
+from .content_rule_groups import CONTENT_RULE_GROUPS, DEFAULT_CONTENT_RULES
+
 # Directory names skipped when walking a tree for recursive auto-tagging.
 DEFAULT_RECURSIVE_SKIP_DIRS: FrozenSet[str] = frozenset(
     {
@@ -49,6 +51,10 @@ DEFAULT_EXTENSION_TAGS: Dict[str, List[str]] = {
     ".rst": ["docs"],
     ".txt": ["text"],
     ".pdf": ["pdf", "document"],
+    ".epub": ["epub", "ebook"],
+    ".mobi": ["mobi", "ebook"],
+    ".azw": ["kindle", "ebook"],
+    ".azw3": ["kindle", "ebook"],
     ".docx": ["word", "document"],
     ".xlsx": ["excel", "spreadsheet"],
     ".csv": ["csv", "data"],
@@ -79,76 +85,46 @@ DEFAULT_EXTENSION_TAGS: Dict[str, List[str]] = {
     ".tf": ["terraform", "infrastructure"],
 }
 
-# Built-in substring/regex → tags when ``autotag.content_enabled`` is true.
-# Merged with ``autotag.content_rules`` (user rules after defaults). Disable
+# Built-in rules live in ``content_rule_groups`` (grouped for ``autotag.content_pattern_groups``).
+# Each rule may use any of: ``contains`` / ``pattern`` (file prefix),
+# ``title_contains`` / ``title_pattern`` (stem without extension),
+# ``filename_contains`` / ``filename_pattern`` (basename). Present facets
+# must all match (AND). Merged with ``autotag.content_rules``. Disable
 # defaults with ``autotag.content_use_defaults``: false.
-DEFAULT_CONTENT_RULES: List[Dict[str, Any]] = [
-    # Python web
-    {"contains": "django.", "tags": ["django", "web"]},
-    {"contains": "from django", "tags": ["django", "web"]},
-    {"contains": "from flask", "tags": ["flask", "web"]},
-    {"contains": "import flask", "tags": ["flask", "web"]},
-    {"contains": "fastapi", "tags": ["fastapi", "web"]},
-    {"contains": "starlette", "tags": ["starlette", "web"]},
-    {"contains": "uvicorn", "tags": ["uvicorn", "server"]},
-    {"contains": "gunicorn", "tags": ["gunicorn", "server"]},
-    {"contains": "tornado.", "tags": ["tornado", "web"]},
-    {"contains": "sanic", "tags": ["sanic", "web"]},
-    # Data / ML
-    {"contains": "import pandas", "tags": ["pandas", "data"]},
-    {"contains": "import numpy", "tags": ["numpy", "data"]},
-    {"pattern": r"\bimport\s+torch\b", "tags": ["pytorch", "ml"]},
-    {"contains": "tensorflow", "tags": ["tensorflow", "ml"]},
-    {"contains": "sklearn", "tags": ["scikit-learn", "ml"]},
-    {"contains": "polars", "tags": ["polars", "data"]},
-    # ORM / DB tooling
-    {"contains": "sqlalchemy", "tags": ["sqlalchemy", "database"]},
-    {"contains": "pydantic", "tags": ["pydantic"]},
-    {"contains": "prisma", "tags": ["prisma", "database"]},
-    # Async / messaging
-    {"contains": "celery", "tags": ["celery", "async"]},
-    {"contains": "kafka", "tags": ["kafka", "messaging"]},
-    {"contains": "rabbitmq", "tags": ["rabbitmq", "messaging"]},
-    # Testing
-    {"contains": "pytest", "tags": ["pytest", "testing"]},
-    {"pattern": r"\bjest\b", "tags": ["jest", "testing"]},
-    {"contains": "mocha", "tags": ["mocha", "testing"]},
-    # CLI frameworks
-    {"contains": "import typer", "tags": ["typer", "cli"]},
-    {"contains": "import click", "tags": ["click", "cli"]},
-    # JS / TS UI
-    {"contains": "from \"react\"", "tags": ["react", "frontend"]},
-    {"contains": "from 'react'", "tags": ["react", "frontend"]},
-    {"contains": "from \"vue\"", "tags": ["vue", "frontend"]},
-    {"contains": "from 'vue'", "tags": ["vue", "frontend"]},
-    {"pattern": r"@angular/", "tags": ["angular", "frontend"]},
-    {"contains": "svelte", "tags": ["svelte", "frontend"]},
-    # Bundlers / lint
-    {"contains": "eslint", "tags": ["eslint", "lint"]},
-    {"contains": "webpack", "tags": ["webpack", "bundler"]},
-    {"pattern": r"\bvite\b", "tags": ["vite", "bundler"]},
-    {"contains": "rollup", "tags": ["rollup", "bundler"]},
-    # Rust ecosystem
-    {"contains": "tokio::", "tags": ["tokio", "async", "rust"]},
-    {"contains": "serde::", "tags": ["serde", "rust"]},
-    # Containers (Dockerfile)
-    {"pattern": r"(?m)^FROM\s+\S+", "tags": ["docker", "container"]},
-    # Infra
-    {"contains": "terraform", "tags": ["terraform", "infra"]},
-    {"contains": "kubernetes", "tags": ["kubernetes", "infra"]},
-    {"contains": "helm", "tags": ["helm", "kubernetes", "infra"]},
-]
+
+
+def _filtered_default_content_rules(mgr) -> List[Dict[str, Any]]:
+    """
+    Built-in rules respecting ``autotag.content_pattern_groups``.
+
+    Missing or ``null`` key → all groups. Empty list ``[]`` → no built-in rules
+    (custom ``autotag.content_rules`` still apply when ``content_use_defaults`` is true).
+    Unknown group ids in config are ignored.
+    """
+    raw = mgr.get("autotag.content_pattern_groups")
+    if raw is None:
+        return list(DEFAULT_CONTENT_RULES)
+    if not isinstance(raw, list):
+        return list(DEFAULT_CONTENT_RULES)
+    allowed = frozenset(str(x) for x in raw)
+    if not allowed:
+        return []
+    out: List[Dict[str, Any]] = []
+    for group in CONTENT_RULE_GROUPS:
+        if group["id"] in allowed:
+            out.extend(group["rules"])
+    return out
 
 
 def get_merged_content_rules() -> List[Dict[str, Any]]:
-    """Defaults plus ``autotag.content_rules``, unless ``content_use_defaults`` is false."""
+    """Defaults (optionally filtered by group) plus ``autotag.content_rules``."""
     mgr = get_config_manager()
     extra = mgr.get("autotag.content_rules") or []
     if not isinstance(extra, list):
         extra = []
     if not mgr.get("autotag.content_use_defaults", True):
         return list(extra)
-    return list(DEFAULT_CONTENT_RULES) + list(extra)
+    return _filtered_default_content_rules(mgr) + list(extra)
 
 
 def get_recursive_skip_dir_names() -> FrozenSet[str]:
@@ -246,9 +222,71 @@ def _read_file_snippet(file_path: str, max_bytes: int) -> Optional[str]:
         return raw.decode("latin-1", errors="replace")
 
 
+def _facet_match(
+    text: Optional[str],
+    rule: Dict[str, Any],
+    pattern_key: str,
+    contains_key: str,
+) -> bool:
+    """
+    Match one facet (content, title, or filename). No keys for this facet → True.
+    Keys present but *text* is None (e.g. unreadable/binary snippet) → False.
+    """
+    pat_raw = rule.get(pattern_key)
+    has_pat = isinstance(pat_raw, str) and pat_raw.strip()
+    con_raw = rule.get(contains_key)
+    has_con = isinstance(con_raw, str) and con_raw.strip()
+    if not has_pat and not has_con:
+        return True
+    if text is None:
+        return False
+    if has_pat:
+        try:
+            flags = 0 if rule.get("case_sensitive") else re.IGNORECASE
+            return bool(re.search(pat_raw, text, flags))
+        except re.error:
+            return False
+    if rule.get("case_sensitive"):
+        return con_raw in text
+    return con_raw.lower() in text.lower()
+
+
+def _rule_has_match_clause(rule: Dict[str, Any]) -> bool:
+    for key in (
+        "pattern",
+        "contains",
+        "title_pattern",
+        "title_contains",
+        "filename_pattern",
+        "filename_contains",
+    ):
+        v = rule.get(key)
+        if isinstance(v, str) and v.strip():
+            return True
+    return False
+
+
+def _rule_matches_snippet_and_names(
+    rule: Dict[str, Any],
+    snippet: Optional[str],
+    title: str,
+    filename: str,
+) -> bool:
+    """All present facets (content / title / filename) must match."""
+    if not _rule_has_match_clause(rule):
+        return False
+    if not _facet_match(snippet, rule, "pattern", "contains"):
+        return False
+    if not _facet_match(title, rule, "title_pattern", "title_contains"):
+        return False
+    if not _facet_match(filename, rule, "filename_pattern", "filename_contains"):
+        return False
+    return True
+
+
 def suggest_tags_from_content(file_path: str) -> List[str]:
     """
-    Apply built-in and configured content rules to a file prefix.
+    Apply built-in and configured rules to file prefix, basename, and stem.
 
     Opt-in via ``autotag.content_enabled``. Built-ins are
     ``DEFAULT_CONTENT_RULES`` unless ``autotag.content_use_defaults`` is false.
@@ -264,10 +302,9 @@ def suggest_tags_from_content(file_path: str) -> List[str]:
 
     max_bytes = int(mgr.get("autotag.content_max_bytes", 65536) or 65536)
     snippet = _read_file_snippet(file_path, max_bytes)
-    if snippet is None:
-        return []
+    basename = os.path.basename(file_path)
+    title = os.path.splitext(basename)[0]
 
-    hay_lower = snippet.lower()
     out: List[str] = []
 
     for rule in rules:
@@ -280,25 +317,9 @@ def suggest_tags_from_content(file_path: str) -> List[str]:
         if not tag_list:
             continue
 
-        pattern = rule.get("pattern")
-        if isinstance(pattern, str) and pattern.strip():
-            try:
-                flags = 0 if rule.get("case_sensitive") else re.IGNORECASE
-                if re.search(pattern, snippet, flags):
-                    out.extend(tag_list)
-            except re.error:
-                continue
+        if not _rule_matches_snippet_and_names(rule, snippet, title, basename):
             continue
-
-        needle = rule.get("contains")
-        if not isinstance(needle, str) or not needle.strip():
-            continue
-        if rule.get("case_sensitive"):
-            if needle in snippet:
-                out.extend(tag_list)
-        else:
-            if needle.lower() in hay_lower:
-                out.extend(tag_list)
+        out.extend(tag_list)
 
     seen: Set[str] = set()
     deduped: List[str] = []
@@ -311,8 +332,8 @@ def suggest_tags_from_content(file_path: str) -> List[str]:
 
 def suggest_tags_for_file(file_path: str, *, include_content: bool = True) -> List[str]:
     """
-    Suggested tags: file extension map, optionally plus content rules
-    (``DEFAULT_CONTENT_RULES`` merged with ``autotag.content_rules`` when
+    Suggested tags: file extension map, optionally plus content/title/filename
+    rules (``DEFAULT_CONTENT_RULES`` merged with ``autotag.content_rules`` when
     ``autotag.content_enabled``). Disabled when ``autotag.enabled`` is false.
     """
     mgr = get_config_manager()

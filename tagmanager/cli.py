@@ -62,6 +62,7 @@ from .app.config.handler import (
     handle_config_import,
     handle_config_categories,
     handle_config_validate,
+    handle_config_tui,
 )
 from .app.alias.service import (
     get_aliases,
@@ -859,6 +860,12 @@ def config_categories():
 def config_validate():
     """Validate current configuration"""
     handle_config_validate()
+
+
+@config_app.command("tui")
+def config_tui():
+    """Edit essential settings in an interactive menu (requires a terminal)"""
+    handle_config_tui()
 
 
 # ---------------------------------------------------------------------------
