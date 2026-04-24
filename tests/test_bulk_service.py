@@ -378,6 +378,33 @@ class TestBulkService(unittest.TestCase):
         self.assertIn("new-tag", file_tags)
         self.assertNotIn("Old-Tag", file_tags)
 
+    def test_bulk_retag_journal_undo(self):
+        """bulk_retag records journal inverse when TAGMANAGER_JOURNAL=1."""
+        from tagmanager.app.bulk.service import bulk_retag
+        from tagmanager.app.helpers import load_tags, save_tags
+        from tagmanager.app.journal.service import undo_last
+
+        py_file = [f for f in self.test_files if f.endswith(".py")][0]
+        np = os.path.normpath(py_file)
+        save_tags({np: ["old-tag", "keep"]})
+
+        with patch.dict(os.environ, {"TAGMANAGER_JOURNAL": "1"}):
+            result = bulk_retag("old-tag", "renamed")
+        self.assertTrue(result["success"])
+
+        tags = load_tags()
+        self.assertIn("renamed", tags[np])
+        self.assertNotIn("old-tag", tags[np])
+
+        with patch.dict(os.environ, {"TAGMANAGER_JOURNAL": "1"}):
+            ok, msg, n = undo_last(1)
+        self.assertTrue(ok, msg)
+        self.assertEqual(n, 1)
+
+        tags2 = load_tags()
+        self.assertIn("old-tag", tags2[np])
+        self.assertNotIn("renamed", tags2[np])
+
     # =================================================================
     # Tests for bulk_remove_tag_from_files
     # =================================================================

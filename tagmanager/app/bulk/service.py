@@ -239,6 +239,10 @@ def bulk_retag(from_tag: str, to_tag: str, dry_run: bool = False) -> Dict:
             "dry_run": dry_run,
         }
 
+    before_snap = {
+        fp: list(data[fp]) for fp in files_to_update if fp in data
+    }
+
     if dry_run:
         return {
             "success": True,
@@ -281,6 +285,14 @@ def bulk_retag(from_tag: str, to_tag: str, dry_run: bool = False) -> Dict:
                 "files_found": files_to_update,
                 "dry_run": False,
             }
+        try:
+            from ..journal.service import append_entry
+
+            inv = {fp: before_snap[fp] for fp in files_to_update if fp in before_snap}
+            if inv:
+                append_entry("bulk_retag", {"paths": inv})
+        except Exception:
+            pass
 
     return {
         "success": True,
