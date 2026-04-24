@@ -303,15 +303,39 @@ def remove(
     """Remove a file from tags, clean invalid paths, or clear all tags from a file"""
     if all_tags and path:
         result = remove_all_tags(path)
-        typer.echo(result["message"])
+        if runtime.json_mode():
+            runtime.emit_json(result)
+        else:
+            typer.echo(result["message"])
         if not result["success"]:
             raise typer.Exit(1)
     elif path:
-        remove_path(path)
+        result = remove_path(path)
+        if runtime.json_mode():
+            runtime.emit_json(result)
+        else:
+            typer.echo(result["message"])
+        if not result["success"]:
+            raise typer.Exit(1)
     elif invalid:
-        remove_invalid_paths()
+        result = remove_invalid_paths()
+        if runtime.json_mode():
+            runtime.emit_json(result)
+        else:
+            typer.echo(result["message"])
+        if not result.get("success", True):
+            raise typer.Exit(1)
     else:
-        typer.echo("No arguments provided")
+        if runtime.json_mode():
+            runtime.emit_json(
+                {
+                    "success": False,
+                    "message": "No arguments provided. Use --path, --invalid, or --all-tags with --path.",
+                    "operation": None,
+                }
+            )
+        else:
+            typer.echo("No arguments provided")
 
 
 @app.command("ls")

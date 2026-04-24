@@ -1,3 +1,5 @@
+from typing import Any, Dict, List
+
 from ..helpers import load_tags, save_tags
 import os
 
@@ -24,41 +26,56 @@ def remove_all_tags(file_path: str) -> dict:
     }
 
 
-def remove_path(file_path: str) -> None:
+def remove_path(file_path: str) -> Dict[str, Any]:
     """
-    Remove a file path from the tags file
-    :param file_path: that you want to remove
-    :return: None
-    """
+    Remove a file path from the tags file.
 
+    :return: ``success``, ``message``, ``path``, and ``removed_tags`` when removed.
+    """
     path = os.path.normpath(os.path.abspath(file_path))
     tags = load_tags()
     popped_tags = tags.pop(path, None)
     if popped_tags is None:
-        print(f"Could not find {path} in TagManager")
-        return None
+        return {
+            "success": False,
+            "path": path,
+            "removed_tags": None,
+            "message": f"Could not find {path} in TagManager",
+        }
     save_tags(tags)
-    print(f"Removed {path} from TagManager")
+    return {
+        "success": True,
+        "path": path,
+        "removed_tags": popped_tags,
+        "message": f"Removed {path} from TagManager",
+    }
 
-    return None
 
-
-def remove_invalid_paths() -> None:
+def remove_invalid_paths() -> Dict[str, Any]:
     """
-    Remove invalid paths from the tags file
-    :return: None
+    Remove paths from the tag DB that do not exist on disk.
+
+    :return: ``success``, ``message``, ``removed_paths``, ``count``.
     """
-    to_remove = []
+    to_remove: List[str] = []
     tags = load_tags()
     for file_path in list(tags.keys()):
         if not os.path.exists(file_path):
             to_remove.append(file_path)
             tags.pop(file_path, None)
-            print(f"Removed {file_path} from TagManager")
 
     if len(to_remove) == 0:
-        print("No invalid paths found")
-        return None
+        return {
+            "success": True,
+            "message": "No invalid paths found",
+            "removed_paths": [],
+            "count": 0,
+        }
 
     save_tags(tags)
-    return None
+    return {
+        "success": True,
+        "message": f"Removed {len(to_remove)} invalid path(s) from TagManager",
+        "removed_paths": to_remove,
+        "count": len(to_remove),
+    }
