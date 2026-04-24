@@ -35,6 +35,7 @@ def _build_mcp():
 
     from .app.add.service import add_tags
     from .app.helpers import load_tags
+    from .app.remove.service import remove_path
     from .app.search.service import combined_search, search_files_by_tags
     from .app.tags.service import list_all_tags, search_files_by_tag
 
@@ -89,6 +90,15 @@ def _build_mcp():
     def search_files_by_single_tag(tag: str, exact: bool = False) -> List[str]:
         """Find files that have a given tag (substring match unless exact=true)."""
         return list(search_files_by_tag(tag.strip(), exact=exact))
+
+    @mcp.tool()
+    def remove_path_from_tag_database(file_path: str) -> str:
+        """
+        Remove a file path from the tag database entirely (discards stored tags).
+        Use remove_all_tags via CLI if you only want to clear tags but keep the path.
+        """
+        r = remove_path(file_path)
+        return json.dumps(r, ensure_ascii=False)
 
     @mcp.tool()
     def add_tags_to_file(

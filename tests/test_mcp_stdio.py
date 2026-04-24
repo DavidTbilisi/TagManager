@@ -64,6 +64,7 @@ class TestMcpServerBuild(unittest.TestCase):
             self.assertIn("list_distinct_tags", names)
             self.assertIn("search_files_by_tag_list", names)
             self.assertIn("add_tags_to_file", names)
+            self.assertIn("remove_path_from_tag_database", names)
 
         asyncio.run(_run())
 
