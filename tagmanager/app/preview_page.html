@@ -27,11 +27,37 @@
     pre { background: #161b22; border: 1px solid #30363d; padding: 0.75rem; border-radius: 6px; overflow: auto; font-size: 0.8rem; }
     .hint { font-size: 0.8rem; color: #8b949e; margin-top: 0.75rem; }
     .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    table.db { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.5rem; }
+    table.db th, table.db td { border: 1px solid #30363d; padding: 0.4rem 0.5rem; vertical-align: top; text-align: left; }
+    table.db th { background: #161b22; color: #8b949e; font-weight: 600; }
+    table.db td.path { word-break: break-all; max-width: 22rem; color: #c9d1d9; }
+    table.db tr.filtered-out { display: none; }
+    #dbWrap { max-height: 22rem; overflow: auto; border: 1px solid #30363d; border-radius: 6px; }
+    .mono { font-family: ui-monospace, monospace; font-size: 0.8rem; }
   </style>
 </head>
 <body>
   <h1>TagManager — preview</h1>
   <p>Dry-run only: see <strong>what would change</strong> before writing. For live edits use <a href="/gui">/gui</a>.</p>
+
+  <fieldset>
+    <legend>Saved tag database (read-only)</legend>
+    <p class="hint" style="margin-top:0">Everything currently stored in your tag file: each path and its tags. Filter is client-side only.</p>
+    <div class="row">
+      <button type="button" id="btnRefreshDb" class="primary">Refresh from server</button>
+      <span id="dbStats" class="mono"></span>
+    </div>
+    <label for="dbFilter">Filter (path or tag text)</label>
+    <input id="dbFilter" type="text" placeholder="e.g. .py or work" autocomplete="off" />
+    <div id="dbWrap">
+      <table class="db" id="dbTable">
+        <thead><tr><th>Path</th><th>Tags</th></tr></thead>
+        <tbody id="dbBody"></tbody>
+      </table>
+    </div>
+    <label style="margin-top:0.75rem">All distinct tag names</label>
+    <div id="allTags" class="tags"></div>
+  </fieldset>
 
   <fieldset>
     <legend>Preview add tags</legend>
@@ -73,6 +99,72 @@
   <script>
 (function () {
   const msg = (t, ok) => { const el = document.getElementById("msg"); el.textContent = t || ""; el.className = ok ? "ok" : (t ? "err" : ""); };
+  let _dbRows = [];
+
+  const renderDbFilter = () => {
+    const q = (document.getElementById("dbFilter").value || "").trim().toLowerCase();
+    _dbRows.forEach(({ tr, path, tags }) => {
+      const hay = (path + " " + (tags || []).join(" ")).toLowerCase();
+      tr.className = !q || hay.includes(q) ? "" : "filtered-out";
+    });
+  };
+
+  const loadFullDatabase = async () => {
+    msg("", true);
+    const body = document.getElementById("dbBody");
+    const stats = document.getElementById("dbStats");
+    const allTagsEl = document.getElementById("allTags");
+    body.innerHTML = "";
+    allTagsEl.innerHTML = "";
+    stats.textContent = "Loading…";
+    _dbRows = [];
+    try {
+      const r = await fetch("/api/v1/tags");
+      const data = await r.json();
+      if (!r.ok || typeof data !== "object" || data === null) throw new Error("invalid response");
+      const paths = Object.keys(data).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+      const tagSet = new Set();
+      paths.forEach((p) => {
+        const tags = Array.isArray(data[p]) ? data[p] : [];
+        tags.forEach((t) => tagSet.add(String(t)));
+        const tr = document.createElement("tr");
+        const td1 = document.createElement("td");
+        td1.className = "path";
+        td1.textContent = p;
+        const td2 = document.createElement("td");
+        const chipRow = document.createElement("div");
+        chipRow.className = "tags";
+        tags.forEach((t) => {
+          const s = document.createElement("span");
+          s.className = "tag";
+          s.textContent = t;
+          chipRow.appendChild(s);
+        });
+        td2.appendChild(chipRow);
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        body.appendChild(tr);
+        _dbRows.push({ tr, path: p, tags });
+      });
+      const sortedTags = Array.from(tagSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+      sortedTags.forEach((t) => {
+        const s = document.createElement("span");
+        s.className = "tag";
+        s.textContent = t;
+        allTagsEl.appendChild(s);
+      });
+      stats.textContent = paths.length + " path(s) · " + sortedTags.length + " distinct tag(s)";
+      renderDbFilter();
+      msg("Database snapshot loaded (read-only).", true);
+    } catch (e) {
+      stats.textContent = "";
+      msg(String(e.message || e), false);
+    }
+  };
+
+  document.getElementById("btnRefreshDb").onclick = () => { loadFullDatabase(); };
+  document.getElementById("dbFilter").addEventListener("input", renderDbFilter);
+
   const jpost = async (url, body) => {
     const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
@@ -150,6 +242,8 @@
       msg(String(e.message || e), false);
     }
   };
+
+  loadFullDatabase();
 })();
   </script>
 </body>

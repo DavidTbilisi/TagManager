@@ -58,6 +58,8 @@ class TestThinGuiHttp(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn(b"<html", body.lower())
         self.assertIn(b"preview", body.lower())
+        self.assertIn(b"Saved tag database", body)
+        self.assertIn(b"/api/v1/tags", body)
 
     def test_path_tags_json(self):
         self._start()

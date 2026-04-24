@@ -249,6 +249,7 @@ The web UI is a **single page** served over HTTP on your machine. It uses the **
 
 A second page on the **same server**: **`http://127.0.0.1:8844/preview`** (adjust host/port if you changed them). Nothing on `/preview` writes the database by itself—it always calls the API with **`dry_run: true`**.
 
+- **Saved tag database** — on load (and **Refresh from server**), fetches **`GET /api/v1/tags`**: a **sortable table** of every saved path and its tags, plus a chip list of **all distinct tag names**, with a client-side **filter** (matches path or tag text).
 - **Preview add tags** — enter a file path, optional tags to add, and the same **no auto-tag / no aliases / no content** toggles as `/gui`. **Preview merge** shows **before** and **after** tag sets (after includes extension auto-tags and alias resolution when those options are off).
 - **Preview remove / clear / drop** — pick a mode and (for “one tag”) a tag name; the server returns a JSON payload describing what would happen.
 
