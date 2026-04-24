@@ -94,6 +94,8 @@ See [MCP clients](#mcp-cursor-claude-chatgpt-and-codex) for wiring it into your 
 
 CI and hook examples (GitHub Actions, `uvx`, sample pre-commit): [tasks/recipes/README.md](tasks/recipes/README.md).
 
+**PyPI releases:** a `v*` tag triggers [`.github/workflows/release.yml`](.github/workflows/release.yml) (build + publish). After bumping version and `release_notes.md`, run **`./publish.sh release`** ([`gh`](https://cli.github.com/) under the hood) — see [docs/RELEASE_CI.md](docs/RELEASE_CI.md).
+
 ---
 
 ## MCP: Cursor, Claude, ChatGPT, and Codex

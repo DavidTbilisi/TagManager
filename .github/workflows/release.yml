@@ -1,0 +1,39 @@
+# Build sdist/wheel and publish to PyPI when a version tag is pushed (e.g. v1.7.0).
+#
+# Cut a release from the default branch (after version bump is merged): ./publish.sh release
+# (or: gh release create v1.8.0 --title "TagManager v1.8.0" --notes-file release_notes.md)
+#
+# Auth: PyPI trusted publishing (OIDC). Configure PyPI → project → Publishing → GitHub
+# for this repo and workflow file `release.yml`. Requires `id-token: write` below.
+#
+# Fallback: add `with: password: ${{ secrets.PYPI_API_TOKEN }}` to the publish step.
+
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build
+        run: pip install --upgrade pip build
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
