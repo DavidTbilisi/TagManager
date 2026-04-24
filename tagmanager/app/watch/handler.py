@@ -1,10 +1,13 @@
+import json
 import os
 import time
 import threading
 from collections import deque
-from typing import Deque, List, Optional
+from typing import Any, Deque, Dict, List, Optional
 
 import typer
+
+from tagmanager import runtime
 
 from .service import WatchEvent, start_watching, WATCHDOG_AVAILABLE
 
@@ -25,6 +28,27 @@ def _format_path(path: str, watch_root: str) -> str:
         return rel if len(rel) < len(path) else path
     except ValueError:
         return path
+
+
+def _watch_event_to_dict(ev: WatchEvent, watch_root: str) -> Dict[str, Any]:
+    """Structured event for ``tm --json watch`` (one JSON object per line)."""
+    d: Dict[str, Any] = {
+        "event": "watch_file",
+        "kind": ev.kind,
+        "path": _format_path(ev.path, watch_root),
+        "success": ev.success,
+        "tags": list(ev.tags),
+        "timestamp": ev.timestamp.isoformat(timespec="seconds"),
+    }
+    if ev.dest:
+        d["dest"] = _format_path(ev.dest, watch_root)
+    if ev.reason:
+        d["reason"] = ev.reason
+    return d
+
+
+def _emit_watch_jsonl(obj: Dict[str, Any]) -> None:
+    print(json.dumps(obj, ensure_ascii=False), flush=True)
 
 
 def _render_event_line(ev: WatchEvent, watch_root: str) -> str:
@@ -175,6 +199,53 @@ def _fallback_plain(
         typer.echo(f"\nWatch stopped. {total[0]} events processed.")
 
 
+def _run_watch_jsonl(
+    watch_path: str,
+    recursive: bool,
+    extra_tags: List[str],
+    preset_name: Optional[str],
+    auto_tag: bool,
+    content_tag: bool,
+    on_delete_clean: bool,
+    ignore_patterns: List[str],
+) -> None:
+    """Stream one JSON object per line (NDJSON) on stdout; no Rich UI."""
+    total = [0]
+
+    def on_event(ev: WatchEvent) -> None:
+        total[0] += 1
+        _emit_watch_jsonl(_watch_event_to_dict(ev, watch_path))
+
+    observer = start_watching(
+        path=watch_path,
+        recursive=recursive,
+        extra_tags=extra_tags,
+        preset_name=preset_name,
+        auto_tag=auto_tag,
+        content_tag=content_tag,
+        on_delete_clean=on_delete_clean,
+        ignore_patterns=ignore_patterns,
+        on_event=on_event,
+    )
+
+    try:
+        while observer.is_alive():
+            time.sleep(0.25)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        observer.stop()
+        observer.join()
+        _emit_watch_jsonl(
+            {
+                "event": "watch_stopped",
+                "ok": True,
+                "events_processed": total[0],
+                "watch_path": watch_path,
+            }
+        )
+
+
 def handle_watch_command(
     watch_path: str,
     recursive: bool,
@@ -187,19 +258,65 @@ def handle_watch_command(
     plain: bool,
 ) -> None:
     if not WATCHDOG_AVAILABLE:
-        typer.echo(
-            "Error: watchdog is not installed.\n"
-            "Install it with:\n"
-            "  pip install watchdog\n"
-            "  or: pip install tagmanager-cli[watch]",
-            err=True,
-        )
+        if runtime.json_mode():
+            runtime.emit_json(
+                {
+                    "ok": False,
+                    "error": "watchdog_not_installed",
+                    "message": "Install watchdog: pip install watchdog or pip install tagmanager-cli[watch]",
+                }
+            )
+        else:
+            typer.echo(
+                "Error: watchdog is not installed.\n"
+                "Install it with:\n"
+                "  pip install watchdog\n"
+                "  or: pip install tagmanager-cli[watch]",
+                err=True,
+            )
         raise typer.Exit(1)
 
     abs_path = os.path.abspath(watch_path)
     if not os.path.isdir(abs_path):
-        typer.echo(f"Error: '{watch_path}' is not a directory.", err=True)
+        if runtime.json_mode():
+            runtime.emit_json(
+                {
+                    "ok": False,
+                    "error": "not_a_directory",
+                    "path": watch_path,
+                    "message": f"'{watch_path}' is not a directory.",
+                }
+            )
+        else:
+            typer.echo(f"Error: '{watch_path}' is not a directory.", err=True)
         raise typer.Exit(1)
+
+    if runtime.json_mode():
+        _emit_watch_jsonl(
+            {
+                "event": "watch_started",
+                "ok": True,
+                "watch_path": abs_path,
+                "recursive": recursive,
+                "extra_tags": list(extra_tags),
+                "preset": preset_name,
+                "auto_tag": auto_tag,
+                "content_tag": content_tag,
+                "clean_on_delete": on_delete_clean,
+                "ignore_patterns": list(ignore_patterns),
+            }
+        )
+        _run_watch_jsonl(
+            watch_path=abs_path,
+            recursive=recursive,
+            extra_tags=extra_tags,
+            preset_name=preset_name,
+            auto_tag=auto_tag,
+            content_tag=content_tag,
+            on_delete_clean=on_delete_clean,
+            ignore_patterns=ignore_patterns,
+        )
+        return
 
     typer.echo(f"Watching: {abs_path}")
     typer.echo(
