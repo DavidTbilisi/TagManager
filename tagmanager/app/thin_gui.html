@@ -31,7 +31,7 @@
 </head>
 <body>
   <h1>TagManager — thin GUI</h1>
-  <p>Local-only. Same tag database as the CLI. Set <code>TAGMANAGER_GUI_ROOT</code> to restrict paths.</p>
+  <p>Local-only; same tag database as <code>tm</code> on this machine. Enter a <strong>file</strong> path → <strong>Load tags</strong> → add or remove tags, or use <strong>Search</strong> for tag-based file lists. Check <strong>Dry-run</strong> to preview adds/removes without saving. Stop the app with <strong>Ctrl+C</strong> in the terminal where you ran <code>tm gui</code>. Set <code>TAGMANAGER_GUI_ROOT</code> to an absolute folder to only allow paths under that tree.</p>
 
   <fieldset>
     <legend>File</legend>
@@ -69,8 +69,9 @@
   </fieldset>
 
   <p id="msg"></p>
-  <p class="hint">API: <code>/api/v1/gui/path-tags</code>, <code>/api/v1/gui/add-tags</code> (POST JSON),
-    <code>/api/v1/gui/remove</code> (POST JSON). Stop server with Ctrl+C in the terminal.</p>
+  <p class="hint">API: <code>GET /api/v1/gui/path-tags?path=</code> (or <code>/api/v1/files/tags?path=</code>),
+    <code>POST /api/v1/gui/add-tags</code>, <code>POST /api/v1/gui/remove</code>, <code>GET /api/v1/search?tags=…&amp;match_all=0|1</code>.
+    Open <code>/</code> or <code>/api</code> for a JSON route list. Stop server with Ctrl+C in the terminal.</p>
 
   <script>
 (function () {

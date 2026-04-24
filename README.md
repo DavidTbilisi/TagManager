@@ -236,10 +236,50 @@ tm gui
 
 ### Thin browser GUI (`tm gui`)
 
-- Serves a small HTML UI at **`/gui`** on the same stdlib HTTP stack as **`tm serve`** (default **`127.0.0.1:8844`** for `tm gui`). For JSON only (no `/gui`), use **`tm serve`** (default port **8765**); **`tm server`** is the same command.
-- Mutations use **`add_tags`**, **`remove_path`**, **`remove_all_tags`**, and the same **`load_tags` / `save_tags`** as the CLI (see `tagmanager/app/gui_handlers.py`).
-- Set **`TAGMANAGER_GUI_ROOT`** to an absolute directory to reject paths outside that tree (optional safety rail).
-- Do not bind on **`0.0.0.0`** on untrusted networks; there is **no authentication**.
+The web UI is a **single page** served over HTTP on your machine. It uses the **same tag file** as `tm add`, `tm search`, etc.—nothing is stored in the cloud.
+
+#### Start and stop
+
+1. Run **`tm gui`** in a terminal. By default the server listens on **`127.0.0.1:8844`**, your browser opens to **`http://127.0.0.1:8844/gui`**, and the UI loads.
+2. **Stop** the server with **Ctrl+C** in that terminal (the process exits; refresh the tab afterward and it will fail to connect—that is expected).
+3. **Without auto-opening a browser:** `tm gui --no-browser` (same host/port; open `/gui` yourself).
+4. **Custom bind or port:** `tm gui --host 127.0.0.1 --port 8844` (defaults are loopback + **8844**).
+
+**JSON-only HTTP** (no HTML page): **`tm serve`** or **`tm server`** on port **8765** by default—the same API routes work (`/api/v1/...`). Use that when you only need scripts or `curl`, not the browser form.
+
+#### Page layout: “File” and “Search”
+
+**File** — one path at a time (a file path your OS can resolve):
+
+| Control | What it does |
+|--------|----------------|
+| **Path** | Absolute or relative path to the file. After **Load tags**, the server may echo back a **normalized absolute path**. |
+| **Dry-run** | When checked, **Add tags** and remove actions **do not write** the database; you get a preview-style success message. Uncheck to apply changes. |
+| **Load tags** | `GET` current tags for that path (same data as `tm path` for that file). |
+| **Tags to add** | Comma-separated list, same idea as `tm add … --tags a,b`. Then **Add tags**. |
+| **No auto-tag / No aliases / No content rules** | Match `tm add`’s `--no-auto`, `--no-aliases`, and skipping content-based rules—useful when you want **only** the tags you typed. |
+| **Remove one tag…** | Prompts for a tag name; removes that tag from the file (like removing one chip). |
+| **Clear all tags on file** | Empties the tag list but **keeps** the path in the database (`tm remove --path … --all-tags`). Confirms before running. |
+| **Remove file from DB** | Drops the path entirely from the tag store (`tm remove --path …` without `--all-tags`). Confirms before running—this is stronger than “clear tags”. |
+
+**Search** — same tag logic as the CLI for a multi-tag query:
+
+| Control | What it does |
+|--------|----------------|
+| **Tags** | Comma-separated tag names to search for. |
+| **Match all (AND)** | Checked: file must have **every** listed tag. Unchecked: file needs **any** listed tag (**OR**), same spirit as `tm search` without `--match-all`. |
+| **Search** | Lists matching file paths below the button (paths may be truncated per your `tm ls` / list display config). |
+
+Status text (green/red) under the form shows the last result or error. If **`TAGMANAGER_GUI_ROOT`** is set to an absolute directory, paths **outside** that tree are rejected for GUI operations (safety rail for shared machines).
+
+#### Security (read this once)
+
+- Default binding is **loopback only**. There is **no login**; anyone who can open the URL on your machine can use the UI if they reach the port.
+- **Do not** use `--host 0.0.0.0` on untrusted networks unless you understand you are exposing the API.
+
+#### Implementation note
+
+Mutations go through **`tagmanager/app/gui_handlers.py`** (same **`load_tags` / `save_tags`** stack as the CLI). REST-style discovery: open **`http://127.0.0.1:8844/`** or **`…/api`** while the server is running for a short JSON list of routes (includes **`GET /api/v1/files/tags?path=`** for scripts).
 
 ---
 
