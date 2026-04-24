@@ -75,17 +75,17 @@ class TestVisualizationService(unittest.TestCase):
         }
         
         tree = create_tree_structure(files_data)
-        
-        # Check root structure (Windows creates \ root)
+
         if "\\" in tree:
             root = tree["\\"]
+        elif "/" in tree:
+            root = tree["/"]
         else:
-            root = tree
-        
+            root = {"children": tree}
+
         self.assertIn("project", root["children"])
         self.assertIn("docs", root["children"])
-        
-        # Check project directory
+
         project_node = root["children"]["project"]
         self.assertEqual(project_node["type"], "directory")
         self.assertIn("main.py", project_node["children"])
@@ -109,17 +109,16 @@ class TestVisualizationService(unittest.TestCase):
         
         files_data = {"/single.py": ["python"]}
         tree = create_tree_structure(files_data)
-        
-        # Handle Windows root structure
+
         if "\\" in tree:
-            root = tree["\\"]
-            self.assertIn("single.py", root["children"])
-            self.assertEqual(root["children"]["single.py"]["type"], "file")
-            self.assertEqual(root["children"]["single.py"]["tags"], ["python"])
+            root_children = tree["\\"]["children"]
+        elif "/" in tree:
+            root_children = tree["/"]["children"]
         else:
-            self.assertIn("single.py", tree)
-            self.assertEqual(tree["single.py"]["type"], "file")
-            self.assertEqual(tree["single.py"]["tags"], ["python"])
+            root_children = tree
+        self.assertIn("single.py", root_children)
+        self.assertEqual(root_children["single.py"]["type"], "file")
+        self.assertEqual(root_children["single.py"]["tags"], ["python"])
 
     def test_create_tree_structure_nested_paths(self):
         """Test tree structure with deeply nested paths"""
@@ -131,14 +130,14 @@ class TestVisualizationService(unittest.TestCase):
         }
         
         tree = create_tree_structure(files_data)
-        
-        # Handle Windows root structure
+
         if "\\" in tree:
             root = tree["\\"]
+        elif "/" in tree:
+            root = tree["/"]
         else:
-            root = tree
-        
-        # Navigate through the tree
+            root = {"children": tree}
+
         self.assertIn("a", root["children"])
         a_node = root["children"]["a"]
         self.assertEqual(a_node["type"], "directory")

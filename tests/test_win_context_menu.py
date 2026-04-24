@@ -36,6 +36,7 @@ class TestWinContextMenu(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("only supported on windows", msg.lower())
 
+    @unittest.skipUnless(sys.platform == "win32", "winreg only available on Windows")
     def test_cascade_parent_registry_state_reads_via_winreg_mock(self):
         """Exercise ``cascade_parent_registry_state_for_tests`` without HKCU writes."""
         import winreg
@@ -57,6 +58,7 @@ class TestWinContextMenu(unittest.TestCase):
         self.assertEqual(d, "")
         self.assertEqual(m, "TagManager")
 
+    @unittest.skipUnless(sys.platform == "win32", "winreg only available on Windows")
     def test_cascade_parent_registry_state_oserror_returns_none(self):
         import winreg
 
@@ -72,6 +74,7 @@ class TestWinContextMenu(unittest.TestCase):
         self.assertIsNone(d)
         self.assertIsNone(m)
 
+    @unittest.skipUnless(sys.platform == "win32", "winreg only available on Windows")
     def test_cascade_parent_registry_state_non_string_types_ignored(self):
         import winreg
 
@@ -202,6 +205,7 @@ class TestWinContextMenu(unittest.TestCase):
             with self.assertRaises(ValueError):
                 wcm._write_add_dir_fixed("stem_x", "not-a-mode")
 
+    @unittest.skipUnless(sys.platform == "win32", "winreg only available on Windows")
     def test_reg_delete_subtree_missing_opens_key_gracefully(self):
         import tagmanager.win_context_menu as wcm
 
@@ -222,6 +226,7 @@ class TestWinContextMenu(unittest.TestCase):
             self.assertIn("-m tagmanager.cli", p)
             self.assertIn(wcm.sys.executable.replace("\\", "/"), p.replace("\\", "/"))
 
+    @unittest.skipUnless(sys.platform == "win32", "winreg only available on Windows")
     def test_reg_set_named_and_default_value(self):
         import tagmanager.win_context_menu as wcm
         import winreg
@@ -236,6 +241,7 @@ class TestWinContextMenu(unittest.TestCase):
             wcm._reg_set(0, r"Software\Test\command", "Icon", "x.ico")
             self.assertEqual(sv.call_args[0][1], "Icon")
 
+    @unittest.skipUnless(sys.platform == "win32", "winreg only available on Windows")
     def test_reg_delete_subtree_deletes_children_then_parent(self):
         import tagmanager.win_context_menu as wcm
         import winreg
@@ -277,6 +283,7 @@ class TestWinContextMenu(unittest.TestCase):
         self.assertIn(r"K\parent\child", deleted)
         self.assertIn(r"K\parent", deleted)
 
+    @unittest.skipUnless(sys.platform == "win32", "winreg only available on Windows")
     def test_reg_delete_subtree_delete_key_failure_swallowed(self):
         import tagmanager.win_context_menu as wcm
         import winreg
