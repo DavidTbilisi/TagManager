@@ -1138,16 +1138,29 @@ windows_shell = typer.Typer(
 
 
 @windows_shell.command("install-context-menu")
-def windows_install_context_menu():
+def windows_install_context_menu(
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Print planned launcher paths and HKCU registry keys without writing",
+    ),
+):
     """Register TagManager entries on right-click for files and folders (HKCU)."""
     from .win_context_menu import install_context_menu, launcher_dir_for_docs
 
-    code, msg = install_context_menu()
+    code, msg = install_context_menu(dry_run=dry_run)
     if runtime.json_mode():
-        runtime.emit_json({"ok": code == 0, "message": msg, "launcher_dir": launcher_dir_for_docs()})
+        runtime.emit_json(
+            {
+                "ok": code == 0,
+                "dry_run": dry_run,
+                "message": msg,
+                "launcher_dir": launcher_dir_for_docs(),
+            }
+        )
     else:
         typer.echo(msg)
-        if code == 0:
+        if code == 0 and not dry_run:
             typer.echo(f"Launcher scripts: {launcher_dir_for_docs()}")
             typer.echo("Restart Explorer or sign out if menus do not appear immediately.")
     raise typer.Exit(code)

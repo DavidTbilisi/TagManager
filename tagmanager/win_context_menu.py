@@ -138,10 +138,52 @@ def _shell_root(kind: str) -> str:
     raise ValueError(kind)
 
 
-def install_context_menu() -> Tuple[int, str]:
+def format_install_plan() -> str:
+    """
+    Human-readable list of launcher paths and HKCU registry keys that
+    :func:`install_context_menu` would create (no writes).
+    """
+    lines: List[str] = []
+    launcher = _launcher_dir()
+    lines.append(f"Launcher directory: {launcher}")
+    lines.append("")
+    for suffix, menu_text, stem, tail, where in _VERBS:
+        bat = launcher / f"{stem}.cmd"
+        if stem == "tm_storage_open":
+            cmd_line = f'"{bat}" "%1"'
+        else:
+            cmd_line = f'"{bat}" "%1"'
+        for kind in where:
+            root = _shell_root(kind)
+            sk = rf"{root}\{suffix}"
+            hk = rf"HKEY_CURRENT_USER\{sk}"
+            lines.append(f"Verb: {suffix}")
+            lines.append(f"  Menu text: {menu_text}")
+            lines.append(f"  Scope: {kind}")
+            lines.append(f"  Registry: {hk}")
+            lines.append(f"  Registry (command): {hk}\\command")
+            lines.append(f"  command default REG_SZ: {cmd_line}")
+            lines.append(f"  Launcher file: {bat}")
+            lines.append("")
+    return "\n".join(lines).rstrip()
+
+
+def install_context_menu(dry_run: bool = False) -> Tuple[int, str]:
     """Install per-user context menu entries. Returns (exit_code, message)."""
+    plan = format_install_plan()
     if sys.platform != "win32":
+        if dry_run:
+            return (
+                0,
+                plan + "\n\n(Dry-run: plan only. Run on Windows to install.)",
+            )
         return 1, "Context menu integration is only supported on Windows."
+
+    if dry_run:
+        return (
+            0,
+            plan + "\n\nDry-run: no launcher files or registry keys were written.",
+        )
 
     import winreg
 

@@ -19,6 +19,15 @@ class TestWinContextMenu(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("only supported on windows", msg.lower())
 
+    def test_install_dry_run_returns_plan_on_any_os(self):
+        from tagmanager import win_context_menu as wcm
+
+        code, msg = wcm.install_context_menu(dry_run=True)
+        self.assertEqual(code, 0, msg)
+        self.assertIn("Launcher directory:", msg)
+        self.assertIn("HKEY_CURRENT_USER", msg)
+        self.assertIn("TagManager", msg)
+
     def test_write_batch_uses_tilde1(self):
         from pathlib import Path
 

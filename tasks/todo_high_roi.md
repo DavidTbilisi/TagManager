@@ -21,7 +21,7 @@ Work through in order unless dependencies say otherwise. Check off when done.
 ## Windows shell
 
 - [ ] **Context menu extras** — Optional verbs (e.g. dry-run recursive add, open terminal here) using same launcher pattern as `win_context_menu.py`.
-- [ ] **`tm windows install-context-menu --dry-run`** — Print planned `.cmd` paths and registry values without writing.
+- [x] **`tm windows install-context-menu --dry-run`** — `format_install_plan()` + `install_context_menu(dry_run=…)`; works on any OS to preview HKCU layout.
 
 ## Data and power users
 
@@ -51,7 +51,8 @@ Work through in order unless dependencies say otherwise. Check off when done.
 | 2026-04-21 | `--json` on `tm config` | `config/handler.py`, `tests/test_cli_config_json.py` |
 | 2026-04-21 | `--json` on `tm watch` | `watch/handler.py` NDJSON stream, `tests/test_cli_watch_json.py` |
 | 2026-04-21 | Automation recipes | `tasks/recipes/`, README link |
+| 2026-04-21 | `install-context-menu --dry-run` | `win_context_menu.format_install_plan`, CLI flag |
 
 ## Suggested next pick
 
-- [ ] **`tm windows install-context-menu --dry-run`** or **context menu extras**.
+- [ ] **Context menu extras** (optional Explorer verbs).
