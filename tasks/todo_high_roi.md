@@ -25,17 +25,17 @@ Work through in order unless dependencies say otherwise. Check off when done.
 
 ## Data and power users
 
-- [ ] **Global tag rename** — Rename a tag string across all paths in the DB (with journal inverse if journal on); clarify interaction with `alias`.
-- [ ] **Export relative paths** — Option to export paths relative to a given root (or strip a prefix) for portable CSV/JSON.
+- [x] **Global tag rename** — `tm bulk retag --from … --to …`; journal entry `bulk_retag` when `journal.enabled` / `TAGMANAGER_JOURNAL=1` (undo via `tm undo`). README clarifies vs `tm alias`.
+- [x] **Export relative paths** — `tm export --relative-to DIR` / `--strip-prefix PATH` (`exportdata/service.py`).
 
 ## MCP / HTTP
 
-- [ ] **More MCP tools** — e.g. `remove_path`, richer `search`, `undo` when journal enabled; align shapes with HTTP RPC where sensible.
+- [x] **More MCP tools** — `remove_path_from_tag_database` in `mcp_stdio.py`; richer search / `undo` via MCP deferred (use CLI `tm undo`).
 
 ## Optional / lower priority
 
-- [ ] **Shell completion** — Fish (and zsh if gaps) parity with existing completion.
-- [ ] **Large-DB performance** — Only if real profiles show need: index or lazy paths for search.
+- [x] **Shell completion** — Fish: `completions/tm.fish` + README / recipes link. Typer still provides bash/zsh install.
+- [ ] **Large-DB performance** — Deferred until real profiling: possible index or lazy path materialization for search.
 
 ---
 
@@ -53,7 +53,11 @@ Work through in order unless dependencies say otherwise. Check off when done.
 | 2026-04-21 | Automation recipes | `tasks/recipes/`, README link |
 | 2026-04-21 | `install-context-menu --dry-run` | `win_context_menu.format_install_plan`, CLI flag |
 | 2026-04-21 | Context menu extras | dry-run recursive add, open cmd here |
+| 2026-04-24 | Export relative paths | `--relative-to`, `--strip-prefix`, `tests/test_exportdata_service.py` |
+| 2026-04-24 | `bulk_retag` + journal | `append_entry("bulk_retag", …)` for `tm undo` |
+| 2026-04-24 | MCP remove path tool | `remove_path_from_tag_database` |
+| 2026-04-24 | Fish completions | `completions/tm.fish` |
 
 ## Suggested next pick
 
-- [ ] **Export relative paths** or **global tag rename / journal** polish.
+- [ ] **Large-DB performance** (after profiling) or **HTTP/MCP parity** for `undo` / advanced search.
