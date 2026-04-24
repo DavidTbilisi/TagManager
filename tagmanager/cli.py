@@ -1013,7 +1013,10 @@ def export_data(
         if not output.endswith(".json"):
             output = os.path.splitext(output)[0] + ".json"
         result = export_tags_json(output)
-    typer.echo(result["message"])
+    if runtime.json_mode():
+        runtime.emit_json(result)
+    else:
+        typer.echo(result["message"])
     if not result["success"]:
         raise typer.Exit(1)
 
