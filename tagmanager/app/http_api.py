@@ -40,6 +40,15 @@ def _read_gui_html() -> bytes:
         return b"<!DOCTYPE html><html><body><p>GUI asset missing.</p></body></html>"
 
 
+def _read_preview_html() -> bytes:
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "preview_page.html")
+    try:
+        with open(path, "rb") as fh:
+            return fh.read()
+    except OSError:
+        return b"<!DOCTYPE html><html><body><p>Preview asset missing.</p></body></html>"
+
+
 def _read_post_json(handler: BaseHTTPRequestHandler) -> Dict[str, Any]:
     length = int(handler.headers.get("Content-Length", "0") or 0)
     raw = handler.rfile.read(length) if length > 0 else b"{}"
@@ -61,6 +70,9 @@ class _TagManagerHandler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         if parsed.path == "/gui":
             _html_response(self, 200, _read_gui_html())
+            return
+        if parsed.path == "/preview":
+            _html_response(self, 200, _read_preview_html())
             return
         if parsed.path in ("/api/v1/gui/path-tags", "/api/v1/files/tags"):
             qs = urllib.parse.parse_qs(parsed.query)
@@ -98,8 +110,10 @@ class _TagManagerHandler(BaseHTTPRequestHandler):
                 {
                     "service": "tagmanager-cli",
                     "gui": "/gui",
+                    "preview": "/preview",
                     "endpoints": [
                         "GET /gui",
+                        "GET /preview",
                         "GET /api/v1/tags",
                         "GET /api/v1/search?tags=a,b&match_all=0",
                         "GET /api/v1/gui/path-tags?path=",
@@ -199,7 +213,7 @@ class _TagManagerHandler(BaseHTTPRequestHandler):
 def run_server(host: str, port: int) -> None:
     httpd = ThreadingHTTPServer((host, port), _TagManagerHandler)
     print(f"TagManager HTTP listening on http://{host}:{port}/ (Ctrl+C to stop)")
-    print(f"Thin GUI: http://{host}:{port}/gui")
+    print(f"Thin GUI: http://{host}:{port}/gui  |  Preview: http://{host}:{port}/preview")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

@@ -10,7 +10,7 @@ _Transform chaos into order with intelligent file organization_
 [![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](README.md)
-[![Tests](https://img.shields.io/badge/Tests-471%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-473%20passed-brightgreen.svg)](tests/)
 
 [Features](#-features) • [Installation](#-installation) • [MCP clients](#mcp-cursor-claude-chatgpt-and-codex) • [Quick Start](#-quick-start) • [Commands](#-commands) • [Examples](#-examples)
 
@@ -47,7 +47,7 @@ TagManager stores tags in a lightweight JSON sidecar (`~/file_tags.json`) — no
 | **Watch mode** | Auto-tag files the moment they land in a directory |
 | **Move tracking** | `tm mv` keeps tag records in sync when you rename files |
 | **Config** | Full dot-notation config system with export/import |
-| **Thin GUI** | `tm gui` — local browser UI for tags + search (`/gui`, same DB as CLI) |
+| **Thin GUI** | `tm gui` — local browser UI for tags + search (`/gui`); dry-run **preview** page at `/preview` |
 | **Shell completion** | Typer/bash/zsh tab-complete tags, presets, aliases; **Fish:** [completions/tm.fish](completions/tm.fish) |
 
 ---
@@ -245,6 +245,15 @@ The web UI is a **single page** served over HTTP on your machine. It uses the **
 3. **Without auto-opening a browser:** `tm gui --no-browser` (same host/port; open `/gui` yourself).
 4. **Custom bind or port:** `tm gui --host 127.0.0.1 --port 8844` (defaults are loopback + **8844**).
 
+#### Preview page (`/preview`)
+
+A second page on the **same server**: **`http://127.0.0.1:8844/preview`** (adjust host/port if you changed them). Nothing on `/preview` writes the database by itself—it always calls the API with **`dry_run: true`**.
+
+- **Preview add tags** — enter a file path, optional tags to add, and the same **no auto-tag / no aliases / no content** toggles as `/gui`. **Preview merge** shows **before** and **after** tag sets (after includes extension auto-tags and alias resolution when those options are off).
+- **Preview remove / clear / drop** — pick a mode and (for “one tag”) a tag name; the server returns a JSON payload describing what would happen.
+
+The main **`/gui`** page links here; the terminal banner also prints the preview URL when the server starts.
+
 **JSON-only HTTP** (no HTML page): **`tm serve`** or **`tm server`** on port **8765** by default—the same API routes work (`/api/v1/...`). Use that when you only need scripts or `curl`, not the browser form.
 
 #### Page layout: “File” and “Search”
@@ -279,7 +288,7 @@ Status text (green/red) under the form shows the last result or error. If **`TAG
 
 #### Implementation note
 
-Mutations go through **`tagmanager/app/gui_handlers.py`** (same **`load_tags` / `save_tags`** stack as the CLI). REST-style discovery: open **`http://127.0.0.1:8844/`** or **`…/api`** while the server is running for a short JSON list of routes (includes **`GET /api/v1/files/tags?path=`** for scripts).
+Mutations go through **`tagmanager/app/gui_handlers.py`** (same **`load_tags` / `save_tags`** stack as the CLI). HTML assets: **`tagmanager/app/thin_gui.html`**, **`tagmanager/app/preview_page.html`**. REST-style discovery: open **`http://127.0.0.1:8844/`** or **`…/api`** while the server is running for a short JSON list of routes (includes **`GET /preview`**, **`GET /api/v1/files/tags?path=`** for scripts).
 
 ---
 

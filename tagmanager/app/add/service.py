@@ -5,6 +5,55 @@ from typing import Any, Dict, List, Optional, Sequence
 from ..helpers import load_tags, save_tags
 
 
+def compute_single_file_add_merge(
+    file_path: str,
+    tags: list,
+    apply_aliases: bool = True,
+    auto_tag: bool = True,
+    content_tag: bool = True,
+) -> Optional[tuple[List[str], Optional[List[str]]]]:
+    """
+    Resolve path, auto-tags, aliases, and merged tag set **without** saving.
+
+    :return: ``(merged_tags, before_tags)`` where ``before_tags`` is ``None`` if the path
+        was absent from the DB, or ``None`` if the path does not exist / no tags to apply.
+    """
+    tags = [t for t in tags if t.strip()]
+
+    abs_path = os.path.abspath(os.path.join(os.getcwd(), file_path))
+    if not os.path.exists(abs_path):
+        return None
+
+    if auto_tag:
+        try:
+            from ..autotag.service import suggest_tags_for_file
+
+            ext_tags = suggest_tags_for_file(abs_path, include_content=content_tag)
+            for t in ext_tags:
+                if t not in tags:
+                    tags.append(t)
+        except Exception:
+            pass
+
+    if not tags:
+        return None
+
+    if apply_aliases:
+        try:
+            from ..alias.service import apply_aliases as _apply
+
+            tags = _apply(tags)
+        except Exception:
+            pass
+
+    existing_tags = load_tags()
+    before_val: Optional[List[str]] = (
+        copy.deepcopy(existing_tags[abs_path]) if abs_path in existing_tags else None
+    )
+    merged = list(set(existing_tags.get(abs_path, [])).union(set(tags)))
+    return merged, before_val
+
+
 def add_tags(
     file_path: str,
     tags: list,
@@ -24,54 +73,31 @@ def add_tags(
     :param dry_run: if True, show outcome without saving (no journal entry)
     :return: True if successful, False otherwise
     """
-    tags = [t for t in tags if t.strip()]
-
-    file_path = os.path.abspath(os.path.join(os.getcwd(), file_path))
-    if not os.path.exists(file_path):
-        print(f"Error: The file '{file_path}' does not exist.")
+    abs_path = os.path.abspath(os.path.join(os.getcwd(), file_path))
+    if not os.path.exists(abs_path):
+        print(f"Error: The file '{abs_path}' does not exist.")
         return False
 
-    # Extension-based auto-tags (rule-based, not AI) — merge before empty check
-    if auto_tag:
-        try:
-            from ..autotag.service import suggest_tags_for_file
-
-            ext_tags = suggest_tags_for_file(file_path, include_content=content_tag)
-            for t in ext_tags:
-                if t not in tags:
-                    tags.append(t)
-        except Exception:
-            pass
-
-    if not tags:
+    computed = compute_single_file_add_merge(
+        file_path, tags, apply_aliases, auto_tag, content_tag
+    )
+    if computed is None:
         print("Error: No valid tags provided (all were empty or whitespace).")
         return False
 
-    if apply_aliases:
-        try:
-            from ..alias.service import apply_aliases as _apply
-            tags = _apply(tags)
-        except Exception:
-            pass
-
-    existing_tags = load_tags()
-    before_val: Optional[List[str]] = (
-        copy.deepcopy(existing_tags[file_path])
-        if file_path in existing_tags
-        else None
-    )
-    merged = list(set(existing_tags.get(file_path, [])).union(set(tags)))
+    merged, before_val = computed
     if dry_run:
         try:
             print(
-                f"[dry-run] Would set tags on '{file_path}' to "
+                f"[dry-run] Would set tags on '{abs_path}' to "
                 f"{sorted(merged)} (was {before_val or 'absent'})"
             )
         except UnicodeEncodeError:
             pass
         return True
 
-    existing_tags[file_path] = merged
+    existing_tags = load_tags()
+    existing_tags[abs_path] = merged
     is_saved = save_tags(existing_tags)
 
     if is_saved:
@@ -81,19 +107,19 @@ def add_tags(
             if sorted(before_val or []) != sorted(merged):
                 append_entry(
                     "add_tags",
-                    {"paths": {file_path: before_val}},
+                    {"paths": {abs_path: before_val}},
                 )
         except Exception:
             pass
 
     if is_saved:
         try:
-            print(f"Tags added to '{file_path}'")
+            print(f"Tags added to '{abs_path}'")
         except UnicodeEncodeError:
             pass
         return True
     else:
-        print(f"Error: Failed to save tags for '{file_path}'")
+        print(f"Error: Failed to save tags for '{abs_path}'")
         return False
 
 

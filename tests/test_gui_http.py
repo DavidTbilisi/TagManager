@@ -52,6 +52,13 @@ class TestThinGuiHttp(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn(b"<html", body.lower())
 
+    def test_preview_page_is_html(self):
+        self._start()
+        status, body = self._get("/preview")
+        self.assertEqual(status, 200)
+        self.assertIn(b"<html", body.lower())
+        self.assertIn(b"preview", body.lower())
+
     def test_path_tags_json(self):
         self._start()
         self.test_dir = tempfile.mkdtemp()

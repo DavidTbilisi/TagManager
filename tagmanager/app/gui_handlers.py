@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
-from .add.service import add_tags
+from .add.service import add_tags, compute_single_file_add_merge
 from .helpers import load_tags, save_tags
 from .remove.service import remove_all_tags, remove_path
 
@@ -56,18 +56,43 @@ def post_add_tags(
     if not os.path.isfile(abs_path):
         return {"ok": False, "error": "not a file or does not exist"}
     flat = [t.strip() for t in tags if t and str(t).strip()]
+    if dry_run:
+        comp = compute_single_file_add_merge(
+            abs_path,
+            flat,
+            apply_aliases=not no_aliases,
+            auto_tag=not no_auto,
+            content_tag=not no_content,
+        )
+        if comp is None:
+            if not os.path.isfile(abs_path):
+                return {"ok": False, "error": "not a file or does not exist"}
+            return {
+                "ok": False,
+                "error": "nothing to merge (no tags after auto-tag/alias rules)",
+            }
+        merged, before_val = comp
+        before_list = list(before_val or [])
+        return {
+            "ok": True,
+            "dry_run": True,
+            "path": abs_path,
+            "tags_before": before_list,
+            "tags_after_preview": merged,
+            "tags": merged,
+        }
     success = add_tags(
         abs_path,
         flat,
         apply_aliases=not no_aliases,
         auto_tag=not no_auto,
         content_tag=not no_content,
-        dry_run=dry_run,
+        dry_run=False,
     )
     if not success:
         return {"ok": False, "error": "add_tags failed (see server stderr or invalid input)"}
     after = list(load_tags().get(abs_path, []))
-    return {"ok": True, "dry_run": dry_run, "path": abs_path, "tags": after}
+    return {"ok": True, "dry_run": False, "path": abs_path, "tags": after}
 
 
 def post_remove(

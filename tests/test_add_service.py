@@ -66,9 +66,9 @@ class TestAddService(unittest.TestCase):
         # Execute
         result = add_tags(self.test_file, tags)
         
-        # Verify
+        # Verify (merge preview + save each read the tag file)
         self.assertTrue(result)
-        self.mock_load_tags.assert_called_once()
+        self.assertEqual(self.mock_load_tags.call_count, 2)
         self.mock_save_tags.assert_called_once()
         
         # Check saved data
@@ -135,6 +135,24 @@ class TestAddService(unittest.TestCase):
 
         self.assertFalse(result)
         self.mock_save_tags.assert_not_called()
+
+    @patch("tagmanager.app.autotag.service.suggest_tags_for_file", return_value=[])
+    def test_compute_single_file_add_merge_unions(self, _sug):
+        from tagmanager.app.add.service import compute_single_file_add_merge
+
+        p = os.path.abspath(self.test_file)
+        self.mock_load_tags.return_value = {p: ["alpha"]}
+        out = compute_single_file_add_merge(
+            self.test_file,
+            ["beta"],
+            apply_aliases=True,
+            auto_tag=False,
+            content_tag=True,
+        )
+        self.assertIsNotNone(out)
+        merged, before = out
+        self.assertEqual(sorted(merged), ["alpha", "beta"])
+        self.assertEqual(before, ["alpha"])
     
     def test_add_tags_nonexistent_file_creates_file(self):
         """Test adding tags to non-existent file returns False (conservative behavior)"""

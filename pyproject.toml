@@ -95,7 +95,7 @@ packages = ["tagmanager", "tagmanager.app", "tagmanager.app.add", "tagmanager.ap
 
 [tool.setuptools.package-data]
 "tagmanager" = ["*.ini", "*.json"]
-"tagmanager.app" = ["thin_gui.html"]
+"tagmanager.app" = ["thin_gui.html", "preview_page.html"]
 
 [tool.black]
 line-length = 88

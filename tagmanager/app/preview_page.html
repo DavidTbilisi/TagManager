@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TagManager — preview</title>
+  <style>
+    :root { font-family: system-ui, sans-serif; background: #0d1117; color: #e6edf3; }
+    body { max-width: 54rem; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.25rem; font-weight: 600; }
+    a { color: #58a6ff; }
+    fieldset { border: 1px solid #30363d; border-radius: 8px; margin: 1rem 0; padding: 1rem; }
+    legend { padding: 0 0.5rem; color: #8b949e; }
+    label { display: block; margin: 0.5rem 0 0.25rem; font-size: 0.85rem; color: #8b949e; }
+    input[type="text"], select { width: 100%; max-width: 100%; box-sizing: border-box; padding: 0.5rem;
+      background: #161b22; border: 1px solid #30363d; border-radius: 6px; color: inherit; }
+    button { margin: 0.35rem 0.35rem 0.35rem 0; padding: 0.45rem 0.9rem; border-radius: 6px;
+      border: 1px solid #30363d; background: #21262d; color: #e6edf3; cursor: pointer; }
+    button.primary { background: #1f6feb; border-color: #388bfd; }
+    .tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.5rem 0; }
+    .tag { background: #21262d; border: 1px solid #30363d; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; }
+    .tag.before { border-color: #a371f7; }
+    .tag.after { border-color: #3fb950; }
+    #msg { min-height: 1.25rem; font-size: 0.9rem; margin-top: 0.5rem; }
+    .err { color: #f85149; }
+    .ok { color: #3fb950; }
+    pre { background: #161b22; border: 1px solid #30363d; padding: 0.75rem; border-radius: 6px; overflow: auto; font-size: 0.8rem; }
+    .hint { font-size: 0.8rem; color: #8b949e; margin-top: 0.75rem; }
+    .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+  </style>
+</head>
+<body>
+  <h1>TagManager — preview</h1>
+  <p>Dry-run only: see <strong>what would change</strong> before writing. For live edits use <a href="/gui">/gui</a>.</p>
+
+  <fieldset>
+    <legend>Preview add tags</legend>
+    <label for="apath">File path</label>
+    <input id="apath" type="text" placeholder="Absolute or relative path to a file" autocomplete="off" />
+    <div class="row" style="margin-top:0.5rem">
+      <button type="button" id="btnLoad" class="primary">Load current tags</button>
+    </div>
+    <label for="ptags">Tags to add (comma-separated)</label>
+    <input id="ptags" type="text" placeholder="work, python" />
+    <div class="row" style="margin-top:0.35rem">
+      <label class="row"><input id="pnoauto" type="checkbox" /> No auto-tag</label>
+      <label class="row"><input id="pnoalias" type="checkbox" /> No aliases</label>
+      <label class="row"><input id="pnocontent" type="checkbox" /> No content rules</label>
+    </div>
+    <button type="button" id="btnPreviewAdd" class="primary">Preview merge (no save)</button>
+    <div id="addOut" style="margin-top:0.75rem"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Preview remove / clear / drop</legend>
+    <label for="rpath">File path</label>
+    <input id="rpath" type="text" placeholder="Same path as above" autocomplete="off" />
+    <label for="rmode">Mode</label>
+    <select id="rmode">
+      <option value="one_tag">Remove one tag (enter name below)</option>
+      <option value="clear_tags">Clear all tags on file (keep DB entry)</option>
+      <option value="path">Remove path from database entirely</option>
+    </select>
+    <label for="rtag">Tag name (only for “remove one tag”)</label>
+    <input id="rtag" type="text" placeholder="e.g. draft" />
+    <button type="button" id="btnPreviewRm" class="primary">Preview action (no save)</button>
+    <pre id="rmOut" style="margin-top:0.75rem"></pre>
+  </fieldset>
+
+  <p id="msg"></p>
+  <p class="hint">Uses <code>POST /api/v1/gui/add-tags</code> and <code>POST /api/v1/gui/remove</code> with <code>dry_run: true</code>. Stop server with Ctrl+C in the terminal.</p>
+
+  <script>
+(function () {
+  const msg = (t, ok) => { const el = document.getElementById("msg"); el.textContent = t || ""; el.className = ok ? "ok" : (t ? "err" : ""); };
+  const jpost = async (url, body) => {
+    const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.ok === false) throw new Error(j.error || j.message || "request failed");
+    return j;
+  };
+  const chips = (el, tags, cls) => {
+    el.innerHTML = "";
+    (tags || []).forEach((t) => {
+      const s = document.createElement("span");
+      s.className = "tag " + (cls || "");
+      s.textContent = t;
+      el.appendChild(s);
+    });
+  };
+  document.getElementById("btnLoad").onclick = async () => {
+    msg("", true);
+    const path = document.getElementById("apath").value.trim();
+    if (!path) { msg("Enter a path.", false); return; }
+    try {
+      const r = await fetch("/api/v1/gui/path-tags?path=" + encodeURIComponent(path));
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || "failed");
+      document.getElementById("apath").value = j.path;
+      document.getElementById("rpath").value = j.path;
+      document.getElementById("addOut").innerHTML = "<p><strong>Current tags</strong></p>";
+      const row = document.createElement("div");
+      row.className = "tags";
+      document.getElementById("addOut").appendChild(row);
+      chips(row, j.tags, "before");
+      msg("Loaded.", true);
+    } catch (e) { msg(String(e.message || e), false); }
+  };
+  document.getElementById("btnPreviewAdd").onclick = async () => {
+    msg("", true);
+    const path = document.getElementById("apath").value.trim();
+    const tags = document.getElementById("ptags").value.split(",").map((s) => s.trim()).filter(Boolean);
+    if (!path) { msg("Enter a path.", false); return; }
+    const out = document.getElementById("addOut");
+    out.innerHTML = "";
+    try {
+      const j = await jpost("/api/v1/gui/add-tags", {
+        path, tags, dry_run: true,
+        no_auto: document.getElementById("pnoauto").checked,
+        no_aliases: document.getElementById("pnoalias").checked,
+        no_content: document.getElementById("pnocontent").checked,
+      });
+      const before = j.tags_before || [];
+      const after = j.tags_after_preview || j.tags || [];
+      out.innerHTML = "<p><strong>Before</strong></p><div class=\"tags\" id=\"chBefore\"></div><p><strong>After preview (merged)</strong></p><div class=\"tags\" id=\"chAfter\"></div>";
+      chips(document.getElementById("chBefore"), before, "before");
+      chips(document.getElementById("chAfter"), after, "after");
+      msg("Preview only — nothing was saved.", true);
+    } catch (e) {
+      out.textContent = "";
+      msg(String(e.message || e), false);
+    }
+  };
+  document.getElementById("btnPreviewRm").onclick = async () => {
+    msg("", true);
+    const path = document.getElementById("rpath").value.trim();
+    const mode = document.getElementById("rmode").value;
+    const tag = document.getElementById("rtag").value.trim();
+    const pre = document.getElementById("rmOut");
+    pre.textContent = "";
+    if (!path) { msg("Enter a path.", false); return; }
+    if (mode === "one_tag" && !tag) { msg("Enter a tag name for remove-one.", false); return; }
+    try {
+      const body = { path, mode, dry_run: true };
+      if (mode === "one_tag") body.tag = tag;
+      const j = await jpost("/api/v1/gui/remove", body);
+      pre.textContent = JSON.stringify(j, null, 2);
+      msg("Preview only — nothing was saved.", true);
+    } catch (e) {
+      msg(String(e.message || e), false);
+    }
+  };
+})();
+  </script>
+</body>
+</html>
