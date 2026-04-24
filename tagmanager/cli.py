@@ -1209,13 +1209,26 @@ def undo(
     raise typer.Exit(0 if ok else 1)
 
 
+def _run_http_cli(host: str, port: int) -> None:
+    run_http_server(host, port)
+
+
 @app.command("serve")
 def serve(
     host: str = typer.Option("127.0.0.1", "--host", help="Bind address"),
     port: int = typer.Option(8765, "--port", "-p", help="TCP port"),
 ):
     """Run local HTTP + JSON-RPC helper for scripts (tags list, search)."""
-    run_http_server(host, port)
+    _run_http_cli(host, port)
+
+
+@app.command("server", hidden=True)
+def server(
+    host: str = typer.Option("127.0.0.1", "--host", help="Bind address"),
+    port: int = typer.Option(8765, "--port", "-p", help="TCP port"),
+):
+    """Alias for ``tm serve`` (common typo)."""
+    _run_http_cli(host, port)
 
 
 @app.command("gui")

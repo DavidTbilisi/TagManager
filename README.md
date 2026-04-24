@@ -236,7 +236,7 @@ tm gui
 
 ### Thin browser GUI (`tm gui`)
 
-- Serves a small HTML UI at **`/gui`** on the same stdlib HTTP stack as **`tm serve`** (default **`127.0.0.1:8844`** for `tm gui`).
+- Serves a small HTML UI at **`/gui`** on the same stdlib HTTP stack as **`tm serve`** (default **`127.0.0.1:8844`** for `tm gui`). For JSON only (no `/gui`), use **`tm serve`** (default port **8765**); **`tm server`** is the same command.
 - Mutations use **`add_tags`**, **`remove_path`**, **`remove_all_tags`**, and the same **`load_tags` / `save_tags`** as the CLI (see `tagmanager/app/gui_handlers.py`).
 - Set **`TAGMANAGER_GUI_ROOT`** to an absolute directory to reject paths outside that tree (optional safety rail).
 - Do not bind on **`0.0.0.0`** on untrusted networks; there is **no authentication**.
