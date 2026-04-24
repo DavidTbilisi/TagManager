@@ -105,7 +105,7 @@ class VersionBumper:
         ]
         
         for pattern, replacement in patterns:
-            if isinstance(pattern, str):
+            if pattern == old_version:
                 content = content.replace(pattern, replacement)
             else:
                 content = re.sub(pattern, replacement, content)
