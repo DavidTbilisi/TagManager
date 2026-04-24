@@ -12,7 +12,7 @@ _Transform chaos into order with intelligent file organization_
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](README.md)
 [![Tests](https://img.shields.io/badge/Tests-406%20passed-brightgreen.svg)](tests/)
 
-[Features](#-features) • [Installation](#-installation) • [MCP: Cursor and Claude](#mcp-cursor-and-claude) • [Quick Start](#-quick-start) • [Commands](#-commands) • [Examples](#-examples)
+[Features](#-features) • [Installation](#-installation) • [MCP clients](#mcp-cursor-claude-chatgpt-and-codex) • [Quick Start](#-quick-start) • [Commands](#-commands) • [Examples](#-examples)
 
 </div>
 
@@ -79,7 +79,7 @@ pip install -e .
 
 ### Optional: MCP (AI assistants)
 
-To expose TagManager to **Cursor**, **Claude Desktop**, or any MCP client over stdio, install the optional SDK:
+To expose TagManager to **Cursor**, **Claude Desktop**, **ChatGPT** (where local stdio is supported), **OpenAI Codex**, or any MCP client over stdio, install the optional SDK:
 
 ```bash
 pip install "tagmanager-cli[mcp]"
@@ -87,11 +87,11 @@ pip install "tagmanager-cli[mcp]"
 pip install -e ".[mcp]"
 ```
 
-See [MCP: Cursor and Claude](#mcp-cursor-and-claude) for wiring it into your editor.
+See [MCP clients](#mcp-cursor-claude-chatgpt-and-codex) for wiring it into your tools.
 
 ---
 
-## MCP: Cursor and Claude
+## MCP: Cursor, Claude, ChatGPT, and Codex
 
 TagManager ships a **Model Context Protocol** server (`tagmanager/mcp_stdio.py`) that exposes tools such as listing tags, searching files by tag, reading tags for a path, and adding tags (default **dry run**). You can run it manually as:
 
@@ -154,7 +154,43 @@ If `tagmanager-cli[mcp]` is installed in that Python environment and imports res
 
 4. Save the file and start Claude Desktop again; enable the **tagmanager** MCP server in the app if prompted. Use the developer **logs** or the tools / hammer control in the chat UI to confirm the server loaded.
 
-Further reading: [Cursor MCP](https://cursor.com/docs/mcp), [Connecting local MCP servers (Claude Desktop)](https://modelcontextprotocol.io/docs/develop/connect-local-servers).
+### ChatGPT and OpenAI
+
+TagManager’s MCP server speaks **stdio** (a local subprocess). How that maps to ChatGPT depends on which product you use.
+
+#### ChatGPT in the browser (Developer mode / custom apps)
+
+ChatGPT **custom apps** (developer mode) connect to an MCP server over a **remote URL** (for example **SSE** or **streamable HTTP**), not by spawning your local `python -m tagmanager.mcp_stdio` directly. This repository does not ship an HTTP MCP bridge.
+
+To use TagManager from **web** ChatGPT you would need a **trusted** network path from OpenAI’s infrastructure to your tools (for example a small **stdio → HTTP** gateway you control, or a hosted deployment), then register that URL under **Settings → Apps** per your workspace rules. Plan and admin requirements change over time; start from OpenAI’s docs: [Developer mode and MCP apps](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt-beta), [ChatGPT developer mode](https://developers.openai.com/api/docs/guides/developer-mode).
+
+#### ChatGPT Desktop (local JSON, when available)
+
+Some **ChatGPT Desktop** builds load MCP servers from a JSON file on disk, similar to Claude Desktop. Community-reported locations (confirm in your app version under **Settings** / developer options):
+
+| OS | File (may vary by release) |
+|----|------|
+| **macOS** | `~/Library/Application Support/ChatGPT/chatgpt_mcp_config.json` |
+| **Windows** | `%APPDATA%\OpenAI\ChatGPT\chatgpt_mcp_config.json` |
+
+If that file exists and expects the same `mcpServers` shape as Claude, reuse the **JSON example** from the [Claude Desktop](#claude-desktop) section (same `command` / `args` / `env` as there). Fully quit and restart the desktop app after edits.
+
+#### OpenAI Codex (local stdio)
+
+[OpenAI Codex](https://developers.openai.com/codex/mcp) documents **stdio** MCP servers in `~/.codex/config.toml` (or a trusted project’s `.codex/config.toml`). Example for a local clone:
+
+```toml
+[mcp_servers.tagmanager]
+command = "python"
+args = ["-m", "tagmanager.mcp_stdio"]
+
+[mcp_servers.tagmanager.env]
+PYTHONPATH = "/absolute/path/to/TagManager"
+```
+
+Use the same Python you used for `pip install "tagmanager-cli[mcp]"`. Then use Codex’s MCP UI or `codex mcp` to verify the server starts.
+
+Further reading: [Cursor MCP](https://cursor.com/docs/mcp), [Connecting local MCP servers (Claude Desktop)](https://modelcontextprotocol.io/docs/develop/connect-local-servers), [OpenAI Codex MCP](https://developers.openai.com/codex/mcp).
 
 ---
 
