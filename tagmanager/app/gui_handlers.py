@@ -6,8 +6,8 @@ import os
 from typing import Any, Dict, List, Optional, Tuple
 
 from .add.service import add_tags, compute_single_file_add_merge
-from .helpers import load_tags, save_tags
-from .remove.service import remove_all_tags, remove_path
+from .helpers import load_tags
+from .remove.service import remove_all_tags, remove_path, remove_tag_from_file
 
 
 def gui_allowed_root() -> Optional[str]:
@@ -135,16 +135,9 @@ def post_remove(
                 "dry_run": True,
                 "message": f"would remove tag {tag!r} from {abs_path}",
             }
-        data = load_tags()
-        if abs_path not in data:
-            return {"ok": False, "error": "path not in tag database"}
-        before = list(data[abs_path])
-        new_tags = [t for t in before if t.lower() != str(tag).strip().lower()]
-        if len(new_tags) == len(before):
-            return {"ok": False, "error": "tag not present on file"}
-        data[abs_path] = new_tags
-        if not save_tags(data):
-            return {"ok": False, "error": "save failed"}
-        return {"ok": True, "path": abs_path, "tags": new_tags}
+        r = remove_tag_from_file(abs_path, str(tag))
+        if not r.get("success"):
+            return {"ok": False, "error": r.get("message", "failed")}
+        return {"ok": True, "path": abs_path, "tags": r.get("tags", [])}
 
     return {"ok": False, "error": f"unknown mode: {mode}"}

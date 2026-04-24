@@ -160,12 +160,15 @@ def get_recursive_skip_dir_names() -> FrozenSet[str]:
     return DEFAULT_RECURSIVE_SKIP_DIRS | frozenset(str(x) for x in extra)
 
 
-def iter_files_recursive(root_dir: str) -> List[str]:
+def iter_files_recursive(root_dir: str, max_depth: Optional[int] = None) -> List[str]:
     """
     List all regular files under root_dir (recursive, rule-based — no AI).
 
     Honors ``files.follow_symlinks``, ``files.include_hidden_files`` (via
     ``files.include_hidden``), and ``autotag.recursive_skip_dirs`` from config.
+
+    :param max_depth: If ``1``, only files directly inside ``root_dir`` (no subfolders).
+        If ``2``, root plus one level of subdirectories, etc. ``None`` means unlimited.
     """
     root_dir = os.path.abspath(os.path.join(os.getcwd(), root_dir))
     if not os.path.isdir(root_dir):
@@ -176,15 +179,37 @@ def iter_files_recursive(root_dir: str) -> List[str]:
     include_hidden = bool(mgr.get("files.include_hidden", False))
     skip_dirs = get_recursive_skip_dir_names()
 
-    out: List[str] = []
+    if max_depth is not None and max_depth < 1:
+        return []
+
+    if max_depth == 1:
+        out: List[str] = []
+        try:
+            for name in os.listdir(root_dir):
+                if not include_hidden and name.startswith("."):
+                    continue
+                fp = os.path.join(root_dir, name)
+                if os.path.isfile(fp):
+                    out.append(fp)
+        except OSError:
+            return []
+        return out
+
+    out = []
     for dirpath, dirnames, filenames in os.walk(root_dir, followlinks=follow_links):
         dirnames[:] = [
             d
             for d in dirnames
             if d not in skip_dirs and (include_hidden or not d.startswith("."))
         ]
+        rel_d = os.path.relpath(dirpath, root_dir)
+        dlev = 0 if rel_d in (".", os.curdir) else rel_d.count(os.sep) + 1
+        if max_depth is not None and dlev + 1 >= max_depth:
+            dirnames[:] = []
         for name in filenames:
             if not include_hidden and name.startswith("."):
+                continue
+            if max_depth is not None and dlev >= max_depth:
                 continue
             fp = os.path.join(dirpath, name)
             if os.path.isfile(fp):

@@ -41,6 +41,38 @@ def remove_all_tags(file_path: str) -> dict:
     }
 
 
+def remove_tag_from_file(file_path: str, tag: str) -> Dict[str, Any]:
+    """Remove a single tag from one file (case-insensitive tag match)."""
+    path = os.path.normpath(os.path.abspath(file_path))
+    needle = str(tag).strip()
+    if not needle:
+        return {"success": False, "path": path, "message": "Tag name is empty"}
+
+    data = load_tags()
+    if path not in data:
+        return {"success": False, "path": path, "message": f"'{path}' not found in TagManager"}
+
+    before = list(data[path])
+    new_tags = [t for t in before if t.lower() != needle.lower()]
+    if len(new_tags) == len(before):
+        return {
+            "success": False,
+            "path": path,
+            "message": f"Tag {needle!r} not present on file",
+        }
+
+    data[path] = new_tags
+    if not save_tags(data):
+        return {"success": False, "path": path, "message": "Failed to save tags"}
+
+    return {
+        "success": True,
+        "path": path,
+        "tags": new_tags,
+        "message": f"Removed tag {needle!r} from '{path}'",
+    }
+
+
 def remove_path(file_path: str) -> Dict[str, Any]:
     """
     Remove a file path from the tags file.

@@ -461,6 +461,38 @@ class TestRemoveService(unittest.TestCase):
         self.assertIn(mixed_path, saved_data)
 
 
+class TestRemoveTagFromFile(unittest.TestCase):
+    def setUp(self):
+        self.helpers_patcher = patch("tagmanager.app.remove.service.load_tags")
+        self.save_tags_patcher = patch("tagmanager.app.remove.service.save_tags")
+        self.mock_load_tags = self.helpers_patcher.start()
+        self.mock_save_tags = self.save_tags_patcher.start()
+
+    def tearDown(self):
+        self.helpers_patcher.stop()
+        self.save_tags_patcher.stop()
+
+    def test_remove_one_tag_success(self):
+        from tagmanager.app.remove.service import remove_tag_from_file
+
+        p = os.path.abspath("/x/a.txt")
+        self.mock_load_tags.return_value = {p: ["a", "B", "c"]}
+        self.mock_save_tags.return_value = True
+        r = remove_tag_from_file("/x/a.txt", "b")
+        self.assertTrue(r["success"])
+        saved = self.mock_save_tags.call_args[0][0]
+        self.assertEqual(saved[p], ["a", "c"])
+
+    def test_remove_one_tag_not_present(self):
+        from tagmanager.app.remove.service import remove_tag_from_file
+
+        p = os.path.abspath("/x/a.txt")
+        self.mock_load_tags.return_value = {p: ["a"]}
+        r = remove_tag_from_file("/x/a.txt", "z")
+        self.assertFalse(r["success"])
+        self.mock_save_tags.assert_not_called()
+
+
 class TestRemoveAllTags(unittest.TestCase):
     """remove_all_tags idempotency (BDD: clear-all / already empty / unknown path)."""
 

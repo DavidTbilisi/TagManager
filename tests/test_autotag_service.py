@@ -372,6 +372,57 @@ class TestAutotagService(unittest.TestCase):
         finally:
             os.remove(path)
 
+    def test_iter_files_max_depth_one_only_immediate_files(self):
+        from tagmanager.app.autotag.service import iter_files_recursive
+
+        root = tempfile.mkdtemp()
+        try:
+            os.makedirs(os.path.join(root, "sub"))
+            open(os.path.join(root, "root.txt"), "w", encoding="utf-8").close()
+            open(os.path.join(root, "sub", "inner.txt"), "w", encoding="utf-8").close()
+            with patch(
+                "tagmanager.app.autotag.service.get_config_manager",
+                return_value=self._make_mgr(),
+            ):
+                paths = iter_files_recursive(root, max_depth=1)
+            self.assertEqual(len(paths), 1)
+            self.assertTrue(paths[0].endswith("root.txt"))
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_iter_files_max_depth_zero_returns_empty(self):
+        from tagmanager.app.autotag.service import iter_files_recursive
+
+        root = tempfile.mkdtemp()
+        try:
+            open(os.path.join(root, "a.txt"), "w", encoding="utf-8").close()
+            with patch(
+                "tagmanager.app.autotag.service.get_config_manager",
+                return_value=self._make_mgr(),
+            ):
+                self.assertEqual(iter_files_recursive(root, max_depth=0), [])
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_iter_files_max_depth_two_includes_one_subdir(self):
+        from tagmanager.app.autotag.service import iter_files_recursive
+
+        root = tempfile.mkdtemp()
+        try:
+            os.makedirs(os.path.join(root, "a", "b"))
+            open(os.path.join(root, "r.txt"), "w", encoding="utf-8").close()
+            open(os.path.join(root, "a", "a1.txt"), "w", encoding="utf-8").close()
+            open(os.path.join(root, "a", "b", "deep.txt"), "w", encoding="utf-8").close()
+            with patch(
+                "tagmanager.app.autotag.service.get_config_manager",
+                return_value=self._make_mgr(),
+            ):
+                paths = iter_files_recursive(root, max_depth=2)
+            basenames = {os.path.basename(p) for p in paths}
+            self.assertEqual(basenames, {"r.txt", "a1.txt"})
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

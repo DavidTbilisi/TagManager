@@ -20,7 +20,12 @@ from .app.filter.handler import (
 )
 from .app.list_all.service import print_list_tags_all_table
 from .app.paths.service import path_tags, fuzzy_search_path
-from .app.remove.service import remove_path, remove_invalid_paths, remove_all_tags
+from .app.remove.service import (
+    remove_all_tags,
+    remove_invalid_paths,
+    remove_path,
+    remove_tag_from_file,
+)
 from .app.search.service import (
     combined_search,
     filter_paths_by_exclude_tags,
@@ -241,6 +246,11 @@ def add(
         "--auto-exclude",
         help="With --recursive: skip auto-tags for files matching any glob",
     ),
+    max_depth: Optional[int] = typer.Option(
+        None,
+        "--max-depth",
+        help="With --recursive: only files up to this folder depth (1 = files directly in the directory only)",
+    ),
 ):
     """Add tags to a file (with optional preset and auto-tagging)"""
     flat: List[str] = []
@@ -272,6 +282,9 @@ def add(
         return out or None
 
     abs_target = os.path.abspath(os.path.join(os.getcwd(), file))
+    if max_depth is not None and max_depth < 1:
+        typer.echo("Error: --max-depth must be at least 1.", err=True)
+        raise typer.Exit(1)
     if recursive:
         if not os.path.isdir(abs_target):
             typer.echo(
@@ -289,10 +302,15 @@ def add(
             exclude_globs=_split_globs(exclude),
             auto_include_globs=_split_globs(auto_include),
             auto_exclude_globs=_split_globs(auto_exclude),
+            max_depth=max_depth,
         )
         if not result.get("success"):
             raise typer.Exit(1)
         return
+
+    if max_depth is not None:
+        typer.echo("Error: --max-depth is only valid with --recursive.", err=True)
+        raise typer.Exit(1)
 
     ok = add_tags(
         file,
@@ -309,6 +327,11 @@ def add(
 @app.command()
 def remove(
     path: Optional[str] = typer.Option(None, "-p", "--path", help="Path to the file"),
+    tag: Optional[str] = typer.Option(
+        None,
+        "--tag",
+        help="Remove only this tag from the file (--path required; not with --all-tags)",
+    ),
     invalid: bool = typer.Option(
         False, "-i", "--invalid", help="Remove invalid paths from tags"
     ),
@@ -316,9 +339,25 @@ def remove(
         False, "--all-tags", help="Clear ALL tags from a file (keeps the entry, just empties its tags)"
     ),
 ):
-    """Remove a file from tags, clean invalid paths, or clear all tags from a file"""
+    """Remove a file from tags, strip one tag, clear all tags on a file, or clean invalid paths"""
+    if all_tags and tag:
+        if runtime.json_mode():
+            runtime.emit_json(
+                {"success": False, "message": "Use either --all-tags or --tag, not both."}
+            )
+        else:
+            typer.echo("Use either --all-tags or --tag, not both.")
+        raise typer.Exit(1)
     if all_tags and path:
         result = remove_all_tags(path)
+        if runtime.json_mode():
+            runtime.emit_json(result)
+        else:
+            typer.echo(result["message"])
+        if not result["success"]:
+            raise typer.Exit(1)
+    elif tag and path:
+        result = remove_tag_from_file(path, tag)
         if runtime.json_mode():
             runtime.emit_json(result)
         else:
@@ -346,7 +385,7 @@ def remove(
             runtime.emit_json(
                 {
                     "success": False,
-                    "message": "No arguments provided. Use --path, --invalid, or --all-tags with --path.",
+                    "message": "No arguments provided. Use --path, --path with --tag, --invalid, or --all-tags with --path.",
                     "operation": None,
                 }
             )

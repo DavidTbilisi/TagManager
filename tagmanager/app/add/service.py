@@ -134,6 +134,7 @@ def add_tags_recursive(
     exclude_globs: Optional[Sequence[str]] = None,
     auto_include_globs: Optional[Sequence[str]] = None,
     auto_exclude_globs: Optional[Sequence[str]] = None,
+    max_depth: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Recursively tag every file under ``dir_path`` using the same rules as
@@ -144,6 +145,7 @@ def add_tags_recursive(
     :param exclude_globs: Files matching any glob are skipped entirely.
     :param auto_include_globs: When set, extension/content auto-tags apply only to matching files.
     :param auto_exclude_globs: Files matching any glob get explicit tags only (no auto-tags).
+    :param max_depth: Passed to :func:`iter_files_recursive` (``1`` = only files in the folder).
     """
     from ..autotag.path_filters import filter_walk_files, should_apply_autotag_for_path
     from ..autotag.service import iter_files_recursive, suggest_tags_for_file
@@ -156,7 +158,7 @@ def add_tags_recursive(
         )
         return {"success": False, "files_tagged": 0, "total_files": 0}
 
-    raw_files = iter_files_recursive(dir_path)
+    raw_files = iter_files_recursive(dir_path, max_depth=max_depth)
     if not raw_files:
         print(f"Error: No files found under '{dir_path}'.")
         return {"success": False, "files_tagged": 0, "total_files": 0}
