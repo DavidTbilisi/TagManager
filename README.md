@@ -89,6 +89,10 @@ pip install -e ".[mcp]"
 
 See [MCP clients](#mcp-cursor-claude-chatgpt-and-codex) for wiring it into your tools.
 
+### Automation snippets
+
+CI and hook examples (GitHub Actions, `uvx`, sample pre-commit): [tasks/recipes/README.md](tasks/recipes/README.md).
+
 ---
 
 ## MCP: Cursor, Claude, ChatGPT, and Codex

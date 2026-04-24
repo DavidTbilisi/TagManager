@@ -1,0 +1,14 @@
+#!/bin/sh
+# Sample pre-commit hook: install as .git/hooks/pre-commit (and chmod +x).
+# Example — fail if no files are tagged "reviewed" in src/ (customize freely).
+
+# . "$(dirname "$0")/pre-commit-env.sh"   # optional: activate venv
+
+# if command -v tm >/dev/null 2>&1; then
+#   tm search --path src/ --tags reviewed >/dev/null || {
+#     echo "Pre-commit: add tag 'reviewed' or adjust this check."
+#     exit 1
+#   }
+# fi
+
+exit 0
