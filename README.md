@@ -12,7 +12,7 @@ _Transform chaos into order with intelligent file organization_
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](README.md)
 [![Tests](https://img.shields.io/badge/Tests-406%20passed-brightgreen.svg)](tests/)
 
-[Features](#-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Commands](#-commands) • [Examples](#-examples)
+[Features](#-features) • [Installation](#-installation) • [MCP: Cursor and Claude](#mcp-cursor-and-claude) • [Quick Start](#-quick-start) • [Commands](#-commands) • [Examples](#-examples)
 
 </div>
 
@@ -76,6 +76,85 @@ git clone https://github.com/davidtbilisi/TagManager.git
 cd TagManager
 pip install -e .
 ```
+
+### Optional: MCP (AI assistants)
+
+To expose TagManager to **Cursor**, **Claude Desktop**, or any MCP client over stdio, install the optional SDK:
+
+```bash
+pip install "tagmanager-cli[mcp]"
+# or, from a clone:
+pip install -e ".[mcp]"
+```
+
+See [MCP: Cursor and Claude](#mcp-cursor-and-claude) for wiring it into your editor.
+
+---
+
+## MCP: Cursor and Claude
+
+TagManager ships a **Model Context Protocol** server (`tagmanager/mcp_stdio.py`) that exposes tools such as listing tags, searching files by tag, reading tags for a path, and adding tags (default **dry run**). You can run it manually as:
+
+```bash
+tm-mcp          # console script, if installed
+# or
+tm mcp          # same server via the main CLI
+```
+
+### Cursor
+
+1. Install the MCP extra (see [Optional: MCP](#optional-mcp-ai-assistants)).
+2. Open the **TagManager repository folder** as your workspace in Cursor (the config below relies on `${workspaceFolder}`).
+3. This repo includes **`.cursor/mcp.json`**, which registers a server named **`tagmanager`** using:
+   - `python -m tagmanager.mcp_stdio`
+   - `PYTHONPATH=${workspaceFolder}` so a local clone works without a separate `pip install` of the package into that interpreter.
+4. In Cursor, open **Settings → MCP** (or the MCP panel), then **refresh** or restart Cursor so the project server is loaded.
+5. If the server fails to start, point **`command`** in `.cursor/mcp.json` at the same Python executable you used for `pip install` (on Windows you can use `py` with `args` like `["-3", "-m", "tagmanager.mcp_stdio"]`).
+
+### Claude Desktop
+
+Claude Desktop reads **its own** MCP config file (not `.cursor/mcp.json`). In the app, use **Settings → Developer → Edit Config** to open it (or edit the path below manually).
+
+| OS | File |
+|----|------|
+| **macOS** | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| **Windows** | `%APPDATA%\Claude\claude_desktop_config.json` |
+| **Linux** | `~/.config/Claude/claude_desktop_config.json` |
+
+1. Install the MCP extra in the Python environment you will reference below.
+2. Quit Claude Desktop before editing the file.
+3. Add or merge a `mcpServers` entry. **Example** when you develop from a clone (replace the path with your real repo directory):
+
+```json
+{
+  "mcpServers": {
+    "tagmanager": {
+      "command": "python",
+      "args": ["-m", "tagmanager.mcp_stdio"],
+      "env": {
+        "PYTHONPATH": "/absolute/path/to/TagManager"
+      }
+    }
+  }
+}
+```
+
+If `tagmanager-cli[mcp]` is installed in that Python environment and imports resolve globally, you can omit `env` and use only `"command": "python"` and `"args": ["-m", "tagmanager.mcp_stdio"]`. Alternatively, if the `tm-mcp` script is on `PATH` for the same environment:
+
+```json
+{
+  "mcpServers": {
+    "tagmanager": {
+      "command": "tm-mcp",
+      "args": []
+    }
+  }
+}
+```
+
+4. Save the file and start Claude Desktop again; enable the **tagmanager** MCP server in the app if prompted. Use the developer **logs** or the tools / hammer control in the chat UI to confirm the server loaded.
+
+Further reading: [Cursor MCP](https://cursor.com/docs/mcp), [Connecting local MCP servers (Claude Desktop)](https://modelcontextprotocol.io/docs/develop/connect-local-servers).
 
 ---
 
