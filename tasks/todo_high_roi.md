@@ -10,10 +10,11 @@ Work through in order unless dependencies say otherwise. Check off when done.
 
 ## Composability and automation
 
-- [ ] **`--json` parity** — Add machine-readable output to remaining high-traffic commands (`config`, `watch`, etc.) consistent with `runtime.json_mode()` / `emit_json`.
+- [ ] **`--json` parity** — Add machine-readable output to remaining high-traffic commands (`watch`, etc.) consistent with `runtime.json_mode()` / `emit_json`.
 - [x] **`--json` on `tm export`** — Emits full result dict (`success`, `path`, `file_count`, `message`).
 - [x] **`--json` on `tm bulk`** — `bulk add` / `bulk remove` / `bulk retag` emit structured JSON when `tm --json bulk …` (or `TM_JSON=1`).
 - [x] **`--json` on `tm remove`** — `remove_path` / `remove_invalid_paths` return dicts; `tm --json remove …` emits JSON; exit code 1 when remove-by-path fails.
+- [x] **`--json` on `tm config`** — `tagmanager/app/config/handler.py` + `tests/test_cli_config_json.py`.
 - [ ] **Automation recipes** — Short snippets in-repo (e.g. `tasks/recipes/`): pre-commit hook, GitHub Action step, `uvx tagmanager-cli` one-liners; link from README when stable.
 
 ## Windows shell
@@ -46,7 +47,8 @@ Work through in order unless dependencies say otherwise. Check off when done.
 | 2026-04-21 | `--json` on `tm bulk` | `handler._emit_bulk_result` + tests |
 | 2026-04-21 | `--json` on `tm remove` | `remove/service.py` dict returns, `cli.remove`, `tests/test_cli_remove_json.py` |
 | 2026-04-21 | `--json` on `tm export` | `cli.export_data`, `tests/test_cli_export_json.py` |
+| 2026-04-21 | `--json` on `tm config` | `config/handler.py`, `tests/test_cli_config_json.py` |
 
 ## Suggested next pick
 
-- [ ] **`--json` on `tm config`** (or `watch`) — same pattern as `export` / `remove`.
+- [ ] **`--json` on `tm watch`** — same pattern as `export` / `remove` / `config`.
