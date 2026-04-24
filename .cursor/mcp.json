@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "tagmanager": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "tagmanager.mcp_stdio"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    }
+  }
+}
