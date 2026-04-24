@@ -201,6 +201,13 @@ class TestBuildMixedGraph(unittest.TestCase):
         self.assertEqual(len(result["edges"]), total_tags)
 
 
+class TestHexToRgb(unittest.TestCase):
+    def test_non_six_hex_returns_gray(self):
+        from tagmanager.app.graph.export import _hex_to_rgb
+
+        self.assertEqual(_hex_to_rgb("#abc"), (128, 128, 128))
+
+
 class TestExportGEXF(unittest.TestCase):
     def _make_graph(self):
         return {

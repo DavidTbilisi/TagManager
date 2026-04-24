@@ -276,6 +276,29 @@ class TestHelpers(unittest.TestCase):
         self.assertIsInstance(tag_file_path, str)
         self.assertTrue(len(tag_file_path) > 0)
 
+    @patch("tagmanager.app.helpers.get_config", side_effect=RuntimeError("no config"))
+    def test_get_tag_file_path_falls_back_to_config_reader(self, mock_get_config):
+        from tagmanager.app import helpers
+
+        path = helpers.get_tag_file_path()
+        self.assertIsInstance(path, str)
+        self.assertTrue(len(path) > 0)
+
+    def test_levenshtein_swaps_when_s1_shorter(self):
+        from tagmanager.app.helpers import levenshtein_distance
+
+        self.assertEqual(levenshtein_distance("a", "abc"), 2)
+
+    def test_levenshtein_empty_second_string(self):
+        from tagmanager.app.helpers import levenshtein_distance
+
+        self.assertEqual(levenshtein_distance("hello", ""), 5)
+
+    def test_normalized_levenshtein_both_empty(self):
+        from tagmanager.app.helpers import normalized_levenshtein_distance
+
+        self.assertEqual(normalized_levenshtein_distance("", ""), 1.0)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
