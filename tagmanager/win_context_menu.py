@@ -38,6 +38,20 @@ _VERBS: List[Tuple[str, str, str, str, Tuple[str, ...]]] = [
         ("dir",),
     ),
     (
+        "TagManager.AddRecursiveDryRun",
+        "Add tags here - recursive dry-run (TagManager)",
+        "tm_add_recursive_dry",
+        'add "{path}" -r --dry-run',
+        ("dir",),
+    ),
+    (
+        "TagManager.OpenTerminalHere",
+        "Open Command Prompt here (TagManager)",
+        "tm_open_terminal_here",
+        "",
+        ("dir",),
+    ),
+    (
         "TagManager.Storage",
         "Open TagManager storage folder",
         "tm_storage_open",
@@ -83,6 +97,22 @@ def _write_batch(script_stem: str, cli_after_python: str) -> Path:
         "  echo TagManager exited with code %ERR%\r\n"
         "  pause\r\n"
         ")\r\n"
+        "endlocal\r\n"
+    )
+    path.write_text(body, encoding="utf-8")
+    return path
+
+
+def _write_open_terminal_here(script_stem: str) -> Path:
+    """Open ``cmd.exe`` with working directory set to the right-clicked folder."""
+    d = _launcher_dir()
+    d.mkdir(parents=True, exist_ok=True)
+    path = d / f"{script_stem}.cmd"
+    body = (
+        "@echo off\r\n"
+        "setlocal\r\n"
+        'cd /d "%~1"\r\n'
+        'start "" cmd /k\r\n'
         "endlocal\r\n"
     )
     path.write_text(body, encoding="utf-8")
@@ -193,6 +223,9 @@ def install_context_menu(dry_run: bool = False) -> Tuple[int, str]:
     for suffix, menu_text, stem, tail, where in _VERBS:
         if stem == "tm_storage_open":
             bat = _write_storage_opener(stem)
+            cmd_line = f'"{bat}" "%1"'
+        elif stem == "tm_open_terminal_here":
+            bat = _write_open_terminal_here(stem)
             cmd_line = f'"{bat}" "%1"'
         else:
             bat = _write_batch(stem, tail)
