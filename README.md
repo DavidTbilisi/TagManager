@@ -47,7 +47,7 @@ TagManager stores tags in a lightweight JSON sidecar (`~/file_tags.json`) — no
 | **Watch mode** | Auto-tag files the moment they land in a directory |
 | **Move tracking** | `tm mv` keeps tag records in sync when you rename files |
 | **Config** | Full dot-notation config system with export/import |
-| **Shell completion** | Tab-complete tag names, presets, and alias names |
+| **Shell completion** | Typer/bash/zsh tab-complete tags, presets, aliases; **Fish:** [completions/tm.fish](completions/tm.fish) |
 
 ---
 
@@ -221,6 +221,9 @@ tm graph
 
 # Watch a directory — auto-tag as files arrive
 tm watch ~/Downloads --tags inbox
+
+# Portable export (paths relative to project root)
+tm export -o tags.json --relative-to .
 ```
 
 ---
@@ -325,6 +328,8 @@ tm bulk add "*.py" --tags python          # tag by glob
 tm bulk remove --tag deprecated           # remove a tag from all files
 tm bulk retag --from js --to javascript   # rename a tag everywhere
 # All bulk commands support --dry-run
+# With journal on (TAGMANAGER_JOURNAL=1 or journal.enabled), retag is undoable: tm undo
+# Aliases (tm alias) normalize names at tag time; retag rewrites stored tags in the DB
 ```
 
 ### Aliases, Presets, Move tracking

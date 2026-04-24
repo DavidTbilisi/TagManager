@@ -7,12 +7,49 @@ from typing import Dict, List, Optional
 from ..helpers import load_tags, save_tags
 
 
-def export_tags_json(output_path: str) -> Dict:
+def _export_path_key(
+    path: str,
+    relative_to: Optional[str],
+    strip_prefix: Optional[str],
+) -> str:
+    """Map a stored absolute path to an export key (relative or stripped)."""
+    path_abs = os.path.normpath(os.path.abspath(path))
+    if relative_to:
+        root = os.path.normpath(os.path.abspath(relative_to))
+        try:
+            return os.path.relpath(path_abs, root)
+        except ValueError:
+            return path_abs
+    if strip_prefix:
+        sp = os.path.normpath(os.path.abspath(strip_prefix.rstrip("/\\")))
+        if path_abs == sp:
+            return "."
+        if path_abs.startswith(sp + os.sep):
+            rest = path_abs[len(sp) + 1 :]
+            return rest if rest else "."
+    return path_abs
+
+
+def export_tags_json(
+    output_path: str,
+    relative_to: Optional[str] = None,
+    strip_prefix: Optional[str] = None,
+) -> Dict:
     """Export all tag data to a JSON file."""
+    if relative_to and strip_prefix:
+        return {
+            "success": False,
+            "path": output_path,
+            "message": "Use only one of relative_to or strip_prefix, not both.",
+        }
     data = load_tags()
+    mapped: Dict[str, List[str]] = {}
+    for path, tags in data.items():
+        key = _export_path_key(path, relative_to, strip_prefix)
+        mapped[key] = list(tags)
     try:
         with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+            json.dump(mapped, f, indent=2, ensure_ascii=False)
         return {
             "success": True,
             "path": output_path,
@@ -23,8 +60,18 @@ def export_tags_json(output_path: str) -> Dict:
         return {"success": False, "path": output_path, "message": str(e)}
 
 
-def export_tags_csv(output_path: str) -> Dict:
+def export_tags_csv(
+    output_path: str,
+    relative_to: Optional[str] = None,
+    strip_prefix: Optional[str] = None,
+) -> Dict:
     """Export all tag data to a CSV file (one row per file-tag pair)."""
+    if relative_to and strip_prefix:
+        return {
+            "success": False,
+            "path": output_path,
+            "message": "Use only one of relative_to or strip_prefix, not both.",
+        }
     data = load_tags()
     rows = 0
     try:
@@ -32,7 +79,8 @@ def export_tags_csv(output_path: str) -> Dict:
             writer = csv.writer(f)
             writer.writerow(["file_path", "tags"])
             for path, tags in data.items():
-                writer.writerow([path, ",".join(tags)])
+                key = _export_path_key(path, relative_to, strip_prefix)
+                writer.writerow([key, ",".join(tags)])
                 rows += 1
         return {
             "success": True,

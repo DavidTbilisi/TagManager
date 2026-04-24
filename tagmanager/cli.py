@@ -1002,17 +1002,31 @@ def export_data(
         "--format", "-f",
         help="Output format: json or csv (inferred from extension if omitted)",
     ),
+    relative_to: Optional[str] = typer.Option(
+        None,
+        "--relative-to",
+        help="Write paths relative to this directory (portable exports)",
+    ),
+    strip_prefix: Optional[str] = typer.Option(
+        None,
+        "--strip-prefix",
+        help="Strip this absolute path prefix from each stored path",
+    ),
 ):
     """Export all tag data to a JSON or CSV file"""
     ext = (fmt or os.path.splitext(output)[1].lstrip(".") or "json").lower()
     if ext == "csv":
         if not output.endswith(".csv"):
             output = os.path.splitext(output)[0] + ".csv"
-        result = export_tags_csv(output)
+        result = export_tags_csv(
+            output, relative_to=relative_to, strip_prefix=strip_prefix
+        )
     else:
         if not output.endswith(".json"):
             output = os.path.splitext(output)[0] + ".json"
-        result = export_tags_json(output)
+        result = export_tags_json(
+            output, relative_to=relative_to, strip_prefix=strip_prefix
+        )
     if runtime.json_mode():
         runtime.emit_json(result)
     else:
