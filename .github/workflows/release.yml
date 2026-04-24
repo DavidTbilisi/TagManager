@@ -1,14 +1,17 @@
 # Build sdist/wheel and publish to PyPI when a version tag is pushed (e.g. v1.7.0).
 #
-# Cut a release from the default branch (after version bump is merged): ./publish.sh release
-# (or: gh release create v1.8.0 --title "TagManager v1.8.0" --notes-file release_notes.md)
+# Auth (pick one):
 #
-# Auth: PyPI trusted publishing (OIDC). On PyPI: Project → Publishing → Add a
-# pending publisher → GitHub → owner DavidTbilisi → repo TagManager → workflow
-# release.yml → Environment name **pypi** (must match the GitHub Environment below).
-# Requires `id-token: write` and a GitHub Environment named `pypi` (no secrets needed).
+# 1) Trusted publishing (no secrets): PyPI → your project → Publishing →
+#    "Add a pending publisher" → GitHub → Owner `DavidTbilisi` → Repository
+#    `TagManager` → Workflow `release.yml` → Environment name **leave blank**
+#    unless you also create a GitHub Environment with the same name on both sides.
+#    This workflow does **not** set `jobs.publish.environment`, so OIDC sends
+#    `environment: MISSING` — PyPI must match that (blank environment field).
 #
-# Fallback: add repo secret PYPI_API_TOKEN and uncomment `password:` on the publish step.
+# 2) API token: create a PyPI project-scoped token, add repo secret `PYPI_API_TOKEN`.
+#    When the secret is set, `gh-action-pypi-publish` uses it; when empty, it
+#    falls back to OIDC (see pypa/gh-action-pypi-publish PR #122).
 
 name: release
 
@@ -24,9 +27,6 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/tagmanager-cli
     steps:
       - uses: actions/checkout@v4
 
@@ -42,6 +42,5 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        # Optional: set repo secret PYPI_API_TOKEN to publish without configuring OIDC.
-        # with:
-        #   password: ${{ secrets.PYPI_API_TOKEN }}
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
