@@ -189,6 +189,33 @@ class TestBulkHandlers(unittest.TestCase):
         self.assertEqual(sig.parameters['remove_tag'].default, None)
         self.assertEqual(sig.parameters['dry_run'].default, False)
 
+    @patch("tagmanager.app.bulk.handler.runtime.emit_json")
+    @patch("tagmanager.app.bulk.handler.runtime.json_mode", return_value=True)
+    @patch("tagmanager.app.bulk.handler.bulk_add_tags")
+    def test_handle_bulk_add_json_mode(self, mock_bulk_add, _mock_json_mode, mock_emit_json):
+        from tagmanager.app.bulk.handler import handle_bulk_add
+
+        mock_bulk_add.return_value = {
+            "success": True,
+            "message": "ok",
+            "files_found": ["/a.py"],
+            "dry_run": False,
+        }
+        handle_bulk_add("*.py", ["t"], ".", False)
+        mock_emit_json.assert_called_once()
+        payload = mock_emit_json.call_args[0][0]
+        self.assertTrue(payload["success"])
+        self.assertEqual(payload["files_found"], ["/a.py"])
+
+    @patch("tagmanager.app.bulk.handler.runtime.emit_json")
+    @patch("tagmanager.app.bulk.handler.runtime.json_mode", return_value=True)
+    def test_handle_bulk_add_json_validation_no_tags(self, _mock_json_mode, mock_emit_json):
+        from tagmanager.app.bulk.handler import handle_bulk_add
+
+        handle_bulk_add("*.py", [], ".", False)
+        mock_emit_json.assert_called_once()
+        self.assertFalse(mock_emit_json.call_args[0][0]["success"])
+
 
 if __name__ == '__main__':
     unittest.main()

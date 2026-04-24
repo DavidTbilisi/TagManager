@@ -10,7 +10,8 @@ Work through in order unless dependencies say otherwise. Check off when done.
 
 ## Composability and automation
 
-- [ ] **`--json` parity** — Add machine-readable output to remaining high-traffic commands (`bulk`, `remove`, `export`, `config`, `watch`, etc.) consistent with `runtime.json_mode()` / `emit_json`.
+- [ ] **`--json` parity** — Add machine-readable output to remaining high-traffic commands (`remove`, `export`, `config`, `watch`, etc.) consistent with `runtime.json_mode()` / `emit_json`.
+- [x] **`--json` on `tm bulk`** — `bulk add` / `bulk remove` / `bulk retag` emit structured JSON when `tm --json bulk …` (or `TM_JSON=1`).
 - [ ] **Automation recipes** — Short snippets in-repo (e.g. `tasks/recipes/`): pre-commit hook, GitHub Action step, `uvx tagmanager-cli` one-liners; link from README when stable.
 
 ## Windows shell
@@ -40,7 +41,8 @@ Work through in order unless dependencies say otherwise. Check off when done.
 |------|------|-------|
 | 2026-04-21 | `tm doctor` | `run_doctor()`, tests in `tests/test_doctor_service.py` |
 | 2026-04-21 | CI coverage gate | `.github/workflows/tests.yml`, `--cov-fail-under=57` |
+| 2026-04-21 | `--json` on `tm bulk` | `handler._emit_bulk_result` + tests |
 
 ## Suggested next pick
 
-- [ ] **`--json` on `bulk`** (or `remove`) — high script value, localized CLI change.
+- [ ] **`--json` on `remove`** (or `export`) — same pattern as `bulk`.
