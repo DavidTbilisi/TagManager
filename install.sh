@@ -103,7 +103,8 @@ check_dependencies() {
 
 install_build_tools() {
     print_step "Installing/upgrading build tools..."
-    "$PIP_CMD" install --upgrade pip build twine
+    # Use python -m pip so upgrading pip works on Windows (pip.exe cannot replace itself).
+    "$PYTHON_CMD" -m pip install --upgrade pip build twine
     print_success "Build tools ready"
 }
 
