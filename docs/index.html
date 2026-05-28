@@ -379,7 +379,7 @@
         <li>All CLI features</li>
         <li>Email support</li>
       </ul>
-      <a href="mailto:ge.philadelphia1@gmail.com?subject=TagManager%20Individual%20License" class="btn btn-primary">Buy now →</a>
+      <a href="#" class="btn btn-primary" onclick="openCheckout('pri_01ksr72rdvfephq1h3gb20dqse'); return false;">Buy now →</a>
     </div>
 
     <div class="plan">
@@ -393,7 +393,7 @@
         <li>Watch mode</li>
         <li>Priority support</li>
       </ul>
-      <a href="mailto:ge.philadelphia1@gmail.com?subject=TagManager%20Team%20License" class="btn btn-outline">Contact us →</a>
+      <a href="#" class="btn btn-outline" onclick="openCheckout('pri_01ksr7537sr6x9daz8zdy6rpv8'); return false;">Subscribe →</a>
     </div>
 
     <div class="plan">
@@ -424,6 +424,19 @@
   </div>
   <p>© 2026 Davit Tchintcharauli · Built in Tbilisi, Georgia</p>
 </footer>
+
+
+<script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+<script>
+  // Client-side token — safe to commit; restricted to davidtbilisi.github.io in Paddle dashboard
+  Paddle.Initialize({ token: 'live_b48424d0655defea076a1556962' });
+
+  function openCheckout(priceId) {
+    Paddle.Checkout.open({
+      items: [{ priceId: priceId, quantity: 1 }]
+    });
+  }
+</script>
 
 </body>
 </html>
