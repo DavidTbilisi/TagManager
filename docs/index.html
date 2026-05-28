@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TagManager — Terminal-native file tagging for knowledge workers</title>
+  <meta name="description" content="Tag your files without moving them. Cross-category search, 3D graph visualization, MCP/AI integration, and watch mode — all from your terminal." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --green: #3fb950;
+      --green-dim: #238636;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --radius: 8px;
+      --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* NAV */
+    nav {
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 100;
+    }
+    .nav-logo {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      color: var(--green);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .nav-logo span { color: var(--text-muted); }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a { color: var(--text-muted); font-size: 0.9rem; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .btn {
+      display: inline-block;
+      padding: 0.45rem 1rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; text-decoration: none; }
+    .btn-primary { background: var(--green-dim); color: #fff; }
+    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+
+    /* HERO */
+    .hero {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 5rem 2rem 3rem;
+      text-align: center;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(63,185,80,0.1);
+      color: var(--green);
+      border: 1px solid rgba(63,185,80,0.3);
+      border-radius: 20px;
+      padding: 0.25rem 0.9rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      font-family: var(--mono);
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -1px;
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 em { color: var(--green); font-style: normal; }
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 580px;
+      margin: 0 auto 2.5rem;
+    }
+    .hero-cta { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+    /* INSTALL BOX */
+    .install-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.5rem;
+      font-family: var(--mono);
+      font-size: 0.95rem;
+      color: var(--green);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      max-width: 400px;
+      margin: 2.5rem auto 0;
+    }
+    .install-box span { color: var(--text-muted); }
+
+    /* STATS BAR */
+    .stats-bar {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 1.25rem 2rem;
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+    }
+    .stat { text-align: center; }
+    .stat-num { font-size: 1.6rem; font-weight: 800; color: var(--green); font-family: var(--mono); }
+    .stat-label { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* SECTIONS */
+    section { max-width: 1000px; margin: 0 auto; padding: 4rem 2rem; }
+    section h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.5px;
+    }
+    section .section-sub {
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+    }
+
+    /* FEATURE GRID */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      transition: border-color 0.2s;
+    }
+    .feature-card:hover { border-color: var(--green); }
+    .feature-icon { font-size: 1.5rem; margin-bottom: 0.75rem; }
+    .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .feature-card p { font-size: 0.875rem; color: var(--text-muted); }
+
+    /* CODE BLOCK */
+    .code-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      font-family: var(--mono);
+      font-size: 0.875rem;
+      overflow-x: auto;
+    }
+    .code-block .prompt { color: var(--text-muted); user-select: none; }
+    .code-block .cmd { color: var(--accent); }
+    .code-block .comment { color: var(--text-muted); }
+    .code-line { margin-bottom: 0.35rem; }
+
+    /* PRICING */
+    #pricing { scroll-margin-top: 70px; }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+    .plan {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .plan.featured {
+      border-color: var(--green);
+      position: relative;
+    }
+    .plan-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--green-dim);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.75rem;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .plan-name { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.75rem; }
+    .plan-price { font-size: 2.2rem; font-weight: 800; font-family: var(--mono); margin-bottom: 0.25rem; }
+    .plan-price sup { font-size: 1rem; vertical-align: super; }
+    .plan-period { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.25rem; }
+    .plan-features { list-style: none; flex: 1; margin-bottom: 1.5rem; }
+    .plan-features li { font-size: 0.875rem; color: var(--text-muted); padding: 0.3rem 0; border-bottom: 1px solid var(--border); display: flex; gap: 0.5rem; }
+    .plan-features li::before { content: '✓'; color: var(--green); flex-shrink: 0; }
+    .plan .btn { text-align: center; width: 100%; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    .footer-links { display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .footer-links a { color: var(--text-muted); }
+    .footer-links a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">tm<span> / TagManager</span></div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="https://github.com/DavidTbilisi/TagManager">GitHub</a>
+    <a href="https://pypi.org/project/tagmanager-cli/" class="btn btn-outline">PyPI</a>
+    <a href="#pricing" class="btn btn-primary">Get license</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="badge">406 passing tests · MIT open core</div>
+  <h1>Tag files.<br><em>Find anything.</em></h1>
+  <p>
+    A terminal-native file tagging system for knowledge workers, researchers,
+    and developers who've outgrown folders.
+  </p>
+  <div class="hero-cta">
+    <a href="#pricing" class="btn btn-primary">Get a commercial license →</a>
+    <a href="https://github.com/DavidTbilisi/TagManager" class="btn btn-outline">View on GitHub</a>
+  </div>
+  <div class="install-box">
+    <span>$</span> pip install tagmanager-cli
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-num">406</div><div class="stat-label">Passing tests</div></div>
+  <div class="stat"><div class="stat-num">60+</div><div class="stat-label">Auto-tagged file types</div></div>
+  <div class="stat"><div class="stat-num">3D</div><div class="stat-label">Tag graph visualization</div></div>
+  <div class="stat"><div class="stat-num">MCP</div><div class="stat-label">AI integration ready</div></div>
+</div>
+
+<section id="features">
+  <h2>Everything your folder system can't do</h2>
+  <p class="section-sub">One file. Many tags. Zero reorganization.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🏷️</div>
+      <h3>Multi-tag any file</h3>
+      <p>Assign as many tags as you want. A PDF can be <code>work</code>, <code>client-a</code>, <code>q1</code>, and <code>final</code> simultaneously.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔍</div>
+      <h3>Cross-category search</h3>
+      <p>Fuzzy path search and tag intersection queries. Find everything tagged <code>work</code> AND <code>urgent</code> in one command.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌐</div>
+      <h3>3D tag graph</h3>
+      <p>Visualize tag relationships and co-occurrences as an interactive 3D network in your browser. See the shape of your knowledge.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👁️</div>
+      <h3>Watch mode</h3>
+      <p>Auto-tag files arriving in a folder. <code>tm watch ~/Downloads --tags inbox</code> — every new download gets tagged instantly.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <h3>MCP / AI integration</h3>
+      <p>Native MCP server for Cursor, Claude Desktop, ChatGPT, and OpenAI Codex. Let your AI assistant tag and search your files.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🖥️</div>
+      <h3>Web GUI</h3>
+      <p>Full browser-based interface for tagging and searching — no terminal required for teammates. Runs locally on your machine.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Bulk operations</h3>
+      <p>Tag entire directories with glob patterns. Retag, move-track, and filter duplicates and orphans across thousands of files.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🐚</div>
+      <h3>Shell completion</h3>
+      <p>Tab-completion for bash, zsh, and Fish. Tag names auto-complete from your existing database as you type.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔌</div>
+      <h3>Obsidian &amp; Logseq ready</h3>
+      <p>Works alongside your PKM setup — tag vault files, search across notes and attachments, surface orphaned resources.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>See it in action</h2>
+  <p class="section-sub">From install to first search in 60 seconds.</p>
+  <div class="code-block">
+    <div class="code-line"><span class="prompt">$</span> <span class="cmd">pip install tagmanager-cli</span></div>
+    <div class="code-line">&nbsp;</div>
+    <div class="code-line"><span class="comment"># Tag a file with multiple labels</span></div>
+    <div class="code-line"><span class="prompt">$</span> <span class="cmd">tm add report.pdf --tags work client-a q1 2024 final</span></div>
+    <div class="code-line">&nbsp;</div>
+    <div class="code-line"><span class="comment"># Find everything tagged work AND q1</span></div>
+    <div class="code-line"><span class="prompt">$</span> <span class="cmd">tm search --tags work q1</span></div>
+    <div class="code-line">&nbsp;</div>
+    <div class="code-line"><span class="comment"># Bulk tag all Python files in a project</span></div>
+    <div class="code-line"><span class="prompt">$</span> <span class="cmd">tm bulk add "src/**/*.py" --tags python source</span></div>
+    <div class="code-line">&nbsp;</div>
+    <div class="code-line"><span class="comment"># Open 3D tag graph in browser</span></div>
+    <div class="code-line"><span class="prompt">$</span> <span class="cmd">tm graph --3d</span></div>
+    <div class="code-line">&nbsp;</div>
+    <div class="code-line"><span class="comment"># Auto-tag Downloads as they arrive</span></div>
+    <div class="code-line"><span class="prompt">$</span> <span class="cmd">tm watch ~/Downloads --tags inbox</span></div>
+  </div>
+</section>
+
+<section id="pricing">
+  <h2>Pricing</h2>
+  <p class="section-sub">The CLI is free and open source (MIT). Commercial use and team features require a license.</p>
+  <div class="pricing-grid">
+
+    <div class="plan">
+      <div class="plan-name">Free</div>
+      <div class="plan-price">$0</div>
+      <div class="plan-period">Personal use · MIT license</div>
+      <ul class="plan-features">
+        <li>Full CLI on PyPI</li>
+        <li>All core tagging features</li>
+        <li>3D graph visualization</li>
+        <li>Watch mode</li>
+        <li>Personal use only</li>
+      </ul>
+      <a href="https://pypi.org/project/tagmanager-cli/" class="btn btn-outline">Install free →</a>
+    </div>
+
+    <div class="plan featured" style="position:relative;">
+      <div class="plan-badge">Most popular</div>
+      <div class="plan-name">Individual</div>
+      <div class="plan-price"><sup>$</sup>19</div>
+      <div class="plan-period">One-time · lifetime license</div>
+      <ul class="plan-features">
+        <li>Commercial use rights</li>
+        <li>GUI desktop tier</li>
+        <li>MCP / AI integration</li>
+        <li>All CLI features</li>
+        <li>Email support</li>
+      </ul>
+      <a href="mailto:ge.philadelphia1@gmail.com?subject=TagManager%20Individual%20License" class="btn btn-primary">Buy now →</a>
+    </div>
+
+    <div class="plan">
+      <div class="plan-name">Team</div>
+      <div class="plan-price"><sup>$</sup>99</div>
+      <div class="plan-period">per year · up to 5 seats</div>
+      <ul class="plan-features">
+        <li>Everything in Individual</li>
+        <li>5 seats included</li>
+        <li>Web GUI (localhost)</li>
+        <li>Watch mode</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="mailto:ge.philadelphia1@gmail.com?subject=TagManager%20Team%20License" class="btn btn-outline">Contact us →</a>
+    </div>
+
+    <div class="plan">
+      <div class="plan-name">Enterprise</div>
+      <div class="plan-price"><sup>$</sup>499</div>
+      <div class="plan-period">per year · unlimited seats</div>
+      <ul class="plan-features">
+        <li>Everything in Team</li>
+        <li>Unlimited seats</li>
+        <li>Custom integrations</li>
+        <li>Commercial-use rights</li>
+        <li>Dedicated support</li>
+      </ul>
+      <a href="mailto:ge.philadelphia1@gmail.com?subject=TagManager%20Enterprise" class="btn btn-outline">Contact us →</a>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="footer-links">
+    <a href="https://github.com/DavidTbilisi/TagManager">GitHub</a>
+    <a href="https://pypi.org/project/tagmanager-cli/">PyPI</a>
+    <a href="#pricing">Pricing</a>
+    <a href="terms.html">Terms of Service</a>
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="refund.html">Refund Policy</a>
+  </div>
+  <p>© 2026 Davit Tchintcharauli · Built in Tbilisi, Georgia</p>
+</footer>
+
+</body>
+</html>
