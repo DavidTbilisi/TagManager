@@ -474,24 +474,6 @@ def storage(
         print(show_storage_location())
 
 
-@app.command("gui")
-def gui(
-    host: str = typer.Option(
-        "127.0.0.1",
-        "--host",
-        help="Bind address (default loopback; avoid exposing on untrusted networks)",
-    ),
-    port: int = typer.Option(8844, "--port", "-p", help="TCP port"),
-    no_browser: bool = typer.Option(
-        False,
-        "--no-browser",
-        help="Do not open the default browser automatically",
-    ),
-):
-    """Open the thin browser UI for tagging and search (same tag DB as the CLI)."""
-    run_gui_server(host, port, open_browser=not no_browser)
-
-
 search_app = typer.Typer(
     help="Search by tags or path; save and re-run named queries",
     invoke_without_command=True,
