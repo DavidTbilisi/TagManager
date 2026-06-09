@@ -474,6 +474,24 @@ def storage(
         print(show_storage_location())
 
 
+@app.command("gui")
+def gui(
+    host: str = typer.Option(
+        "127.0.0.1",
+        "--host",
+        help="Bind address (default loopback; avoid exposing on untrusted networks)",
+    ),
+    port: int = typer.Option(8844, "--port", "-p", help="TCP port"),
+    no_browser: bool = typer.Option(
+        False,
+        "--no-browser",
+        help="Do not open the default browser automatically",
+    ),
+):
+    """Open the thin browser UI for tagging and search (same tag DB as the CLI)."""
+    run_gui_server(host, port, open_browser=not no_browser)
+
+
 search_app = typer.Typer(
     help="Search by tags or path; save and re-run named queries",
     invoke_without_command=True,
@@ -695,12 +713,58 @@ filter_app = typer.Typer(help="Smart filtering and analysis")
 config_app = typer.Typer(help="Configuration management")
 alias_app = typer.Typer(help="Tag alias management")
 preset_app = typer.Typer(help="Tag preset management")
+license_app = typer.Typer(help="Manage your TagManager Pro license")
+shell_app = typer.Typer(help="Internal: shell tag dialog launcher (used by integrations)")
+sendto_app = typer.Typer(help="Windows 'Send to' menu integration (right-click -> Send to -> Tag with TagManager)")
+hotkey_app = typer.Typer(help="Global hotkey integration (Ctrl+Alt+T by default -> file picker -> tag dialog)")
 
-app.add_typer(bulk_app,   name="bulk")
-app.add_typer(filter_app, name="filter")
-app.add_typer(config_app, name="config")
-app.add_typer(alias_app,  name="alias")
-app.add_typer(preset_app, name="preset")
+app.add_typer(bulk_app,    name="bulk")
+app.add_typer(filter_app,  name="filter")
+app.add_typer(config_app,  name="config")
+app.add_typer(alias_app,   name="alias")
+app.add_typer(preset_app,  name="preset")
+app.add_typer(license_app, name="license")
+app.add_typer(shell_app,   name="shell")
+app.add_typer(sendto_app,  name="sendto")
+app.add_typer(hotkey_app,  name="hotkey")
+
+
+# ---------------------------------------------------------------------------
+# License sub-commands
+# ---------------------------------------------------------------------------
+
+@license_app.command("activate")
+def license_activate(
+    transaction_id: str = typer.Argument(
+        ...,
+        metavar="TRANSACTION_ID",
+        help="Paddle transaction id from your purchase receipt (starts with 'txn_')",
+    ),
+):
+    """Activate TagManager Pro with a Paddle transaction id."""
+    handle_license_activate(transaction_id)
+
+
+@license_app.command("status")
+def license_status():
+    """Show current license status."""
+    handle_license_status()
+
+
+@license_app.command("refresh")
+def license_refresh():
+    """Re-fetch the license attestation from the verify server."""
+    handle_license_refresh()
+
+
+@license_app.command("deactivate")
+def license_deactivate(
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
+):
+    """Remove the installed license key."""
+    if not yes:
+        typer.confirm("Remove the installed license key?", abort=True)
+    handle_license_deactivate()
 
 
 # ---------------------------------------------------------------------------
@@ -1408,6 +1472,7 @@ def watch(
     ),
 ):
     """Watch a directory and auto-tag files as they are created or moved"""
+    require_pro("tm watch")
     ignore_patterns = list(ignore) if ignore else list(_DEFAULT_IGNORE)
     handle_watch_command(
         watch_path=path,
@@ -1476,6 +1541,7 @@ def graph(
     ),
 ):
     """Visualize tag relationships as an interactive network graph (2D/3D)"""
+    require_pro("tm graph")
     handle_graph_command(
         mode=mode,
         three_d=three_d,
@@ -1487,6 +1553,154 @@ def graph(
         no_open=no_open,
         no_server=no_server,
     )
+
+
+# ---------------------------------------------------------------------------
+# MCP server
+# ---------------------------------------------------------------------------
+
+@app.command("mcp")
+def mcp_server(
+    show_config: bool = typer.Option(False, "--config", help="Print Claude Desktop config and exit"),
+):
+    """Start the TagManager MCP server (stdio transport for Claude/AI clients)."""
+    import sys
+    import json as _json
+
+    # --config prints config but does not start the server, so allow it for free
+    # users so they can preview the integration before purchasing.
+    if not show_config:
+        require_pro("tm mcp")
+
+    if show_config:
+        py_exe = sys.executable
+        cwd = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cfg = {
+            "mcpServers": {
+                "tagmanager": {
+                    "command": py_exe,
+                    "args": ["-m", "tagmanager.mcp_server"],
+                    "cwd": cwd,
+                }
+            }
+        }
+        typer.echo("\nAdd to your Claude Desktop config:")
+        typer.echo("%APPDATA%\\Claude\\claude_desktop_config.json\n")
+        typer.echo(_json.dumps(cfg, indent=2))
+        return
+
+    try:
+        from tagmanager.mcp_server.server import main as _mcp_main
+        typer.echo("Starting TagManager MCP server (stdio)…", err=True)
+        _mcp_main()
+    except ImportError:
+        typer.echo("MCP not installed. Run: pip install mcp", err=True)
+        raise typer.Exit(1)
+
+
+# ---------------------------------------------------------------------------
+# Shell integration helpers
+# ---------------------------------------------------------------------------
+#
+# Background: on Windows 11 26H1+, the modern File Explorer silently filters
+# out HKCU-registered shell verbs (both plain command verbs and IExplorerCommand
+# COM handlers via registry — verified empirically; Explorer never even loads
+# the DLL). The sanctioned way is a signed MSIX sparse package, which needs
+# admin and the Windows SDK to build/install. The `tm sendto` and `tm hotkey`
+# commands below give the same convenience without any of that.
+#
+# `tm shell tag` remains as the primitive that opens the tag dialog for a
+# given path — it's what the Send to shortcut and hotkey daemon call.
+
+
+@shell_app.command("tag")
+def shell_tag(
+    path: str = typer.Argument(..., help="File or folder to tag"),
+):
+    """Pop the tag dialog for the given path. Used by Send to / hotkey integrations."""
+    raise typer.Exit(handle_shell_tag(path))
+
+
+@shell_app.command("install")
+def shell_install():
+    """[Deprecated] Use `tm sendto install` instead — Win11 blocks registry-only context menus."""
+    print(
+        "`tm shell install` is no longer supported: Windows 11 silently blocks\n"
+        "HKCU-registered shell verbs and IExplorerCommand COM handlers from the\n"
+        "right-click menu unless they ship in a signed MSIX package.\n\n"
+        "Use one of these instead:\n"
+        "  tm sendto install   # adds right-click -> Send to -> Tag with TagManager\n"
+        "  tm hotkey install   # registers a global Ctrl+Alt+T hotkey"
+    )
+    raise typer.Exit(1)
+
+
+@shell_app.command("uninstall")
+def shell_uninstall():
+    """Remove any registry entries left over from earlier `tm shell install` attempts."""
+    raise typer.Exit(handle_shell_uninstall())
+
+
+@shell_app.command("status")
+def shell_status():
+    """Show registry-state diagnostics (kept for cleanup; not the primary integration)."""
+    raise typer.Exit(handle_shell_status())
+
+
+# ---------------------------------------------------------------------------
+# Send to menu integration
+# ---------------------------------------------------------------------------
+
+@sendto_app.command("install")
+def sendto_install():
+    """Add a 'Tag with TagManager' entry to the Windows 'Send to' menu (no admin)."""
+    raise typer.Exit(handle_sendto_install())
+
+
+@sendto_app.command("uninstall")
+def sendto_uninstall():
+    """Remove the 'Tag with TagManager' Send to entry."""
+    raise typer.Exit(handle_sendto_uninstall())
+
+
+@sendto_app.command("status")
+def sendto_status():
+    """Check whether the Send to entry is installed."""
+    raise typer.Exit(handle_sendto_status())
+
+
+# ---------------------------------------------------------------------------
+# Global hotkey integration
+# ---------------------------------------------------------------------------
+
+@hotkey_app.command("run")
+def hotkey_run(
+    modifiers: str = typer.Option("ctrl+alt", "--modifiers", "-m", help="Modifier chord, e.g. 'ctrl+alt' or 'ctrl+shift'"),
+    key: str = typer.Option("t", "--key", "-k", help="Single character key, e.g. 't'"),
+):
+    """Run the hotkey daemon in the foreground. Pops a file picker on trigger."""
+    raise typer.Exit(handle_hotkey_run(modifiers, key))
+
+
+@hotkey_app.command("install")
+def hotkey_install(
+    modifiers: str = typer.Option("ctrl+alt", "--modifiers", "-m", help="Modifier chord"),
+    key: str = typer.Option("t", "--key", "-k", help="Single character key"),
+):
+    """Install the hotkey daemon to autostart at logon (Startup folder, no admin)."""
+    raise typer.Exit(handle_hotkey_install(modifiers, key))
+
+
+@hotkey_app.command("uninstall")
+def hotkey_uninstall():
+    """Remove the hotkey daemon from autostart."""
+    raise typer.Exit(handle_hotkey_uninstall())
+
+
+@hotkey_app.command("status")
+def hotkey_status():
+    """Check whether the hotkey daemon autostart is installed."""
+    raise typer.Exit(handle_hotkey_status())
 
 
 # ---------------------------------------------------------------------------

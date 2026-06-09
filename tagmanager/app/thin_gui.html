@@ -3,172 +3,2970 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TagManager — thin GUI</title>
+  <title>The TagManager · A Personal Catalogue</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&family=IBM+Plex+Mono:wght@400;500&display=swap" />
   <style>
-    :root { font-family: system-ui, sans-serif; background: #0f1419; color: #e6edf3; }
-    body { max-width: 52rem; margin: 2rem auto; padding: 0 1rem; }
-    h1 { font-size: 1.25rem; font-weight: 600; }
-    a { color: #58a6ff; }
-    fieldset { border: 1px solid #30363d; border-radius: 8px; margin: 1rem 0; padding: 1rem; }
-    legend { padding: 0 0.5rem; color: #8b949e; }
-    label { display: block; margin: 0.5rem 0 0.25rem; font-size: 0.85rem; color: #8b949e; }
-    input[type="text"], textarea { width: 100%; box-sizing: border-box; padding: 0.5rem;
-      background: #161b22; border: 1px solid #30363d; border-radius: 6px; color: inherit; }
-    button { margin: 0.35rem 0.35rem 0.35rem 0; padding: 0.45rem 0.9rem; border-radius: 6px;
-      border: 1px solid #30363d; background: #21262d; color: #e6edf3; cursor: pointer; }
-    button.primary { background: #238636; border-color: #238636; }
-    button.danger { background: #da3633; border-color: #f85149; }
-    .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
-    .tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.5rem 0; }
-    .tag { background: #21262d; border: 1px solid #30363d; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; }
-    #msg { min-height: 1.25rem; font-size: 0.9rem; margin-top: 0.5rem; }
-    .err { color: #f85149; }
-    .ok { color: #3fb950; }
-    ul.results { list-style: none; padding: 0; margin: 0.5rem 0 0; max-height: 14rem; overflow: auto; }
-    ul.results li { padding: 0.35rem 0; border-bottom: 1px solid #21262d; font-size: 0.85rem; word-break: break-all; }
-    .hint { font-size: 0.8rem; color: #8b949e; margin-top: 0.75rem; }
+    /* ─────────────────────────────────────────────────────────────
+       Quiet edition · Fraunces for prose, IBM Plex Mono for data.
+       Calm, well-spaced, high-contrast. Vermillion only when it
+       actually means something: primary action, current section,
+       dry-run notice.
+    ───────────────────────────────────────────────────────────── */
+    :root {
+      --paper:        #f8f4ea;
+      --paper-deep:   #f0ead8;
+      --paper-edge:   #e7e0c8;
+      --ink:          #16110b;
+      --ink-soft:     #3a2f23;
+      --ink-mute:     #6b5a47;
+      --ink-faint:    #a08a6e;
+      --rule:         #d6c8a9;
+      --rule-soft:    #e2d8c0;
+      --accent:       #a82a1f;
+      --accent-soft:  rgba(168, 42, 31, .08);
+      --accent-deep:  #781a13;
+      --leaf:         #4a6e2f;
+
+      --display: "Fraunces", "EB Garamond", Georgia, serif;
+      --mono:    "IBM Plex Mono", ui-monospace, Consolas, monospace;
+      --serif:   "Fraunces", "EB Garamond", Georgia, serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: 18px;
+      line-height: 1.65;
+      font-feature-settings: "kern", "liga";
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* ─── Layout ──────────────────────────────────────────── */
+    .page {
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 4rem 2.5rem 6rem;
+      display: grid;
+      grid-template-columns: 8rem 1fr;
+      column-gap: 3.5rem;
+    }
+    @media (max-width: 960px) {
+      .page { grid-template-columns: 1fr; padding: 2rem 1.4rem 4rem; }
+    }
+
+    main { grid-column: 2; min-width: 0; }
+
+    /* ─── Margin rail ─────────────────────────────────────── */
+    .rail {
+      grid-column: 1;
+      position: sticky;
+      top: 2.5rem;
+      align-self: start;
+      padding-top: 7rem;
+      font-family: var(--mono);
+      font-size: .72rem;
+      letter-spacing: .08em;
+    }
+    .rail-section {
+      color: var(--ink-faint);
+      text-transform: uppercase;
+      letter-spacing: .2em;
+      margin-bottom: .55rem;
+      font-size: .65rem;
+    }
+    .rail ol { list-style: none; margin: 0 0 1.2rem; padding: 0; }
+    .rail li { margin: 0; }
+    .rail a {
+      color: var(--ink-mute);
+      text-decoration: none;
+      display: block;
+      padding: .35rem 0;
+      transition: color .2s;
+    }
+    .rail a:hover { color: var(--ink); }
+    .rail a.is-current { color: var(--accent); font-weight: 500; }
+    @media (max-width: 960px) { .rail { display: none; } }
+
+    /* ─── Colophon header ─────────────────────────────────── */
+    header.head {
+      padding-bottom: 2rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--rule);
+    }
+    .head .eyebrow {
+      font-family: var(--mono);
+      font-size: .68rem;
+      letter-spacing: .25em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: 1.3rem;
+    }
+    .head h1 {
+      font-family: var(--display);
+      font-size: clamp(2.6rem, 5vw, 4rem);
+      line-height: 1;
+      margin: 0;
+      font-weight: 450;
+      letter-spacing: -0.02em;
+      font-variation-settings: "opsz" 144;
+      color: var(--ink);
+    }
+    .head h1 em {
+      font-style: italic;
+      color: var(--ink-soft);
+      font-variation-settings: "opsz" 144;
+    }
+    .head .tagline {
+      margin: 1.2rem 0 0;
+      font-size: 1.05rem;
+      color: var(--ink-mute);
+      max-width: 36rem;
+      line-height: 1.5;
+    }
+    .head .meta {
+      display: flex;
+      gap: 2.5rem;
+      margin-top: 1.6rem;
+      font-family: var(--mono);
+      font-size: .85rem;
+      color: var(--ink-mute);
+    }
+    .head .meta dt {
+      font-size: .62rem;
+      text-transform: uppercase;
+      letter-spacing: .2em;
+      color: var(--ink-faint);
+      margin-bottom: .15rem;
+    }
+    .head .meta dd { margin: 0; color: var(--ink); font-weight: 500; font-feature-settings: "tnum"; }
+
+    /* ─── Section heading ─────────────────────────────────── */
+    section { padding-top: 4.5rem; scroll-margin-top: 2rem; }
+    section.reveal { opacity: 0; transform: translateY(8px); transition: opacity .55s ease, transform .55s ease; }
+    section.reveal.show { opacity: 1; transform: none; }
+
+    .sec-head {
+      display: flex;
+      align-items: baseline;
+      gap: .9rem;
+      margin-bottom: 2rem;
+      padding-bottom: .55rem;
+      border-bottom: 1px solid var(--rule);
+    }
+    .sec-num {
+      font-family: var(--mono);
+      font-size: .78rem;
+      letter-spacing: .2em;
+      color: var(--ink-faint);
+      font-feature-settings: "tnum";
+      flex-shrink: 0;
+    }
+    .sec-title {
+      font-family: var(--display);
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: var(--ink);
+      letter-spacing: -0.005em;
+      font-variation-settings: "opsz" 48;
+    }
+    .sec-meta {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: var(--ink-faint);
+      letter-spacing: .05em;
+    }
+
+    /* ─── Form primitives ─────────────────────────────────── */
+    label.field-label, .field-label {
+      display: block;
+      font-family: var(--mono);
+      font-size: .68rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin: 0 0 .5rem;
+    }
+
+    input[type="text"], input:not([type]), textarea, select {
+      width: 100%;
+      background: transparent;
+      border: 0;
+      border-bottom: 1.5px solid var(--rule);
+      padding: .65rem .05rem;
+      font-family: var(--mono);
+      font-size: .95rem;
+      color: var(--ink);
+      outline: none;
+      transition: border-color .2s;
+    }
+    input[type="text"]:focus,
+    input:not([type]):focus,
+    textarea:focus,
+    select:focus { border-bottom-color: var(--ink); }
+    input::placeholder { color: var(--ink-faint); }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.6rem 2rem;
+    }
+    .field-grid.two   { grid-template-columns: 1fr 1fr; }
+    .field-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+    .field-grid.path-row { grid-template-columns: 1fr auto; align-items: end; }
+    @media (max-width: 720px) {
+      .field-grid.two, .field-grid.three { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Buttons ─────────────────────────────────────────── */
+    .btn {
+      font-family: var(--mono);
+      font-size: .72rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      padding: .7rem 1.2rem .6rem;
+      border: 1.5px solid var(--ink);
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 500;
+      transition: background .15s, color .15s, border-color .15s, transform .12s;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--ink); color: var(--paper); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--paper);
+    }
+    .btn.primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+    .btn.ghost { border-color: var(--rule); color: var(--ink-mute); }
+    .btn.ghost:hover { background: transparent; color: var(--ink); border-color: var(--ink); }
+    .btn.danger { color: var(--accent); border-color: var(--accent); background: transparent; }
+    .btn.danger:hover { background: var(--accent); color: var(--paper); }
+    .btn[disabled] { opacity: .4; cursor: not-allowed; }
+
+    .button-row { display: flex; flex-wrap: wrap; gap: .65rem; align-items: center; }
+
+    /* ─── Toggle / checkbox ───────────────────────────────── */
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: .55rem;
+      font-family: var(--mono);
+      font-size: .72rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+      cursor: pointer;
+      user-select: none;
+    }
+    .toggle input { position: absolute; opacity: 0; pointer-events: none; }
+    .toggle .box {
+      width: 1rem; height: 1rem;
+      border: 1.5px solid var(--ink-mute);
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: border-color .15s, background .15s;
+    }
+    .toggle .box::after {
+      content: "";
+      width: .42rem;
+      height: .42rem;
+      background: var(--ink);
+      transform: scale(0);
+      transition: transform .15s ease;
+    }
+    .toggle input:checked + .box::after { transform: scale(1); }
+    .toggle:hover .box { border-color: var(--ink); }
+    .toggle.dry .box::after { background: var(--accent); }
+    .toggle.dry input:checked ~ span:last-child { color: var(--accent); font-weight: 500; }
+
+    /* ─── Card ─────────────────────────────────────────────── */
+    .card {
+      background: var(--paper-deep);
+      padding: 2rem 2rem 1.8rem;
+      margin-top: 1.5rem;
+      border: 1px solid var(--rule-soft);
+    }
+    .card-section + .card-section {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--rule-soft);
+    }
+    .card-head {
+      font-family: var(--mono);
+      font-size: .68rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      display: flex;
+      gap: 1rem;
+      align-items: baseline;
+      margin-bottom: 1rem;
+    }
+    .card-head .meta { margin-left: auto; font-style: normal; color: var(--ink-mute); letter-spacing: .05em; }
+
+    /* ─── Chips ────────────────────────────────────────────── */
+    .chips { display: flex; flex-wrap: wrap; gap: .45rem; }
+    .chip {
+      font-family: var(--mono);
+      font-size: .78rem;
+      letter-spacing: .02em;
+      padding: .3rem .65rem .25rem;
+      border: 1px solid var(--rule);
+      background: var(--paper);
+      color: var(--ink);
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      cursor: pointer;
+      transition: border-color .15s, color .15s, background .15s;
+      animation: chipIn .3s ease both;
+    }
+    @keyframes chipIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+    .chip:hover { border-color: var(--ink); }
+    .chip[data-removable]:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .chip[data-removable]::after {
+      content: "×";
+      font-family: var(--display);
+      font-size: 1rem;
+      line-height: 1;
+      color: var(--ink-faint);
+      margin-left: .1rem;
+      transition: color .15s, transform .15s;
+    }
+    .chip[data-removable]:hover::after { color: var(--accent); }
+    .chip.before { color: var(--ink-mute); border-color: var(--ink-faint); }
+    .chip.after  { border-color: var(--ink); }
+    .chip.gain {
+      border-color: var(--leaf);
+      color: var(--leaf);
+    }
+    .chip.gain::before { content: "+"; }
+    .chip.empty {
+      font-family: var(--serif);
+      font-style: italic;
+      color: var(--ink-faint);
+      border-style: dashed;
+      border-color: var(--rule-soft);
+      cursor: default;
+      font-size: .92rem;
+      padding: .3rem .65rem;
+    }
+    .chip.empty:hover { border-color: var(--rule-soft); color: var(--ink-faint); }
+
+    /* ─── Autocomplete dropdown ───────────────────────────── */
+    .auto-wrap { position: relative; }
+    .auto-popup {
+      position: absolute;
+      left: 0; right: 0; top: 100%;
+      background: var(--paper);
+      border: 1px solid var(--ink-soft);
+      box-shadow: 0 8px 24px -12px rgba(22, 17, 11, .25);
+      max-height: 17rem;
+      overflow-y: auto;
+      z-index: 10;
+      margin-top: 4px;
+      font-family: var(--mono);
+      font-size: .85rem;
+    }
+    .auto-popup .opt {
+      padding: .5rem .8rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .auto-popup .opt:hover,
+    .auto-popup .opt.is-active {
+      background: var(--ink);
+      color: var(--paper);
+    }
+    .auto-popup .opt .cnt {
+      color: var(--ink-faint);
+      font-feature-settings: "tnum";
+      font-size: .78rem;
+    }
+    .auto-popup .opt.is-active .cnt,
+    .auto-popup .opt:hover .cnt { color: rgba(248, 244, 234, .65); }
+    .auto-popup .empty {
+      padding: .65rem .8rem;
+      color: var(--ink-faint);
+      font-style: italic;
+      font-family: var(--serif);
+    }
+
+    /* ─── Dry-run pane ─────────────────────────────────────── */
+    .dry-pane {
+      margin-top: 1.8rem;
+      padding: 1.6rem 1.8rem 1.4rem;
+      border: 1px dashed var(--accent);
+      background: var(--accent-soft);
+      position: relative;
+    }
+    .dry-pane::before {
+      content: "DRY RUN · NOT SAVED";
+      position: absolute;
+      top: -.6rem; left: 1rem;
+      background: var(--paper);
+      padding: 0 .55rem;
+      font-family: var(--mono);
+      font-size: .62rem;
+      letter-spacing: .25em;
+      color: var(--accent);
+      font-weight: 500;
+    }
+    .dry-cols {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1.5rem;
+      align-items: start;
+      margin-top: .5rem;
+    }
+    .dry-cols .arrow {
+      align-self: center;
+      font-family: var(--display);
+      font-size: 1.5rem;
+      color: var(--ink-faint);
+      padding-top: 1.2rem;
+    }
+
+    /* ─── Tables ──────────────────────────────────────────── */
+    .records {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: .84rem;
+    }
+    .records th {
+      text-align: left;
+      font-family: var(--mono);
+      font-size: .64rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      font-weight: 500;
+      border-bottom: 1px solid var(--rule);
+      padding: .55rem .7rem;
+      background: var(--paper-deep);
+      position: sticky; top: 0; z-index: 1;
+    }
+    .records td {
+      padding: .65rem .7rem;
+      border-bottom: 1px solid var(--rule-soft);
+      vertical-align: top;
+    }
+    .records tr {
+      cursor: pointer;
+      transition: background .12s;
+    }
+    .records tr:hover { background: var(--paper-deep); }
+    .records tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+    .records td.path { color: var(--ink); word-break: break-all; }
+    .records td.open {
+      width: 5.5rem;
+      white-space: nowrap;
+      text-align: right;
+      padding-right: 1rem;
+    }
+    .records .row-action {
+      font-family: var(--mono);
+      font-size: .64rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-left: .55rem;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .15s, color .15s;
+      padding: .15rem .25rem;
+    }
+    .records tr:hover .row-action { opacity: 1; }
+    .records .row-action:hover { color: var(--accent); }
+    .records td.cnt {
+      color: var(--ink-faint); font-feature-settings: "tnum";
+      text-align: right; white-space: nowrap; width: 5rem;
+    }
+    .records td.tags-cell .chips { margin: 0; }
+
+    .records-frame {
+      max-height: 24rem;
+      overflow-y: auto;
+      margin-top: 1rem;
+      border: 1px solid var(--rule-soft);
+      background: var(--paper);
+    }
+
+    /* ─── Tag cloud (quiet — sized only) ──────────────────── */
+    .cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .45rem .9rem;
+      align-items: baseline;
+    }
+    .cloud .cl-tag {
+      cursor: pointer;
+      font-family: var(--display);
+      color: var(--ink);
+      transition: color .15s;
+      line-height: 1.4;
+      font-variation-settings: "opsz" 24;
+    }
+    .cloud .cl-tag:hover { color: var(--accent); }
+    .cloud .cl-tag em {
+      font-family: var(--mono);
+      font-style: normal;
+      font-size: .58rem;
+      color: var(--ink-faint);
+      letter-spacing: .05em;
+      vertical-align: super;
+      margin-left: 2px;
+    }
+
+    /* ─── Authority list ──────────────────────────────────── */
+    .auth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; }
+    @media (max-width: 880px) { .auth-grid { grid-template-columns: 1fr; gap: 2.5rem; } }
+
+    .auth-list {
+      max-height: 24rem;
+      overflow-y: auto;
+      margin: 1rem 0 0;
+      border-top: 1px solid var(--rule);
+    }
+    .auth-row {
+      display: flex;
+      align-items: baseline;
+      gap: .9rem;
+      padding: .65rem .25rem;
+      border-bottom: 1px solid var(--rule-soft);
+      font-family: var(--mono);
+      font-size: .85rem;
+    }
+    .auth-row .lhs { color: var(--ink); font-weight: 500; }
+    .auth-row .arrow { color: var(--ink-faint); }
+    .auth-row .rhs {
+      flex: 1;
+      color: var(--ink);
+      min-height: 1em;
+    }
+    .auth-row .del {
+      font-family: var(--mono);
+      font-size: .62rem;
+      color: var(--ink-faint);
+      cursor: pointer;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      padding: .15rem .4rem;
+      flex-shrink: 0;
+      transition: color .15s, background .15s;
+    }
+    .auth-row .del:hover { color: var(--paper); background: var(--accent); }
+
+    .auth-empty {
+      padding: 1.2rem 0;
+      font-family: var(--serif);
+      font-style: italic;
+      color: var(--ink-faint);
+      text-align: center;
+      font-size: .95rem;
+    }
+
+    .auth-row .preset-chips {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .3rem;
+    }
+
+    /* ─── Stats ──────────────────────────────────────────── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2.5rem;
+      margin-bottom: 3rem;
+    }
+    @media (max-width: 720px) { .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 1.8rem; } }
+    .stat .num {
+      font-family: var(--display);
+      font-size: clamp(2.6rem, 4.5vw, 3.6rem);
+      line-height: 1;
+      font-variation-settings: "opsz" 144;
+      font-feature-settings: "tnum";
+      color: var(--ink);
+      font-weight: 450;
+    }
+    .stat .num.accent { color: var(--accent); }
+    .stat .num em {
+      font-style: italic;
+      color: var(--ink-mute);
+    }
+    .stat .lbl {
+      margin-top: .55rem;
+      font-family: var(--mono);
+      font-size: .68rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+
+    .bar-list { margin: 0; padding: 0; list-style: none; }
+    .bar-list li {
+      display: grid;
+      grid-template-columns: 11rem 1fr 3rem;
+      align-items: center;
+      gap: 1.2rem;
+      padding: .55rem 0;
+      border-bottom: 1px solid var(--rule-soft);
+    }
+    .bar-list .bar-label {
+      font-family: var(--mono);
+      font-size: .82rem;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .bar-list .bar-track {
+      height: 8px;
+      background: var(--paper-deep);
+      position: relative;
+      overflow: hidden;
+    }
+    .bar-list .bar-fill {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      background: var(--accent);
+      transition: width .9s cubic-bezier(.2,.7,.2,1);
+    }
+    .bar-list .bar-num {
+      font-family: var(--mono);
+      font-feature-settings: "tnum";
+      text-align: right;
+      color: var(--ink-mute);
+      font-size: .85rem;
+    }
+
+    /* ─── Status toast ────────────────────────────────────── */
+    #msg {
+      position: fixed;
+      bottom: 1.5rem; left: 50%;
+      transform: translate(-50%, 12px);
+      background: var(--ink);
+      color: var(--paper);
+      padding: .6rem 1.1rem .55rem;
+      font-family: var(--mono);
+      font-size: .76rem;
+      letter-spacing: .08em;
+      box-shadow: 0 8px 28px -10px rgba(22, 17, 11, .35);
+      opacity: 0;
+      transition: opacity .2s, transform .25s;
+      z-index: 50;
+      max-width: 90vw;
+      pointer-events: none;
+    }
+    #msg.shown { opacity: 1; transform: translate(-50%, 0); }
+    #msg.err { background: var(--accent); }
+
+    /* ─── Footer ──────────────────────────────────────────── */
+    footer.end {
+      margin-top: 6rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: var(--ink-faint);
+      letter-spacing: .05em;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    footer.end a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+    }
+    footer.end a:hover { border-bottom-color: var(--accent); }
+
+    /* ─── Utility ─────────────────────────────────────────── */
+    .hidden { display: none !important; }
+    .text-mute  { color: var(--ink-mute); }
+    .text-faint { color: var(--ink-faint); }
+    .num-emph   { color: var(--accent); font-feature-settings: "tnum"; }
+    .between    { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+
+    /* Scrollbar (paper-toned) */
+    *::-webkit-scrollbar { width: 10px; height: 10px; }
+    *::-webkit-scrollbar-track { background: transparent; }
+    *::-webkit-scrollbar-thumb { background: var(--rule-soft); border: 2px solid var(--paper); }
+    *::-webkit-scrollbar-thumb:hover { background: var(--rule); }
+
+    /* ─── Number inputs (small spinboxes used by Cleanup) ─────── */
+    input[type="number"] {
+      width: 4.5rem;
+      background: transparent;
+      border: 0;
+      border-bottom: 1.5px solid var(--rule);
+      padding: .35rem .1rem;
+      font-family: var(--mono);
+      font-size: .9rem;
+      color: var(--ink);
+      outline: none;
+    }
+    input[type="number"]:focus { border-bottom-color: var(--ink); }
+
+    /* ─── Tag drawer (right slide-in) ─────────────────────────── */
+    .drawer-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(22, 17, 11, .2);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s;
+      z-index: 60;
+    }
+    .drawer-backdrop.is-open { opacity: 1; pointer-events: auto; }
+    .drawer {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: min(32rem, 92vw);
+      background: var(--paper);
+      border-left: 1px solid var(--rule);
+      box-shadow: -16px 0 50px -28px rgba(22, 17, 11, .35);
+      transform: translateX(100%);
+      transition: transform .35s cubic-bezier(.4, 0, .2, 1);
+      z-index: 61;
+      overflow-y: auto;
+      padding: 2.4rem 2rem 3rem;
+    }
+    .drawer.is-open { transform: translateX(0); }
+    .drawer-close {
+      position: absolute;
+      top: 1.2rem; right: 1.2rem;
+      background: transparent;
+      border: 1px solid var(--rule);
+      color: var(--ink-mute);
+      width: 2rem; height: 2rem;
+      font-family: var(--mono);
+      font-size: 1rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      transition: color .15s, border-color .15s;
+    }
+    .drawer-close:hover { color: var(--ink); border-color: var(--ink); }
+    .drawer .eyebrow {
+      font-family: var(--mono);
+      font-size: .62rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: .8rem;
+    }
+    .drawer h2 {
+      font-family: var(--display);
+      font-size: 1.9rem;
+      font-weight: 500;
+      margin: 0 0 1rem;
+      line-height: 1.05;
+      color: var(--ink);
+      font-variation-settings: "opsz" 96;
+      word-break: break-word;
+    }
+    .drawer .drawer-stat {
+      display: flex; gap: 2rem;
+      padding-bottom: 1.4rem;
+      margin-bottom: 1.4rem;
+      border-bottom: 1px solid var(--rule);
+    }
+    .drawer .drawer-stat .num {
+      font-family: var(--display);
+      font-size: 2rem;
+      line-height: 1;
+      color: var(--ink);
+      font-feature-settings: "tnum";
+      font-variation-settings: "opsz" 96;
+    }
+    .drawer .drawer-stat .num.accent { color: var(--accent); }
+    .drawer .drawer-stat .lbl {
+      font-family: var(--mono);
+      font-size: .62rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-top: .35rem;
+    }
+    .drawer .drawer-block { margin-bottom: 1.8rem; }
+    .drawer .drawer-block .card-head { margin-bottom: .7rem; }
+    .drawer .drawer-list {
+      margin: 0; padding: 0;
+      list-style: none;
+    }
+    .drawer .drawer-list li {
+      font-family: var(--mono);
+      font-size: .82rem;
+      padding: .5rem 0;
+      border-bottom: 1px solid var(--rule-soft);
+      color: var(--ink);
+      display: flex; gap: .5rem;
+      align-items: baseline;
+    }
+    .drawer .drawer-list .path-cell {
+      flex: 1;
+      cursor: pointer;
+      word-break: break-all;
+      color: var(--ink);
+      transition: color .15s;
+    }
+    .drawer .drawer-list .path-cell:hover { color: var(--accent); }
+    .drawer .drawer-list .row-action {
+      font-family: var(--mono);
+      font-size: .6rem;
+      letter-spacing: .12em;
+      color: var(--ink-faint);
+      text-transform: uppercase;
+      padding: .15rem .35rem;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .15s, color .15s;
+      flex-shrink: 0;
+    }
+    .drawer .drawer-list li:hover .row-action { opacity: 1; }
+    .drawer .drawer-list .row-action:hover { color: var(--accent); }
+    .drawer .more-link {
+      margin-top: .8rem;
+      font-family: var(--mono);
+      font-size: .68rem;
+      letter-spacing: .12em;
+      color: var(--accent);
+      cursor: pointer;
+      display: inline-block;
+      border-bottom: 1px solid transparent;
+    }
+    .drawer .more-link:hover { border-bottom-color: var(--accent); }
+
+    /* ─── Shortcuts modal ───────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(22, 17, 11, .4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+      z-index: 80;
+      display: flex;
+      align-items: center; justify-content: center;
+      padding: 2rem;
+    }
+    .modal-backdrop.is-open { opacity: 1; pointer-events: auto; }
+    .modal {
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      max-width: 30rem;
+      width: 100%;
+      padding: 1.8rem 2rem;
+      box-shadow: 0 20px 60px -20px rgba(22, 17, 11, .4);
+      transform: translateY(8px);
+      transition: transform .2s;
+    }
+    .modal-backdrop.is-open .modal { transform: none; }
+    .modal h3 {
+      font-family: var(--display);
+      margin: 0 0 1.2rem;
+      font-size: 1.3rem;
+      font-weight: 500;
+      font-variation-settings: "opsz" 48;
+    }
+    .kbd-list { margin: 0; padding: 0; list-style: none; }
+    .kbd-list li {
+      display: grid;
+      grid-template-columns: 5rem 1fr;
+      gap: 1rem;
+      padding: .45rem 0;
+      font-size: .85rem;
+      border-bottom: 1px solid var(--rule-soft);
+      align-items: baseline;
+    }
+    .kbd-list li:last-child { border-bottom: 0; }
+    .kbd {
+      font-family: var(--mono);
+      font-size: .7rem;
+      background: var(--paper-deep);
+      border: 1px solid var(--rule);
+      padding: .1rem .4rem;
+      letter-spacing: .04em;
+      color: var(--ink);
+      white-space: nowrap;
+      display: inline-block;
+    }
+    .kbd-list .label { color: var(--ink-mute); }
+
+    /* ─── Cleanup tabs ──────────────────────────────────────── */
+    .tabs {
+      display: flex; gap: 0;
+      border-bottom: 1px solid var(--rule);
+      margin-bottom: 1.6rem;
+      flex-wrap: wrap;
+    }
+    .tab {
+      font-family: var(--mono);
+      font-size: .7rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      padding: .8rem 1.1rem;
+      color: var(--ink-mute);
+      cursor: pointer;
+      border: 0;
+      background: transparent;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color .15s, border-color .15s;
+    }
+    .tab:hover { color: var(--ink); }
+    .tab.is-active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      font-weight: 500;
+    }
+    .tab .cnt {
+      margin-left: .4rem;
+      color: var(--ink-faint);
+      font-feature-settings: "tnum";
+    }
+    .tab.is-active .cnt { color: var(--accent); opacity: .7; }
+    .tab-pane { display: none; }
+    .tab-pane.is-active { display: block; }
+    .tab-controls {
+      display: flex; gap: 1.2rem; align-items: center;
+      margin-bottom: 1rem;
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: var(--ink-mute);
+    }
+    .tab-controls label { display: inline-flex; gap: .5rem; align-items: center; }
+
+    /* Duplicates panel — groups of files */
+    .dup-group {
+      border-top: 1px solid var(--rule-soft);
+      padding: 1rem 0 .6rem;
+    }
+    .dup-group:first-child { border-top: 0; padding-top: .4rem; }
+    .dup-group .dup-head {
+      display: flex; gap: 1rem; align-items: baseline;
+      margin-bottom: .55rem;
+    }
+    .dup-group .dup-head .gnum {
+      font-family: var(--mono);
+      font-size: .68rem;
+      color: var(--ink-faint);
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+    .dup-files {
+      margin: 0; padding: 0;
+      list-style: none;
+      font-family: var(--mono);
+      font-size: .82rem;
+    }
+    .dup-files li {
+      display: flex; gap: .55rem;
+      padding: .3rem 0;
+      align-items: baseline;
+      border-bottom: 1px solid var(--rule-soft);
+    }
+    .dup-files li:last-child { border-bottom: 0; }
+    .dup-files .path-cell {
+      flex: 1; color: var(--ink); word-break: break-all;
+      cursor: pointer;
+      transition: color .15s;
+    }
+    .dup-files .path-cell:hover { color: var(--accent); }
+    .dup-files .row-action {
+      font-family: var(--mono);
+      font-size: .6rem;
+      letter-spacing: .12em;
+      color: var(--ink-faint);
+      text-transform: uppercase;
+      padding: .15rem .35rem;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .15s, color .15s;
+    }
+    .dup-files li:hover .row-action { opacity: 1; }
+    .dup-files .row-action:hover { color: var(--accent); }
+
+    /* ─── Suggestion rail (§01) ────────────────────────────── */
+    .sugg-rail {
+      display: flex; flex-wrap: wrap; gap: .4rem;
+      align-items: center;
+      margin: 0 0 .9rem;
+      min-height: 1.6rem;
+    }
+    .sugg-rail .sugg-label {
+      font-family: var(--mono);
+      font-size: .6rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-right: .3rem;
+    }
+    .sugg-rail .chip { animation: none; }
+    .sugg-rail .chip::before { content: "+ "; font-family: var(--mono); color: var(--ink-faint); }
+
+    /* ─── Search action sub-row (Tag all results…) ─────────── */
+    .search-action-row {
+      display: none;
+      align-items: center;
+      gap: .65rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px dashed var(--rule);
+      flex-wrap: wrap;
+    }
+    .search-action-row.shown { display: flex; }
+    .search-action-row .lbl {
+      font-family: var(--mono);
+      font-size: .65rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+    .search-action-row .auto-wrap { flex: 1; min-width: 14rem; }
+    .search-action-row .progress {
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: var(--ink-mute);
+    }
+
+    /* ─── Footer log pill + panel ──────────────────────────── */
+    footer.end .log-pill {
+      font-family: var(--mono);
+      font-size: .68rem;
+      letter-spacing: .08em;
+      color: var(--ink-faint);
+      cursor: pointer;
+      user-select: none;
+      padding: .15rem .35rem;
+      border: 1px solid transparent;
+    }
+    footer.end .log-pill:hover { color: var(--ink); border-color: var(--rule-soft); }
+    footer.end .log-pill.is-open { color: var(--ink); border-color: var(--ink); }
+    .log-body {
+      position: fixed;
+      bottom: 5rem;
+      right: 1.5rem;
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      width: min(34rem, 92vw);
+      max-height: 18rem;
+      overflow-y: auto;
+      padding: 1rem 1.2rem;
+      z-index: 55;
+      box-shadow: 0 12px 40px -20px rgba(22, 17, 11, .35);
+      font-family: var(--mono);
+      font-size: .78rem;
+      transform: translateY(8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s, transform .2s;
+    }
+    .log-body.is-open { opacity: 1; transform: none; pointer-events: auto; }
+    .log-body .log-head {
+      font-family: var(--mono);
+      font-size: .6rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: .5rem;
+      padding-bottom: .4rem;
+      border-bottom: 1px solid var(--rule-soft);
+    }
+    .log-row {
+      display: flex; gap: 1rem;
+      padding: .3rem 0;
+      border-bottom: 1px solid var(--rule-soft);
+    }
+    .log-row:last-child { border-bottom: 0; }
+    .log-time {
+      color: var(--ink-faint);
+      font-size: .68rem;
+      min-width: 5rem;
+      font-feature-settings: "tnum";
+    }
+    .log-text { color: var(--ink); flex: 1; }
+    .log-text.err { color: var(--accent); }
+    .log-body .empty {
+      color: var(--ink-faint);
+      font-style: italic;
+      font-family: var(--serif);
+      padding: .5rem 0;
+    }
   </style>
 </head>
 <body>
-  <h1>TagManager — thin GUI</h1>
-  <p>Local-only; same tag database as <code>tm</code> on this machine. Enter a <strong>file</strong> path → <strong>Load tags</strong> → add or remove tags, or use <strong>Search</strong> for tag-based file lists. Check <strong>Dry-run</strong> to preview adds/removes without saving. Stop the app with <strong>Ctrl+C</strong> in the terminal where you ran <code>tm gui</code>. Set <code>TAGMANAGER_GUI_ROOT</code> to an absolute folder to only allow paths under that tree. <a href="/preview">Open preview page</a> for a dry-run–only layout (before/after tag chips).</p>
+<div class="page">
 
-  <fieldset>
-    <legend>File</legend>
-    <label for="fpath">Path (file)</label>
-    <input id="fpath" type="text" placeholder="C:\path\to\file.py or relative path" autocomplete="off" />
-    <div class="row" style="margin-top:0.5rem">
-      <label class="row"><input id="dry" type="checkbox" /> Dry-run (add / remove preview)</label>
-    </div>
-    <div class="row">
-      <button type="button" class="primary" id="btnLoad">Load tags</button>
-      <button type="button" id="btnAdd">Add tags</button>
-      <button type="button" id="btnRmTag">Remove one tag…</button>
-      <button type="button" class="danger" id="btnClear">Clear all tags on file</button>
-      <button type="button" class="danger" id="btnDrop">Remove file from DB</button>
-    </div>
-    <label for="newtags">Tags to add (comma-separated)</label>
-    <input id="newtags" type="text" placeholder="work, python" />
-    <div class="row" style="margin-top:0.35rem">
-      <label class="row"><input id="noauto" type="checkbox" /> No auto-tag</label>
-      <label class="row"><input id="noalias" type="checkbox" /> No aliases</label>
-      <label class="row"><input id="nocontent" type="checkbox" /> No content rules</label>
-    </div>
-    <div id="tags" class="tags"></div>
-  </fieldset>
+  <aside class="rail" aria-label="Sections">
+    <div class="rail-section">Contents</div>
+    <ol>
+      <li><a href="#sec-record">§ 01 — Record</a></li>
+      <li><a href="#sec-search">§ 02 — Search</a></li>
+      <li><a href="#sec-bulk">§ 03 — Bulk</a></li>
+      <li><a href="#sec-archive">§ 04 — Archive</a></li>
+      <li><a href="#sec-authority">§ 05 — Authority</a></li>
+      <li><a href="#sec-stats">§ 06 — Statistics</a></li>
+      <li><a href="#sec-cleanup">§ 07 — Cleanup</a></li>
+    </ol>
+    <div class="rail-section">Aux.</div>
+    <ol>
+      <li><a href="/preview">Dry-run page</a></li>
+      <li><a href="/api">JSON index</a></li>
+    </ol>
+  </aside>
 
-  <fieldset>
-    <legend>Search</legend>
-    <label for="qtags">Tags (comma-separated)</label>
-    <input id="qtags" type="text" placeholder="python, docs" />
-    <div class="row">
-      <label class="row"><input id="matchall" type="checkbox" /> Match all (AND)</label>
-      <button type="button" class="primary" id="btnSearch">Search</button>
+  <main>
+
+    <!-- Header -->
+    <header class="head">
+      <div class="eyebrow">A personal catalogue · kept in plain text</div>
+      <h1>The Tag<em>Manager</em></h1>
+      <p class="tagline">Tag a file, find one later, file many at once — all running on this machine, against the same database your <span style="font-family:var(--mono); color:var(--ink)">tm</span> command uses.</p>
+      <dl class="meta">
+        <div><dt>Records</dt><dd id="hdrFiles">·</dd></div>
+        <div><dt>Subjects</dt><dd id="hdrTags">·</dd></div>
+        <div><dt>Bureau</dt><dd id="hdrPort">·</dd></div>
+      </dl>
+    </header>
+
+    <!-- §01 -->
+    <section id="sec-record" class="reveal">
+      <div class="sec-head">
+        <span class="sec-num">§ 01</span>
+        <h2 class="sec-title">Principal record</h2>
+      </div>
+
+      <div class="field-grid path-row">
+        <div class="auto-wrap">
+          <label class="field-label" for="fpath">Path of record</label>
+          <input id="fpath" type="text" autocomplete="off"
+                 placeholder="C:\path\to\file.ext  ·  or pick a record from § 04 below" />
+          <div id="fpathPop" class="auto-popup hidden"></div>
+        </div>
+        <div style="display:flex; gap:.5rem; align-items:end;">
+          <button type="button" class="btn primary" id="btnLoad">Load record</button>
+        </div>
+      </div>
+
+      <div class="card" id="recordCard">
+
+        <div class="card-section">
+          <div class="card-head">
+            <span>Current subjects</span>
+            <span class="meta" id="currentTagsCount">none recorded</span>
+          </div>
+          <div id="currentTags" class="chips">
+            <span class="chip empty">load a record to begin</span>
+          </div>
+        </div>
+
+        <div class="card-section">
+          <div class="card-head">
+            <span>Add subjects</span>
+            <span class="meta">comma- or space-separated</span>
+          </div>
+          <div id="suggRail" class="sugg-rail" aria-label="Tag suggestions"></div>
+          <div class="auto-wrap">
+            <input id="newtags" type="text" placeholder="e.g. work, python, archived" autocomplete="off" />
+            <div id="newtagsPop" class="auto-popup hidden"></div>
+          </div>
+          <div class="between" style="margin-top:1.4rem;">
+            <div class="button-row" style="gap:1.6rem;">
+              <label class="toggle"><input id="noauto" type="checkbox" /><span class="box"></span><span>No auto-tag</span></label>
+              <label class="toggle"><input id="noalias" type="checkbox" /><span class="box"></span><span>No aliases</span></label>
+              <label class="toggle dry"><input id="dry" type="checkbox" /><span class="box"></span><span>Dry run</span></label>
+            </div>
+            <div class="button-row">
+              <button type="button" class="btn primary" id="btnAdd">Commit additions</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-section">
+          <div class="card-head"><span>Open · clear · withdraw</span></div>
+          <div class="button-row">
+            <button type="button" class="btn ghost" id="btnOpenFile" disabled>Open file</button>
+            <button type="button" class="btn ghost" id="btnOpenFolder" disabled>Open folder</button>
+            <span style="flex:1"></span>
+            <button type="button" class="btn ghost" id="btnClear">Clear all subjects</button>
+            <button type="button" class="btn danger" id="btnDrop">Withdraw record</button>
+          </div>
+        </div>
+
+        <div id="dryPane" class="dry-pane hidden">
+          <div class="dry-cols">
+            <div>
+              <div class="card-head" style="margin-bottom:.5rem;"><span>Before</span></div>
+              <div class="chips" id="dryBefore"></div>
+            </div>
+            <div class="arrow">→</div>
+            <div>
+              <div class="card-head" style="margin-bottom:.5rem;"><span>After (preview)</span></div>
+              <div class="chips" id="dryAfter"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- §02 -->
+    <section id="sec-search" class="reveal">
+      <div class="sec-head">
+        <span class="sec-num">§ 02</span>
+        <h2 class="sec-title">Catalogue search</h2>
+        <span class="sec-meta" id="searchCount">0 records</span>
+      </div>
+
+      <div class="field-grid two">
+        <div class="auto-wrap">
+          <label class="field-label" for="qall">Has all of</label>
+          <input id="qall" type="text" placeholder="python, web" autocomplete="off" />
+          <div id="qallPop" class="auto-popup hidden"></div>
+        </div>
+        <div class="auto-wrap">
+          <label class="field-label" for="qany">Has any of</label>
+          <input id="qany" type="text" placeholder="draft, todo" autocomplete="off" />
+          <div id="qanyPop" class="auto-popup hidden"></div>
+        </div>
+        <div class="auto-wrap">
+          <label class="field-label" for="qnot">Has none of</label>
+          <input id="qnot" type="text" placeholder="archived" autocomplete="off" />
+          <div id="qnotPop" class="auto-popup hidden"></div>
+        </div>
+        <div>
+          <label class="field-label" for="qpath">Path contains</label>
+          <input id="qpath" type="text" placeholder="e.g. .py or Documents\notes" autocomplete="off" />
+        </div>
+      </div>
+
+      <div class="button-row" style="margin-top:1.8rem;">
+        <button type="button" class="btn primary" id="btnSearch">Cross-reference</button>
+        <button type="button" class="btn ghost" id="btnSearchClear">Reset</button>
+      </div>
+
+      <div class="records-frame">
+        <table class="records">
+          <thead>
+            <tr>
+              <th style="width:55%">Record (path)</th>
+              <th>Subjects</th>
+              <th style="width:5.5rem;"></th>
+            </tr>
+          </thead>
+          <tbody id="searchBody">
+            <tr><td colspan="3" style="text-align:center; padding:1.8rem;" class="text-faint">
+              your search results will appear here
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="srAction" class="search-action-row">
+        <span class="lbl">Act on all results</span>
+        <div class="auto-wrap">
+          <input id="srTags" type="text" placeholder="subject(s) — comma- or space-separated" autocomplete="off" />
+          <div id="srTagsPop" class="auto-popup hidden"></div>
+        </div>
+        <button type="button" class="btn primary" id="btnSrTag">Tag all</button>
+        <button type="button" class="btn ghost" id="btnSrUntag">Remove tag from all</button>
+        <span class="progress" id="srProgress"></span>
+      </div>
+    </section>
+
+    <!-- §03 -->
+    <section id="sec-bulk" class="reveal">
+      <div class="sec-head">
+        <span class="sec-num">§ 03</span>
+        <h2 class="sec-title">Bulk commitment</h2>
+        <span class="sec-meta" id="bulkCount">no preview yet</span>
+      </div>
+
+      <div class="field-grid two">
+        <div>
+          <label class="field-label" for="bpattern">Glob pattern</label>
+          <input id="bpattern" type="text" value="**/*" placeholder="**/*.py" autocomplete="off" />
+        </div>
+        <div>
+          <label class="field-label" for="bbase">Base directory</label>
+          <input id="bbase" type="text" placeholder="leave blank for current directory" autocomplete="off" />
+        </div>
+        <div class="auto-wrap" style="grid-column: 1 / -1">
+          <label class="field-label" for="btags">Subjects to add</label>
+          <input id="btags" type="text" placeholder="comma- or space-separated" autocomplete="off" />
+          <div id="btagsPop" class="auto-popup hidden"></div>
+        </div>
+      </div>
+
+      <div class="button-row" style="margin-top:1.8rem;">
+        <button type="button" class="btn" id="btnBulkPreview">Preview matches</button>
+        <button type="button" class="btn primary" id="btnBulkApply">Apply to all matches</button>
+      </div>
+
+      <div id="bulkResult" class="dry-pane hidden">
+        <div class="card-head">
+          <span>Matches</span>
+          <span class="meta" id="bulkResultTitle">preview</span>
+        </div>
+        <ul id="bulkList" style="
+          margin: .5rem 0 0;
+          padding: 0;
+          list-style: none;
+          font-family: var(--mono);
+          font-size: .82rem;
+          max-height: 20rem;
+          overflow-y: auto;
+        "></ul>
+      </div>
+    </section>
+
+    <!-- §04 -->
+    <section id="sec-archive" class="reveal">
+      <div class="sec-head">
+        <span class="sec-num">§ 04</span>
+        <h2 class="sec-title">The archive</h2>
+      </div>
+
+      <div class="field-grid two" style="gap:3rem">
+        <div>
+          <div class="card-head">
+            <span>Subjects, weighted by usage</span>
+            <span class="meta" id="cloudCount">·</span>
+          </div>
+          <div class="cloud" id="cloud" style="min-height:6rem"></div>
+        </div>
+        <div>
+          <div class="card-head">
+            <span>Records, alphabetical</span>
+            <span class="meta"><input id="archiveFilter" type="text" placeholder="filter…" style="max-width: 10rem; font-size:.78rem; padding:.2rem 0; border-bottom-width: 1px;" /></span>
+          </div>
+          <div class="records-frame" style="max-height:20rem;">
+            <table class="records">
+              <thead>
+                <tr>
+                  <th>Path</th>
+                  <th style="text-align:right;width:4rem;">Subj.</th>
+                  <th style="width:5.5rem;"></th>
+                </tr>
+              </thead>
+              <tbody id="archiveBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- §05 -->
+    <section id="sec-authority" class="reveal">
+      <div class="sec-head">
+        <span class="sec-num">§ 05</span>
+        <h2 class="sec-title">Authority files</h2>
+      </div>
+
+      <div class="auth-grid">
+
+        <div class="auth-block">
+          <div class="card-head">
+            <span>Cross-references (aliases)</span>
+            <span class="meta" id="aliasCount">·</span>
+          </div>
+          <div class="field-grid two" style="gap:1.2rem; margin-top:.5rem">
+            <input id="aliasIn" type="text" placeholder="alias · e.g. py" autocomplete="off" />
+            <input id="aliasOut" type="text" placeholder="canonical · e.g. python" autocomplete="off" />
+          </div>
+          <div class="button-row" style="margin-top:1rem">
+            <button class="btn" id="btnAliasAdd">Add cross-reference</button>
+          </div>
+          <div class="auth-list" id="aliasList">
+            <div class="auth-empty">no cross-references on file</div>
+          </div>
+        </div>
+
+        <div class="auth-block">
+          <div class="card-head">
+            <span>Subject bundles (presets)</span>
+            <span class="meta" id="presetCount">·</span>
+          </div>
+          <div class="field-grid" style="gap:1.2rem; margin-top:.5rem">
+            <input id="presetName" type="text" placeholder="name · e.g. essay" autocomplete="off" />
+            <input id="presetTags" type="text" placeholder="subjects · comma- or space-separated" autocomplete="off" />
+          </div>
+          <div class="button-row" style="margin-top:1rem">
+            <button class="btn" id="btnPresetAdd">Save bundle</button>
+          </div>
+          <div class="auth-list" id="presetList">
+            <div class="auth-empty">no bundles on file</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- §06 -->
+    <section id="sec-stats" class="reveal">
+      <div class="sec-head">
+        <span class="sec-num">§ 06</span>
+        <h2 class="sec-title">Statistics</h2>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat">
+          <div class="num accent" id="statFiles">·</div>
+          <div class="lbl">Records on file</div>
+        </div>
+        <div class="stat">
+          <div class="num" id="statUnique">·</div>
+          <div class="lbl">Distinct subjects</div>
+        </div>
+        <div class="stat">
+          <div class="num"><em id="statAvg">·</em></div>
+          <div class="lbl">Avg. subjects / record</div>
+        </div>
+        <div class="stat">
+          <div class="num" id="statOrphan">·</div>
+          <div class="lbl">Untagged records</div>
+        </div>
+      </div>
+
+      <div class="card-head"><span>Most-used subjects · top ten</span></div>
+      <ol class="bar-list" id="topBars"></ol>
+    </section>
+
+    <!-- §07 Cleanup -->
+    <section id="sec-cleanup" class="reveal">
+      <div class="sec-head">
+        <span class="sec-num">§ 07</span>
+        <h2 class="sec-title">Cleanup</h2>
+        <span class="sec-meta" id="cleanupHint">housekeeping</span>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab is-active" data-tab="duplicates">Duplicates <span class="cnt" id="cntDup">·</span></button>
+        <button type="button" class="tab" data-tab="orphans">Orphans <span class="cnt" id="cntOrph">·</span></button>
+        <button type="button" class="tab" data-tab="clusters">Clusters <span class="cnt" id="cntClu">·</span></button>
+        <button type="button" class="tab" data-tab="isolated">Isolated <span class="cnt" id="cntIso">·</span></button>
+        <button type="button" class="tab" data-tab="dead">Dead records <span class="cnt" id="cntDead">·</span></button>
+      </div>
+
+      <!-- Duplicates -->
+      <div class="tab-pane is-active" data-pane="duplicates">
+        <div class="tab-controls">
+          <button type="button" class="btn ghost" id="btnRefreshDup">Refresh</button>
+          <span id="dupSummary" class="text-faint">click refresh to scan</span>
+        </div>
+        <div id="dupBody"></div>
+      </div>
+
+      <!-- Orphans -->
+      <div class="tab-pane" data-pane="orphans">
+        <div class="tab-controls">
+          <button type="button" class="btn ghost" id="btnRefreshOrph">Refresh</button>
+          <span id="orphSummary" class="text-faint">click refresh to scan</span>
+        </div>
+        <div class="records-frame">
+          <table class="records">
+            <thead><tr><th>Untagged record</th><th style="width:5.5rem;"></th></tr></thead>
+            <tbody id="orphBody">
+              <tr><td colspan="2" style="text-align:center; padding:1.5rem;" class="text-faint">no scan yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Clusters -->
+      <div class="tab-pane" data-pane="clusters">
+        <div class="tab-controls">
+          <label>Min. cluster size <input type="number" id="cluMin" min="2" max="500" value="5" /></label>
+          <button type="button" class="btn ghost" id="btnRefreshClu">Refresh</button>
+          <span id="cluSummary" class="text-faint">click refresh to scan</span>
+        </div>
+        <ol class="bar-list" id="cluBody"></ol>
+      </div>
+
+      <!-- Isolated -->
+      <div class="tab-pane" data-pane="isolated">
+        <div class="tab-controls">
+          <label>Max. shared tags <input type="number" id="isoMax" min="0" max="20" value="1" /></label>
+          <button type="button" class="btn ghost" id="btnRefreshIso">Refresh</button>
+          <span id="isoSummary" class="text-faint">click refresh to scan</span>
+        </div>
+        <div class="records-frame">
+          <table class="records">
+            <thead>
+              <tr><th>Isolated record</th><th>Tags</th><th style="width:5.5rem;"></th></tr>
+            </thead>
+            <tbody id="isoBody">
+              <tr><td colspan="3" style="text-align:center; padding:1.5rem;" class="text-faint">no scan yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Dead records -->
+      <div class="tab-pane" data-pane="dead">
+        <div class="tab-controls">
+          <button type="button" class="btn ghost" id="btnRefreshDead">Scan (dry run)</button>
+          <button type="button" class="btn danger" id="btnCleanDead" disabled>Clean for real</button>
+          <span id="deadSummary" class="text-faint">click scan to find records pointing at deleted files</span>
+        </div>
+        <div class="records-frame">
+          <table class="records">
+            <thead><tr><th>Path on disk (missing)</th></tr></thead>
+            <tbody id="deadBody">
+              <tr><td style="text-align:center; padding:1.5rem;" class="text-faint">no scan yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <footer class="end">
+      <span>Printed locally · no network egress</span>
+      <span class="log-pill" id="logPill" title="Recent status messages">▾ log <span id="logCount">0</span></span>
+      <span>Stop with <b style="color:var(--ink); font-weight:500;">Ctrl-C</b> in the terminal</span>
+      <a href="/api">JSON index</a>
+    </footer>
+  </main>
+</div>
+
+<!-- Tag detail drawer -->
+<div id="drawerBackdrop" class="drawer-backdrop" aria-hidden="true"></div>
+<aside id="tagDrawer" class="drawer" role="dialog" aria-hidden="true" aria-labelledby="drawerTitle">
+  <button type="button" class="drawer-close" id="drawerClose" title="Close (Esc)">×</button>
+  <div class="eyebrow">Subject inspector</div>
+  <h2 id="drawerTitle">·</h2>
+  <div class="drawer-stat">
+    <div>
+      <div class="num accent" id="drawerCount">·</div>
+      <div class="lbl">Records</div>
     </div>
-    <ul id="results" class="results"></ul>
-  </fieldset>
+    <div>
+      <div class="num" id="drawerPct">·</div>
+      <div class="lbl">% of all</div>
+    </div>
+  </div>
 
-  <p id="msg"></p>
-  <p class="hint">API: <code>GET /api/v1/gui/path-tags?path=</code> (or <code>/api/v1/files/tags?path=</code>),
-    <code>POST /api/v1/gui/add-tags</code>, <code>POST /api/v1/gui/remove</code>, <code>GET /api/v1/search?tags=…&amp;match_all=0|1</code>.
-    Open <code>/</code> or <code>/api</code> for a JSON route list. Stop server with Ctrl+C in the terminal.</p>
+  <div class="drawer-block">
+    <div class="card-head"><span>Co-occurring subjects</span><span class="meta" id="drawerCoocCount">·</span></div>
+    <div id="drawerCooc" class="chips"></div>
+  </div>
 
-  <script>
-(function () {
-  const msg = (t, ok) => { const el = document.getElementById("msg"); el.textContent = t || ""; el.className = ok ? "ok" : (t ? "err" : ""); };
+  <div class="drawer-block">
+    <div class="card-head"><span>File-types</span></div>
+    <ol class="bar-list" id="drawerTypes"></ol>
+  </div>
+
+  <div class="drawer-block">
+    <div class="card-head"><span>Records on file</span><span class="meta" id="drawerFilesMeta">·</span></div>
+    <ul class="drawer-list" id="drawerFiles"></ul>
+    <a class="more-link hidden" id="drawerMore">Show all</a>
+  </div>
+</aside>
+
+<!-- Shortcuts modal -->
+<div id="modalBackdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-labelledby="modalTitle">
+    <h3 id="modalTitle">Keyboard shortcuts</h3>
+    <ul class="kbd-list">
+      <li><span class="kbd">?</span> <span class="label">show this list</span></li>
+      <li><span class="kbd">1</span>–<span class="kbd">7</span> <span class="label">jump to a section</span></li>
+      <li><span class="kbd">g</span> <span class="label">focus path input in § 01</span></li>
+      <li><span class="kbd">/</span> <span class="label">focus search in § 02</span></li>
+      <li><span class="kbd">d</span> <span class="label">toggle dry-run</span></li>
+      <li><span class="kbd">Esc</span> <span class="label">close drawer / modal / popups</span></li>
+    </ul>
+  </div>
+</div>
+
+<!-- Log panel -->
+<div id="logBody" class="log-body" role="region" aria-label="Status log">
+  <div class="log-head">Last 10 messages</div>
+  <div id="logList"><div class="empty">no messages yet</div></div>
+</div>
+
+<div id="msg" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+(() => {
+  /* ─── Helpers ─────────────────────────────────────────────── */
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, txt) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt;
+    return e;
+  };
+  const tok = (s) => (s || "").replace(/,/g, " ").split(/\s+/).map(t => t.trim()).filter(Boolean);
+
+  /* Toast + ring-buffer log. */
+  const LOG_MAX = 10;
+  const logBuf = [];
+  const status = (text, isError) => {
+    const m = $("msg");
+    if (!text) { m.classList.remove("shown"); return; }
+    m.textContent = text;
+    m.classList.toggle("err", !!isError);
+    m.classList.add("shown");
+    clearTimeout(status._t);
+    status._t = setTimeout(() => m.classList.remove("shown"), isError ? 5500 : 3200);
+    // Mirror to log buffer.
+    const ts = new Date();
+    const hh = String(ts.getHours()).padStart(2, "0");
+    const mm = String(ts.getMinutes()).padStart(2, "0");
+    const ss = String(ts.getSeconds()).padStart(2, "0");
+    logBuf.unshift({ time: `${hh}:${mm}:${ss}`, text, err: !!isError });
+    if (logBuf.length > LOG_MAX) logBuf.length = LOG_MAX;
+    renderLog();
+  };
+  function renderLog() {
+    const list = $("logList");
+    $("logCount").textContent = logBuf.length;
+    if (!logBuf.length) { list.innerHTML = "<div class='empty'>no messages yet</div>"; return; }
+    list.innerHTML = "";
+    logBuf.forEach(item => {
+      const row = el("div", "log-row");
+      row.appendChild(el("span", "log-time", item.time));
+      row.appendChild(el("span", "log-text" + (item.err ? " err" : ""), item.text));
+      list.appendChild(row);
+    });
+  }
+
+  const jget = async (url) => {
+    const r = await fetch(url);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.ok === false) throw new Error(j.error || j.message || `${r.status}`);
+    return j;
+  };
   const jpost = async (url, body) => {
     const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok || j.ok === false) throw new Error(j.error || j.message || "request failed");
+    if (!r.ok || j.ok === false) throw new Error(j.error || j.message || `${r.status}`);
     return j;
   };
-  const renderTags = (tags) => {
-    const el = document.getElementById("tags");
-    el.innerHTML = "";
-    (tags || []).forEach((t) => { const s = document.createElement("span"); s.className = "tag"; s.textContent = t; el.appendChild(s); });
+
+  /* ─── Caches ──────────────────────────────────────────────── */
+  let allTags = [];
+  let allPaths = [];
+  let allDb = {};
+  let aliases = {};
+  let presets = {};
+  let loadedPath = "";
+  let loadedTags = [];
+
+  /* ─── Header / reveal ─────────────────────────────────────── */
+  const hdrSetup = () => {
+    $("hdrPort").textContent = ":" + (location.port || "8844");
   };
-  document.getElementById("btnLoad").onclick = async () => {
-    msg("", true);
-    const path = document.getElementById("fpath").value.trim();
-    if (!path) { msg("Enter a path.", false); return; }
-    try {
-      const r = await fetch("/api/v1/gui/path-tags?path=" + encodeURIComponent(path));
-      const j = await r.json();
-      if (!j.ok) throw new Error(j.error || "failed");
-      renderTags(j.tags);
-      document.getElementById("fpath").value = j.path;
-      msg("Loaded.", true);
-    } catch (e) { msg(String(e.message || e), false); }
+  const reveal = () => {
+    const sections = document.querySelectorAll("section.reveal");
+    sections.forEach((s, i) => setTimeout(() => s.classList.add("show"), 60 + i * 80));
   };
-  document.getElementById("btnAdd").onclick = async () => {
-    msg("", true);
-    const path = document.getElementById("fpath").value.trim();
-    const tags = document.getElementById("newtags").value.split(",").map((s) => s.trim()).filter(Boolean);
-    const dry = document.getElementById("dry").checked;
-    if (!path) { msg("Enter a path.", false); return; }
-    try {
-      await jpost("/api/v1/gui/add-tags", {
-        path, tags, dry_run: dry,
-        no_auto: document.getElementById("noauto").checked,
-        no_aliases: document.getElementById("noalias").checked,
-        no_content: document.getElementById("nocontent").checked,
+  const railSpy = () => {
+    const links = Array.from(document.querySelectorAll(".rail a[href^='#']"));
+    if (!("IntersectionObserver" in window) || !links.length) return;
+    const map = new Map();
+    links.forEach(a => {
+      const id = a.getAttribute("href").slice(1);
+      const sec = document.getElementById(id);
+      if (sec) map.set(sec, a);
+    });
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(en => {
+        if (en.isIntersecting) {
+          links.forEach(a => a.classList.remove("is-current"));
+          const a = map.get(en.target);
+          if (a) a.classList.add("is-current");
+        }
       });
-      const r2 = await fetch("/api/v1/gui/path-tags?path=" + encodeURIComponent(path));
-      const j2 = await r2.json();
-      renderTags(j2.tags);
-      msg(dry ? "Dry-run OK (no save)." : "Tags updated.", true);
-    } catch (e) { msg(String(e.message || e), false); }
+    }, { rootMargin: "-30% 0px -65% 0px", threshold: 0 });
+    map.forEach((_a, sec) => io.observe(sec));
   };
-  document.getElementById("btnRmTag").onclick = async () => {
-    const tag = prompt("Tag name to remove from this file:");
-    if (!tag) return;
-    const path = document.getElementById("fpath").value.trim();
-    const dry = document.getElementById("dry").checked;
+
+  /* ─── Autocomplete (tag-shaped) ───────────────────────────── */
+  function attachAutocomplete(inputEl, popupEl, source) {
+    if (!inputEl || !popupEl) return;
+    let items = [];
+    let idx = -1;
+    const close = () => { popupEl.classList.add("hidden"); items = []; idx = -1; };
+    const highlight = () => popupEl.querySelectorAll(".opt").forEach((o, i) => o.classList.toggle("is-active", i === idx));
+    const currentToken = () => {
+      const v = inputEl.value;
+      const cut = Math.max(v.lastIndexOf(","), v.lastIndexOf(" "));
+      return cut >= 0 ? v.slice(cut + 1) : v;
+    };
+    const accept = (i) => {
+      if (!items[i]) return;
+      const chosen = items[i].tag;
+      const v = inputEl.value;
+      const cut = Math.max(v.lastIndexOf(","), v.lastIndexOf(" "));
+      const prefix = cut >= 0 ? v.slice(0, cut + 1) : "";
+      inputEl.value = (prefix + chosen + " ").replace(/^\s+/, "");
+      close();
+      inputEl.focus();
+    };
+    const render = (matches, q) => {
+      popupEl.innerHTML = "";
+      if (!matches.length) {
+        popupEl.appendChild(el("div", "empty", `no match for "${q}"`));
+        popupEl.classList.remove("hidden");
+        items = []; idx = -1; return;
+      }
+      items = matches;
+      matches.forEach((m, i) => {
+        const opt = el("div", "opt" + (i === 0 ? " is-active" : ""));
+        opt.appendChild(el("span", null, m.tag));
+        if (m.count != null) opt.appendChild(el("span", "cnt", "× " + m.count));
+        opt.addEventListener("mousedown", (ev) => { ev.preventDefault(); accept(i); });
+        opt.addEventListener("mouseenter", () => { idx = i; highlight(); });
+        popupEl.appendChild(opt);
+      });
+      idx = 0;
+      popupEl.classList.remove("hidden");
+    };
+    const refresh = () => {
+      const all = source() || [];
+      const tk = currentToken().trim().toLowerCase();
+      if (!tk) { close(); return; }
+      const already = new Set(
+        inputEl.value.replace(/,/g, " ").split(/\s+/)
+          .map(t => t.trim().toLowerCase()).filter(t => t && t !== tk)
+      );
+      const starts = [], contains = [];
+      for (const m of all) {
+        if (already.has(m.tag.toLowerCase())) continue;
+        const t = m.tag.toLowerCase();
+        if (t === tk) continue;
+        if (t.startsWith(tk)) starts.push(m);
+        else if (t.includes(tk)) contains.push(m);
+      }
+      render(starts.concat(contains).slice(0, 12), tk);
+    };
+    inputEl.addEventListener("input", refresh);
+    inputEl.addEventListener("focus", refresh);
+    inputEl.addEventListener("blur", () => setTimeout(close, 120));
+    inputEl.addEventListener("keydown", (ev) => {
+      if (popupEl.classList.contains("hidden") || !items.length) return;
+      if (ev.key === "ArrowDown") { ev.preventDefault(); idx = (idx + 1) % items.length; highlight(); return; }
+      if (ev.key === "ArrowUp")   { ev.preventDefault(); idx = (idx - 1 + items.length) % items.length; highlight(); return; }
+      if (ev.key === "Enter" || ev.key === "Tab") { ev.preventDefault(); accept(idx); return; }
+      if (ev.key === "Escape") { close(); return; }
+    });
+  }
+  function attachPathAutocomplete(inputEl, popupEl, source) {
+    if (!inputEl || !popupEl) return;
+    let items = [];
+    let idx = -1;
+    const close = () => { popupEl.classList.add("hidden"); items = []; idx = -1; };
+    const highlight = () => popupEl.querySelectorAll(".opt").forEach((o, j) => o.classList.toggle("is-active", j === idx));
+    const render = (matches, q) => {
+      popupEl.innerHTML = "";
+      if (!matches.length) {
+        popupEl.appendChild(el("div", "empty", `no path matching "${q}"`));
+        popupEl.classList.remove("hidden");
+        items = []; idx = -1; return;
+      }
+      items = matches;
+      matches.forEach((m, i) => {
+        const opt = el("div", "opt" + (i === 0 ? " is-active" : ""));
+        opt.appendChild(el("span", null, m));
+        opt.addEventListener("mousedown", (ev) => { ev.preventDefault(); inputEl.value = m; close(); inputEl.focus(); });
+        opt.addEventListener("mouseenter", () => { idx = i; highlight(); });
+        popupEl.appendChild(opt);
+      });
+      idx = 0;
+      popupEl.classList.remove("hidden");
+    };
+    inputEl.addEventListener("input", () => {
+      const q = inputEl.value.trim().toLowerCase();
+      const all = source() || [];
+      if (!q) { close(); return; }
+      const starts = [], contains = [];
+      for (const p of all) {
+        const lo = p.toLowerCase();
+        if (lo === q) continue;
+        if (lo.startsWith(q)) starts.push(p);
+        else if (lo.includes(q)) contains.push(p);
+      }
+      render(starts.concat(contains).slice(0, 12), q);
+    });
+    inputEl.addEventListener("blur", () => setTimeout(close, 120));
+    inputEl.addEventListener("keydown", (ev) => {
+      if (popupEl.classList.contains("hidden") || !items.length) return;
+      if (ev.key === "ArrowDown") { ev.preventDefault(); idx = (idx + 1) % items.length; highlight(); return; }
+      if (ev.key === "ArrowUp")   { ev.preventDefault(); idx = (idx - 1 + items.length) % items.length; highlight(); return; }
+      if (ev.key === "Enter")     { ev.preventDefault(); if (items[idx]) { inputEl.value = items[idx]; close(); } return; }
+      if (ev.key === "Escape")    { close(); return; }
+    });
+  }
+
+  const tagsSource = () => allTags;
+  const pathsSource = () => allPaths;
+
+  /* ─── Render helpers ─────────────────────────────────────── */
+  function renderCurrentTags() {
+    const c = $("currentTags");
+    c.innerHTML = "";
+    if (!loadedPath) {
+      c.appendChild(el("span", "chip empty", "load a record to begin"));
+      $("currentTagsCount").textContent = "none recorded";
+      return;
+    }
+    if (!loadedTags.length) {
+      c.appendChild(el("span", "chip empty", "no subjects on this record"));
+      $("currentTagsCount").textContent = "0 subjects";
+      return;
+    }
+    loadedTags.forEach((t, i) => {
+      const chip = el("span", "chip");
+      chip.dataset.removable = "true";
+      chip.style.animationDelay = (i * 22) + "ms";
+      chip.appendChild(el("span", null, t));
+      chip.title = "Click to remove '" + t + "'" + ($("dry").checked ? " (dry run)" : "");
+      chip.addEventListener("click", () => removeOneTag(t));
+      c.appendChild(chip);
+    });
+    $("currentTagsCount").textContent = loadedTags.length + " subject" + (loadedTags.length === 1 ? "" : "s");
+  }
+
+  function setLoaded(path, tags) {
+    loadedPath = path || "";
+    loadedTags = Array.isArray(tags) ? tags.slice() : [];
+    if (path) $("fpath").value = path;
+    renderCurrentTags();
+    $("dryPane").classList.add("hidden");
+    // Enable/disable open-buttons in lockstep with a loaded record.
+    const hasRecord = !!loadedPath;
+    $("btnOpenFile").disabled = !hasRecord;
+    $("btnOpenFolder").disabled = !hasRecord;
+    // Refresh suggestion chips above the add-subjects input.
+    suggCacheKey = "";  // force re-render even if anchor unchanged
+    renderSuggestions();
+  }
+
+  /* Open a path via the OS shell (file or its containing folder). */
+  async function openPath(path, mode) {
+    if (!path) { status("Load a record first.", true); return; }
     try {
-      await jpost("/api/v1/gui/remove", { path, mode: "one_tag", tag: tag.trim(), dry_run: dry });
-      const r2 = await fetch("/api/v1/gui/path-tags?path=" + encodeURIComponent(path));
-      const j2 = await r2.json();
-      renderTags(j2.tags);
-      msg(dry ? "Dry-run OK." : "Tag removed.", true);
-    } catch (e) { msg(String(e.message || e), false); }
-  };
-  document.getElementById("btnClear").onclick = async () => {
-    if (!confirm("Clear all tags on this file (keeps DB entry)?")) return;
-    const path = document.getElementById("fpath").value.trim();
-    const dry = document.getElementById("dry").checked;
+      const j = await jpost("/api/v1/open", { path, mode });
+      status(mode === "folder" ? "Opened folder" : "Opened file");
+    } catch (e) {
+      status("Open failed: " + (e.message || e), true);
+    }
+  }
+
+  function renderChipsInto(container, list, cls) {
+    container.innerHTML = "";
+    if (!list || !list.length) {
+      container.appendChild(el("span", "chip empty", "— none —"));
+      return;
+    }
+    list.forEach((t, i) => {
+      const c = el("span", "chip" + (cls ? " " + cls : ""));
+      c.style.animationDelay = (i * 25) + "ms";
+      c.appendChild(el("span", null, t));
+      container.appendChild(c);
+    });
+  }
+
+  /* ─── §01 actions ─────────────────────────────────────────── */
+  async function loadPath(path) {
+    path = (path || $("fpath").value).trim();
+    if (!path) { status("Enter a path first.", true); return; }
     try {
-      await jpost("/api/v1/gui/remove", { path, mode: "clear_tags", dry_run: dry });
-      renderTags([]);
-      msg(dry ? "Dry-run OK." : "Cleared.", true);
-    } catch (e) { msg(String(e.message || e), false); }
-  };
-  document.getElementById("btnDrop").onclick = async () => {
-    if (!confirm("Remove this path from the tag database entirely?")) return;
-    const path = document.getElementById("fpath").value.trim();
-    const dry = document.getElementById("dry").checked;
+      const j = await jget("/api/v1/gui/path-tags?path=" + encodeURIComponent(path));
+      setLoaded(j.path, j.tags || []);
+      status("Loaded · " + (j.tags || []).length + " subject(s).");
+    } catch (e) { status(String(e.message || e), true); }
+  }
+
+  async function addTags() {
+    const path = ($("fpath").value || "").trim();
+    if (!path) { status("Enter a path first.", true); return; }
+    const tags = tok($("newtags").value);
+    const dry = $("dry").checked;
     try {
-      await jpost("/api/v1/gui/remove", { path, mode: "path", dry_run: dry });
-      renderTags([]);
-      msg(dry ? "Dry-run OK." : "Removed from DB.", true);
-    } catch (e) { msg(String(e.message || e), false); }
-  };
-  document.getElementById("btnSearch").onclick = async () => {
-    msg("", true);
-    const tags = document.getElementById("qtags").value.split(",").map((s) => s.trim()).filter(Boolean);
-    const ul = document.getElementById("results");
-    ul.innerHTML = "";
-    if (!tags.length) { msg("Enter tags to search.", false); return; }
-    const ma = document.getElementById("matchall").checked ? "1" : "0";
-    const q = "tags=" + encodeURIComponent(tags.join(",")) + "&match_all=" + ma;
+      const j = await jpost("/api/v1/gui/add-tags", {
+        path, tags, dry_run: dry,
+        no_auto: $("noauto").checked,
+        no_aliases: $("noalias").checked,
+      });
+      if (dry) {
+        renderChipsInto($("dryBefore"), j.tags_before || [], "before");
+        const before = new Set((j.tags_before || []).map(s => s.toLowerCase()));
+        const after = j.tags_after_preview || j.tags || [];
+        const afterEl = $("dryAfter");
+        afterEl.innerHTML = "";
+        if (!after.length) afterEl.appendChild(el("span", "chip empty", "— none —"));
+        after.forEach((t, i) => {
+          const gain = !before.has(t.toLowerCase());
+          const c = el("span", "chip " + (gain ? "gain" : "after"));
+          c.style.animationDelay = (i * 25) + "ms";
+          c.appendChild(el("span", null, t));
+          afterEl.appendChild(c);
+        });
+        $("dryPane").classList.remove("hidden");
+        const gained = (after || []).length - (j.tags_before || []).length;
+        status("Dry run · would add " + Math.max(0, gained) + " subject(s).");
+        return;
+      }
+      setLoaded(j.path, j.tags || []);
+      $("newtags").value = "";
+      $("dryPane").classList.add("hidden");
+      await refreshArchive();
+      status("Committed · current subjects = " + (j.tags || []).length + ".");
+    } catch (e) { status(String(e.message || e), true); }
+  }
+
+  async function removeOneTag(tag) {
+    if (!loadedPath) return;
+    const dry = $("dry").checked;
     try {
-      const r = await fetch("/api/v1/search?" + q);
-      const j = await r.json();
-      const files = j.files || [];
-      files.forEach((f) => { const li = document.createElement("li"); li.textContent = f; ul.appendChild(li); });
-      msg(files.length + " file(s).", true);
-    } catch (e) { msg(String(e.message || e), false); }
-  };
+      await jpost("/api/v1/gui/remove", { path: loadedPath, mode: "one_tag", tag, dry_run: dry });
+      if (dry) { status("Dry run · would remove '" + tag + "'."); return; }
+      const r = await jget("/api/v1/gui/path-tags?path=" + encodeURIComponent(loadedPath));
+      setLoaded(r.path, r.tags || []);
+      await refreshArchive();
+      status("Removed · '" + tag + "'.");
+    } catch (e) { status(String(e.message || e), true); }
+  }
+
+  function showDestructiveDryRun(beforeTags, afterLabel) {
+    renderChipsInto($("dryBefore"), beforeTags, "before");
+    const afterEl = $("dryAfter");
+    afterEl.innerHTML = "";
+    afterEl.appendChild(el("span", "chip empty", afterLabel));
+    $("dryPane").classList.remove("hidden");
+  }
+
+  async function clearTags() {
+    if (!loadedPath) { status("Load a record first.", true); return; }
+    const dry = $("dry").checked;
+    if (!dry && !confirm("Clear ALL subjects on this record? The record stays in the catalogue.")) return;
+    try {
+      const j = await jpost("/api/v1/gui/remove", { path: loadedPath, mode: "clear_tags", dry_run: dry });
+      if (dry) {
+        showDestructiveDryRun(loadedTags, "— would be cleared —");
+        status("Dry run · " + (j.message || "would clear all subjects"));
+        return;
+      }
+      const r = await jget("/api/v1/gui/path-tags?path=" + encodeURIComponent(loadedPath));
+      setLoaded(r.path, r.tags || []);
+      await refreshArchive();
+      status("Cleared · 0 subjects.");
+    } catch (e) { status(String(e.message || e), true); }
+  }
+
+  async function dropPath() {
+    if (!loadedPath) { status("Load a record first.", true); return; }
+    const dry = $("dry").checked;
+    if (!dry && !confirm("Withdraw this record from the catalogue entirely? (The file itself is untouched.)")) return;
+    try {
+      const j = await jpost("/api/v1/gui/remove", { path: loadedPath, mode: "path", dry_run: dry });
+      if (dry) {
+        showDestructiveDryRun(loadedTags, "— record would be withdrawn —");
+        status("Dry run · " + (j.message || "would withdraw record"));
+        return;
+      }
+      setLoaded("", []);
+      $("fpath").value = "";
+      await refreshArchive();
+      status("Withdrawn · record removed from catalogue.");
+    } catch (e) { status(String(e.message || e), true); }
+  }
+
+  /* ─── §02 search ──────────────────────────────────────────── */
+  function renderSearchResults(paths) {
+    const body = $("searchBody");
+    body.innerHTML = "";
+    if (!paths.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 3;
+      td.style.textAlign = "center";
+      td.style.padding = "1.8rem";
+      td.className = "text-faint";
+      td.textContent = "no records matched";
+      tr.appendChild(td);
+      body.appendChild(tr);
+      $("searchCount").textContent = "0 records";
+      refreshSearchActionRow();
+      return;
+    }
+    paths.forEach((p) => {
+      const tags = allDb[p] || [];
+      const tr = el("tr");
+      tr.title = "click to load this record above";
+      tr.addEventListener("click", () => {
+        $("fpath").value = p;
+        loadPath(p);
+        document.getElementById("sec-record").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      const tdP = el("td", "path"); tdP.textContent = p;
+      const tdT = el("td", "tags-cell");
+      const chips = el("div", "chips");
+      tags.slice(0, 8).forEach((t) => {
+        const chip = el("span", "chip", t);
+        chip.title = "Inspect '" + t + "'";
+        chip.addEventListener("click", (ev) => { ev.stopPropagation(); openTagDrawer(t); });
+        chips.appendChild(chip);
+      });
+      if (tags.length > 8) chips.appendChild(el("span", "chip empty", "+" + (tags.length - 8)));
+      tdT.appendChild(chips);
+      const tdO = el("td", "open");
+      const aFile = el("span", "row-action", "Open");
+      aFile.title = "Open this file";
+      aFile.addEventListener("click", (ev) => { ev.stopPropagation(); openPath(p, "file"); });
+      const aFolder = el("span", "row-action", "Folder");
+      aFolder.title = "Show in containing folder";
+      aFolder.addEventListener("click", (ev) => { ev.stopPropagation(); openPath(p, "folder"); });
+      tdO.appendChild(aFile);
+      tdO.appendChild(aFolder);
+      tr.appendChild(tdP);
+      tr.appendChild(tdT);
+      tr.appendChild(tdO);
+      body.appendChild(tr);
+    });
+    $("searchCount").textContent = paths.length + " record" + (paths.length === 1 ? "" : "s");
+    refreshSearchActionRow();
+  }
+
+  async function runSearch() {
+    const all = tok($("qall").value);
+    const any = tok($("qany").value);
+    const not = tok($("qnot").value);
+    const pq  = ($("qpath").value || "").trim();
+
+    try {
+      let allSet = null, anySet = null;
+      if (all.length) {
+        const q = "tags=" + encodeURIComponent(all.join(",")) + "&match_all=1"
+                + (not.length ? "&exclude=" + encodeURIComponent(not.join(",")) : "");
+        const j = await fetch("/api/v1/search?" + q).then(r => r.json());
+        allSet = new Set(j.files || []);
+      }
+      if (any.length) {
+        const q = "tags=" + encodeURIComponent(any.join(",")) + "&match_all=0"
+                + (not.length ? "&exclude=" + encodeURIComponent(not.join(",")) : "");
+        const j = await fetch("/api/v1/search?" + q).then(r => r.json());
+        anySet = new Set(j.files || []);
+      }
+      let matched;
+      if (allSet && anySet) matched = new Set([...allSet].filter(x => anySet.has(x)));
+      else matched = allSet || anySet;
+
+      if (!matched) {
+        matched = new Set(Object.keys(allDb));
+        if (not.length) {
+          const ban = not.map(t => t.toLowerCase());
+          for (const p of [...matched]) {
+            const tags = (allDb[p] || []).map(t => t.toLowerCase());
+            if (ban.some(b => tags.some(t => t.includes(b) || t === b))) matched.delete(p);
+          }
+        }
+      }
+      if (pq) {
+        const lo = pq.toLowerCase();
+        for (const p of [...matched]) if (!p.toLowerCase().includes(lo)) matched.delete(p);
+      }
+      const sorted = [...matched].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+      renderSearchResults(sorted);
+      status("Search · " + sorted.length + " record(s).");
+    } catch (e) { status(String(e.message || e), true); }
+  }
+
+  function resetSearch() {
+    ["qall", "qany", "qnot", "qpath"].forEach(id => $(id).value = "");
+    renderSearchResults([]);
+    $("searchCount").textContent = "0 records";
+    refreshSearchActionRow();
+  }
+
+  /* ─── §03 bulk ────────────────────────────────────────────── */
+  function renderBulkList(files, isLive) {
+    const wrap = $("bulkResult");
+    const list = $("bulkList");
+    list.innerHTML = "";
+    if (!files.length) { wrap.classList.add("hidden"); return; }
+    wrap.classList.remove("hidden");
+    $("bulkResultTitle").textContent = (isLive ? "applied" : "preview") + " · " + files.length + " file(s)";
+    files.slice(0, 800).forEach(f => {
+      const li = el("li");
+      li.style.padding = ".3rem 0";
+      li.style.borderBottom = "1px solid var(--rule-soft)";
+      li.style.color = "var(--ink)";
+      li.textContent = f;
+      list.appendChild(li);
+    });
+    if (files.length > 800) {
+      const li = el("li", "text-faint", "+" + (files.length - 800) + " more not shown");
+      list.appendChild(li);
+    }
+  }
+
+  async function bulkPreview() {
+    const pattern = $("bpattern").value.trim() || "**/*";
+    const tags = tok($("btags").value);
+    const base = $("bbase").value.trim() || ".";
+    if (!tags.length) { status("Add at least one subject.", true); return; }
+    try {
+      const j = await jpost("/api/v1/bulk/preview", { pattern, tags, base_path: base });
+      $("bulkCount").textContent = (j.count || 0) + " match(es)";
+      renderBulkList(j.files || [], false);
+      status("Preview · " + (j.count || 0) + " file(s) would be tagged with " + tags.join(", "));
+    } catch (e) { status(String(e.message || e), true); }
+  }
+
+  async function bulkApply() {
+    const pattern = $("bpattern").value.trim() || "**/*";
+    const tags = tok($("btags").value);
+    const base = $("bbase").value.trim() || ".";
+    if (!tags.length) { status("Add at least one subject.", true); return; }
+    if (!confirm("Tag every file matching '" + pattern + "' under '" + (base || ".") + "' with [" + tags.join(", ") + "]?")) return;
+    try {
+      const j = await jpost("/api/v1/bulk/add", { pattern, tags, base_path: base });
+      $("bulkCount").textContent = (j.files_processed || j.count || 0) + " record(s) committed";
+      renderBulkList(j.files_found || j.files || [], true);
+      await refreshArchive();
+      status(j.message || "Bulk commit applied.");
+    } catch (e) { status(String(e.message || e), true); }
+  }
+
+  /* ─── §04 archive ─────────────────────────────────────────── */
+  function renderCloud() {
+    const c = $("cloud");
+    c.innerHTML = "";
+    if (!allTags.length) {
+      c.appendChild(el("span", "text-faint", "no subjects on file"));
+      $("cloudCount").textContent = "0";
+      return;
+    }
+    $("cloudCount").textContent = allTags.length + " distinct";
+    const maxCount = allTags[0] ? allTags[0].count : 1;
+    allTags.forEach((m) => {
+      const span = el("span", "cl-tag");
+      const weight = Math.min(1, m.count / maxCount);
+      const size = 0.92 + weight * 0.85;
+      span.style.fontSize = size + "rem";
+      span.appendChild(document.createTextNode(m.tag));
+      const cnt = el("em"); cnt.textContent = m.count;
+      span.appendChild(cnt);
+      span.title = "Inspect '" + m.tag + "' (shift-click to search)";
+      span.addEventListener("click", (ev) => {
+        if (ev.shiftKey) {
+          $("qall").value = m.tag;
+          $("qany").value = "";
+          runSearch();
+          document.getElementById("sec-search").scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          openTagDrawer(m.tag);
+        }
+      });
+      c.appendChild(span);
+    });
+  }
+
+  function renderArchiveTable(filter) {
+    const body = $("archiveBody");
+    body.innerHTML = "";
+    const q = (filter || "").trim().toLowerCase();
+    const paths = Object.keys(allDb)
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+      .filter(p => !q || p.toLowerCase().includes(q) || (allDb[p] || []).some(t => t.toLowerCase().includes(q)));
+    paths.slice(0, 500).forEach(p => {
+      const tr = el("tr");
+      tr.addEventListener("click", () => {
+        $("fpath").value = p;
+        loadPath(p);
+        document.getElementById("sec-record").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      const td1 = el("td", "path"); td1.textContent = p;
+      const td2 = el("td", "cnt"); td2.textContent = (allDb[p] || []).length;
+      const td3 = el("td", "open");
+      const aFile = el("span", "row-action", "Open");
+      aFile.title = "Open this file";
+      aFile.addEventListener("click", (ev) => { ev.stopPropagation(); openPath(p, "file"); });
+      const aFolder = el("span", "row-action", "Folder");
+      aFolder.title = "Show in containing folder";
+      aFolder.addEventListener("click", (ev) => { ev.stopPropagation(); openPath(p, "folder"); });
+      td3.appendChild(aFile);
+      td3.appendChild(aFolder);
+      tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+      body.appendChild(tr);
+    });
+    if (paths.length > 500) {
+      const tr = el("tr"); const td = el("td"); td.colSpan = 3; td.className = "text-faint";
+      td.style.textAlign = "center"; td.style.padding = ".8rem";
+      td.textContent = "+ " + (paths.length - 500) + " more (refine the filter)";
+      tr.appendChild(td); body.appendChild(tr);
+    }
+  }
+
+  async function refreshArchive() {
+    try {
+      const [db, tags, stats] = await Promise.all([
+        fetch("/api/v1/tags").then(r => r.json()),
+        jget("/api/v1/all-tags"),
+        jget("/api/v1/stats"),
+      ]);
+      allDb = db || {};
+      allTags = (tags.tags || []).map(t => ({ tag: t.tag, count: t.count }));
+      allPaths = Object.keys(allDb).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+
+      $("hdrFiles").textContent = (tags.total_files != null ? tags.total_files : allPaths.length).toString();
+      $("hdrTags").textContent  = (tags.unique != null ? tags.unique : allTags.length).toString();
+
+      $("statFiles").textContent  = stats.total_files || 0;
+      $("statUnique").textContent = stats.unique_tags || 0;
+      $("statAvg").textContent    = (stats.avg_tags_per_file != null ? stats.avg_tags_per_file : 0).toString();
+      $("statOrphan").textContent = stats.files_without_tags || 0;
+
+      const bars = $("topBars");
+      bars.innerHTML = "";
+      const top = (stats.most_common_tags || []).slice(0, 10);
+      const maxC = top.length ? top[0][1] : 1;
+      top.forEach(([tag, count]) => {
+        const li = el("li");
+        const lbl = el("span", "bar-label"); lbl.textContent = tag;
+        lbl.style.cursor = "pointer";
+        lbl.title = "Inspect '" + tag + "'";
+        lbl.addEventListener("click", () => openTagDrawer(tag));
+        const track = el("span", "bar-track");
+        const fill = el("span", "bar-fill");
+        fill.style.width = "0%";
+        setTimeout(() => { fill.style.width = ((count / maxC) * 100).toFixed(1) + "%"; }, 40);
+        track.appendChild(fill);
+        const num = el("span", "bar-num"); num.textContent = count;
+        li.appendChild(lbl); li.appendChild(track); li.appendChild(num);
+        bars.appendChild(li);
+      });
+
+      renderCloud();
+      renderArchiveTable($("archiveFilter").value);
+      // Re-render the §01 chip suggestion rail (top-8 unless a record is loaded).
+      suggCacheKey = "";
+      renderSuggestions();
+    } catch (e) {
+      status("Could not refresh archive: " + (e.message || e), true);
+    }
+  }
+
+  /* ─── §05 authority ───────────────────────────────────────── */
+  function renderAliases() {
+    const list = $("aliasList");
+    list.innerHTML = "";
+    const keys = Object.keys(aliases).sort();
+    $("aliasCount").textContent = keys.length + " on file";
+    if (!keys.length) { list.appendChild(el("div", "auth-empty", "no cross-references on file")); return; }
+    keys.forEach(k => {
+      const row = el("div", "auth-row");
+      const lhs = el("span", "lhs", k);
+      const arr = el("span", "arrow", "→");
+      const rhs = el("span", "rhs", aliases[k]);
+      const del = el("span", "del", "remove");
+      del.addEventListener("click", async () => {
+        try {
+          await jpost("/api/v1/aliases/delete", { alias: k });
+          aliases = (await jget("/api/v1/aliases")).aliases || {};
+          renderAliases();
+          status("Removed alias · " + k);
+        } catch (e) { status(e.message || String(e), true); }
+      });
+      row.appendChild(lhs); row.appendChild(arr); row.appendChild(rhs); row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+
+  async function addAlias() {
+    const a = $("aliasIn").value.trim();
+    const c = $("aliasOut").value.trim();
+    if (!a || !c) { status("Both alias and canonical are required.", true); return; }
+    try {
+      await jpost("/api/v1/aliases/set", { alias: a, canonical: c });
+      aliases = (await jget("/api/v1/aliases")).aliases || {};
+      $("aliasIn").value = ""; $("aliasOut").value = "";
+      renderAliases();
+      status("Cross-reference filed · " + a + " → " + c);
+    } catch (e) { status(e.message || String(e), true); }
+  }
+
+  function renderPresets() {
+    const list = $("presetList");
+    list.innerHTML = "";
+    const keys = Object.keys(presets).sort();
+    $("presetCount").textContent = keys.length + " on file";
+    if (!keys.length) { list.appendChild(el("div", "auth-empty", "no bundles on file")); return; }
+    keys.forEach(k => {
+      const row = el("div", "auth-row");
+      const lhs = el("span", "lhs", k);
+      const chipsWrap = el("div", "preset-chips");
+      (presets[k] || []).forEach(t => chipsWrap.appendChild(el("span", "chip", t)));
+      const apply = el("span", "del"); apply.textContent = "use";
+      apply.title = "Load these subjects into § 01 'Add subjects'";
+      apply.addEventListener("click", () => {
+        $("newtags").value = (presets[k] || []).join(", ") + " ";
+        document.getElementById("sec-record").scrollIntoView({ behavior: "smooth", block: "start" });
+        $("newtags").focus();
+      });
+      const del = el("span", "del", "remove");
+      del.addEventListener("click", async () => {
+        try {
+          await jpost("/api/v1/presets/delete", { name: k });
+          presets = (await jget("/api/v1/presets")).presets || {};
+          renderPresets();
+          status("Removed bundle · " + k);
+        } catch (e) { status(e.message || String(e), true); }
+      });
+      row.appendChild(lhs); row.appendChild(chipsWrap); row.appendChild(apply); row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+
+  async function addPreset() {
+    const n = $("presetName").value.trim();
+    const tags = tok($("presetTags").value);
+    if (!n || !tags.length) { status("Bundle name + at least one subject required.", true); return; }
+    try {
+      await jpost("/api/v1/presets/set", { name: n, tags });
+      presets = (await jget("/api/v1/presets")).presets || {};
+      $("presetName").value = ""; $("presetTags").value = "";
+      renderPresets();
+      status("Bundle filed · " + n);
+    } catch (e) { status(e.message || String(e), true); }
+  }
+
+  /* ─── §01 chip suggestions ────────────────────────────────── */
+  // When no record is loaded: top-8 most-used tags.
+  // When a record is loaded: top-8 tags that co-occur with the rarest of
+  // its current tags (most discriminating anchor).
+  let suggCacheKey = "";
+  async function renderSuggestions() {
+    const rail = $("suggRail");
+    if (!rail) return;
+    let key, candidates;
+    if (loadedTags && loadedTags.length) {
+      // Choose the rarest of loadedTags as anchor.
+      let anchor = loadedTags[0];
+      let anchorCount = Infinity;
+      const known = new Map(allTags.map(t => [t.tag.toLowerCase(), t.count]));
+      for (const t of loadedTags) {
+        const c = known.get(t.toLowerCase());
+        if (c != null && c < anchorCount) { anchor = t; anchorCount = c; }
+      }
+      key = "rec::" + anchor;
+      if (key === suggCacheKey) return;
+      suggCacheKey = key;
+      try {
+        const j = await jget("/api/v1/stats/tag/" + encodeURIComponent(anchor));
+        const co = (j.co_occurring_tags || []).map(([tag, count]) => ({ tag, count }));
+        const exclude = new Set(loadedTags.map(t => t.toLowerCase()));
+        candidates = co.filter(c => !exclude.has(c.tag.toLowerCase())).slice(0, 8);
+      } catch (e) { candidates = []; }
+    } else {
+      key = "top";
+      if (key === suggCacheKey) return;
+      suggCacheKey = key;
+      candidates = allTags.slice(0, 8);
+    }
+    rail.innerHTML = "";
+    if (!candidates || !candidates.length) return;
+    const label = el("span", "sugg-label",
+      loadedTags && loadedTags.length ? "Also seen with" : "Most-used");
+    rail.appendChild(label);
+    candidates.forEach((c, i) => {
+      const chip = el("span", "chip");
+      chip.style.animationDelay = (i * 20) + "ms";
+      chip.appendChild(el("span", null, c.tag));
+      chip.title = "Append to add-subjects input";
+      chip.addEventListener("click", () => {
+        // Append to #newtags, separated by a space.
+        const input = $("newtags");
+        const cur = (input.value || "").trim();
+        const already = new Set(cur.replace(/,/g, " ").split(/\s+/).map(t => t.trim().toLowerCase()));
+        if (already.has(c.tag.toLowerCase())) { status("Already in input."); return; }
+        input.value = (cur ? cur + " " : "") + c.tag + " ";
+        input.focus();
+      });
+      rail.appendChild(chip);
+    });
+  }
+
+  /* ─── Tag detail drawer (A) ──────────────────────────────── */
+  let drawerStack = [];   // history of tags so back navigation works
+  const drawerEl = () => $("tagDrawer");
+  const drawerOpen = () => drawerEl().classList.contains("is-open");
+
+  async function openTagDrawer(tagName) {
+    if (!tagName) return;
+    drawerStack.push(tagName);
+    await loadDrawer(tagName);
+    drawerEl().classList.add("is-open");
+    $("drawerBackdrop").classList.add("is-open");
+    drawerEl().setAttribute("aria-hidden", "false");
+  }
+
+  function closeDrawer() {
+    drawerStack = [];
+    drawerEl().classList.remove("is-open");
+    $("drawerBackdrop").classList.remove("is-open");
+    drawerEl().setAttribute("aria-hidden", "true");
+  }
+
+  async function loadDrawer(tagName) {
+    $("drawerTitle").textContent = tagName;
+    $("drawerCount").textContent = "·";
+    $("drawerPct").textContent = "·";
+    $("drawerCooc").innerHTML = "";
+    $("drawerTypes").innerHTML = "";
+    $("drawerFiles").innerHTML = "";
+    $("drawerCoocCount").textContent = "·";
+    $("drawerFilesMeta").textContent = "·";
+    $("drawerMore").classList.add("hidden");
+
+    let j;
+    try {
+      j = await jget("/api/v1/stats/tag/" + encodeURIComponent(tagName));
+    } catch (e) {
+      status("Could not load tag: " + (e.message || e), true);
+      return;
+    }
+    const count = j.files_with_tag || 0;
+    const pct = j.percentage_of_files || 0;
+    $("drawerCount").textContent = count;
+    $("drawerPct").textContent = pct.toFixed(1) + "%";
+
+    // Co-occurrences as clickable chips.
+    const cooc = (j.co_occurring_tags || []).slice(0, 10);
+    $("drawerCoocCount").textContent = (j.co_occurring_tags || []).length + " seen";
+    const coocEl = $("drawerCooc");
+    if (!cooc.length) {
+      coocEl.appendChild(el("span", "chip empty", "(no co-occurrences)"));
+    } else {
+      cooc.forEach(([t, c], i) => {
+        const chip = el("span", "chip");
+        chip.style.animationDelay = (i * 20) + "ms";
+        const lbl = el("span", null, t);
+        chip.appendChild(lbl);
+        const meta = el("span"); meta.textContent = "× " + c;
+        meta.style.color = "var(--ink-faint)";
+        meta.style.fontSize = ".7rem";
+        chip.appendChild(meta);
+        chip.title = "Inspect '" + t + "'";
+        chip.addEventListener("click", () => openTagDrawer(t));
+        coocEl.appendChild(chip);
+      });
+    }
+
+    // File-type histogram as bar-list.
+    const types = Object.entries(j.file_types || {})
+      .sort((a, b) => b[1] - a[1]).slice(0, 8);
+    const maxT = types.length ? types[0][1] : 1;
+    const typesEl = $("drawerTypes");
+    if (!types.length) {
+      const li = el("li"); li.style.borderBottom = "0";
+      const empty = el("span", "text-faint", "no extensions");
+      empty.style.fontFamily = "var(--serif)"; empty.style.fontStyle = "italic";
+      li.appendChild(empty);
+      typesEl.appendChild(li);
+    }
+    types.forEach(([ext, c]) => {
+      const li = el("li");
+      const lbl = el("span", "bar-label", ext === "no_extension" ? "(none)" : "." + ext);
+      const track = el("span", "bar-track");
+      const fill = el("span", "bar-fill");
+      fill.style.width = "0%";
+      setTimeout(() => { fill.style.width = ((c / maxT) * 100).toFixed(1) + "%"; }, 40);
+      track.appendChild(fill);
+      const num = el("span", "bar-num", String(c));
+      li.appendChild(lbl); li.appendChild(track); li.appendChild(num);
+      typesEl.appendChild(li);
+    });
+
+    // Files list — collapsed to first 10 with "show all" link.
+    const allFiles = j.files || [];
+    $("drawerFilesMeta").textContent = allFiles.length + " on file";
+    const filesEl = $("drawerFiles");
+    const renderFiles = (list) => {
+      filesEl.innerHTML = "";
+      list.forEach(p => {
+        const li = el("li");
+        const cell = el("span", "path-cell", p);
+        cell.title = "Load this record into § 01";
+        cell.addEventListener("click", () => {
+          $("fpath").value = p;
+          loadPath(p);
+          closeDrawer();
+          document.getElementById("sec-record").scrollIntoView({ behavior: "smooth" });
+        });
+        const aFile = el("span", "row-action", "Open");
+        aFile.addEventListener("click", (ev) => { ev.stopPropagation(); openPath(p, "file"); });
+        const aFolder = el("span", "row-action", "Folder");
+        aFolder.addEventListener("click", (ev) => { ev.stopPropagation(); openPath(p, "folder"); });
+        li.appendChild(cell); li.appendChild(aFile); li.appendChild(aFolder);
+        filesEl.appendChild(li);
+      });
+    };
+    const showInitial = allFiles.slice(0, 10);
+    renderFiles(showInitial);
+    const more = $("drawerMore");
+    if (allFiles.length > 10) {
+      more.classList.remove("hidden");
+      more.textContent = "Show all " + allFiles.length;
+      more.onclick = () => { renderFiles(allFiles); more.classList.add("hidden"); };
+    } else {
+      more.classList.add("hidden");
+      more.onclick = null;
+    }
+    // Scroll drawer to top on each open.
+    drawerEl().scrollTop = 0;
+  }
+
+  /* ─── §07 Cleanup section (B) ────────────────────────────── */
+  function setActiveTab(name) {
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("is-active", t.dataset.tab === name));
+    document.querySelectorAll(".tab-pane").forEach(p => p.classList.toggle("is-active", p.dataset.pane === name));
+  }
+
+  async function refreshDuplicates() {
+    const body = $("dupBody");
+    const summary = $("dupSummary");
+    body.innerHTML = "";
+    summary.textContent = "scanning…";
+    try {
+      const j = await jget("/api/v1/filter/duplicates");
+      $("cntDup").textContent = j.group_count || 0;
+      summary.textContent =
+        (j.group_count || 0) + " group(s) · " +
+        (j.file_count || 0) + " file(s) out of " +
+        (j.total_files || 0) + " · " + (j.message || "");
+      const groups = j.groups || [];
+      if (!groups.length) {
+        body.innerHTML = "<div class='text-faint' style='padding:1rem 0;'>no duplicate tag sets</div>";
+        return;
+      }
+      groups.forEach((g, i) => {
+        const wrap = el("div", "dup-group");
+        const head = el("div", "dup-head");
+        head.appendChild(el("span", "gnum", "Group " + String(i + 1).padStart(2, "0") + " · " + g.files.length + " files"));
+        const chips = el("div", "chips");
+        (g.tags || []).forEach(t => {
+          const c = el("span", "chip");
+          c.appendChild(el("span", null, t));
+          c.addEventListener("click", () => openTagDrawer(t));
+          chips.appendChild(c);
+        });
+        head.appendChild(chips);
+        wrap.appendChild(head);
+
+        const ul = el("ul", "dup-files");
+        (g.files || []).forEach(p => {
+          const li = el("li");
+          const cell = el("span", "path-cell", p);
+          cell.addEventListener("click", () => {
+            $("fpath").value = p;
+            loadPath(p);
+            document.getElementById("sec-record").scrollIntoView({ behavior: "smooth" });
+          });
+          const aFile = el("span", "row-action", "Open");
+          aFile.addEventListener("click", (ev) => { ev.stopPropagation(); openPath(p, "file"); });
+          const aFolder = el("span", "row-action", "Folder");
+          aFolder.addEventListener("click", (ev) => { ev.stopPropagation(); openPath(p, "folder"); });
+          li.appendChild(cell); li.appendChild(aFile); li.appendChild(aFolder);
+          ul.appendChild(li);
+        });
+        wrap.appendChild(ul);
+        body.appendChild(wrap);
+      });
+    } catch (e) { summary.textContent = "failed: " + (e.message || e); }
+  }
+
+  async function refreshOrphans() {
+    const body = $("orphBody");
+    const summary = $("orphSummary");
+    body.innerHTML = "";
+    summary.textContent = "scanning…";
+    try {
+      const j = await jget("/api/v1/filter/orphans");
+      $("cntOrph").textContent = j.count || 0;
+      summary.textContent = (j.count || 0) + " untagged · " + (j.message || "");
+      const list = j.orphans || [];
+      if (!list.length) {
+        const tr = el("tr"); const td = el("td"); td.colSpan = 2;
+        td.style.textAlign = "center"; td.style.padding = "1.5rem";
+        td.className = "text-faint"; td.textContent = "no untagged records";
+        tr.appendChild(td); body.appendChild(tr);
+        return;
+      }
+      list.forEach(p => {
+        const tr = el("tr");
+        tr.addEventListener("click", () => {
+          $("fpath").value = p;
+          loadPath(p);
+          document.getElementById("sec-record").scrollIntoView({ behavior: "smooth" });
+        });
+        const td1 = el("td", "path"); td1.textContent = p;
+        const td2 = el("td", "open");
+        const aFile = el("span", "row-action", "Open");
+        aFile.addEventListener("click", (ev) => { ev.stopPropagation(); openPath(p, "file"); });
+        const aFolder = el("span", "row-action", "Folder");
+        aFolder.addEventListener("click", (ev) => { ev.stopPropagation(); openPath(p, "folder"); });
+        td2.appendChild(aFile); td2.appendChild(aFolder);
+        tr.appendChild(td1); tr.appendChild(td2);
+        body.appendChild(tr);
+      });
+    } catch (e) { summary.textContent = "failed: " + (e.message || e); }
+  }
+
+  async function refreshClusters() {
+    const body = $("cluBody");
+    const summary = $("cluSummary");
+    body.innerHTML = "";
+    summary.textContent = "scanning…";
+    try {
+      const min = parseInt($("cluMin").value || "5", 10) || 5;
+      const j = await jget("/api/v1/filter/clusters?min_size=" + encodeURIComponent(min));
+      $("cntClu").textContent = j.count || 0;
+      summary.textContent = (j.count || 0) + " cluster(s) ≥ " + min + " file(s)";
+      const clusters = j.clusters || [];
+      if (!clusters.length) {
+        body.innerHTML = "<li><span class='text-faint' style='font-family:var(--serif); font-style:italic;'>no clusters at this threshold</span></li>";
+        return;
+      }
+      const maxC = clusters[0].file_count || 1;
+      clusters.slice(0, 30).forEach(c => {
+        const li = el("li");
+        const lbl = el("span", "bar-label"); lbl.textContent = c.tag;
+        lbl.style.cursor = "pointer";
+        lbl.title = "Inspect '" + c.tag + "'";
+        lbl.addEventListener("click", () => openTagDrawer(c.tag));
+        const track = el("span", "bar-track");
+        const fill = el("span", "bar-fill");
+        fill.style.width = "0%";
+        setTimeout(() => { fill.style.width = ((c.file_count / maxC) * 100).toFixed(1) + "%"; }, 40);
+        track.appendChild(fill);
+        const num = el("span", "bar-num", c.file_count + " · " + c.percentage.toFixed(1) + "%");
+        li.appendChild(lbl); li.appendChild(track); li.appendChild(num);
+        body.appendChild(li);
+      });
+    } catch (e) { summary.textContent = "failed: " + (e.message || e); }
+  }
+
+  async function refreshIsolated() {
+    const body = $("isoBody");
+    const summary = $("isoSummary");
+    body.innerHTML = "";
+    summary.textContent = "scanning…";
+    try {
+      const max = parseInt($("isoMax").value || "1", 10);
+      const j = await jget("/api/v1/filter/isolated?max_shared=" + encodeURIComponent(isNaN(max) ? 1 : max));
+      $("cntIso").textContent = j.count || 0;
+      summary.textContent = (j.count || 0) + " isolated record(s) sharing ≤ " + (isNaN(max) ? 1 : max) + " tag(s)";
+      const list = j.isolated || [];
+      if (!list.length) {
+        const tr = el("tr"); const td = el("td"); td.colSpan = 3;
+        td.style.textAlign = "center"; td.style.padding = "1.5rem";
+        td.className = "text-faint"; td.textContent = "no isolated records";
+        tr.appendChild(td); body.appendChild(tr);
+        return;
+      }
+      list.forEach(entry => {
+        const tr = el("tr");
+        const p = entry.file_path;
+        tr.addEventListener("click", () => {
+          $("fpath").value = p;
+          loadPath(p);
+          document.getElementById("sec-record").scrollIntoView({ behavior: "smooth" });
+        });
+        const td1 = el("td", "path"); td1.textContent = p;
+        const td2 = el("td", "tags-cell");
+        const chips = el("div", "chips");
+        (entry.tags || []).slice(0, 6).forEach(t => {
+          const chip = el("span", "chip", t);
+          chip.title = "Inspect '" + t + "'";
+          chip.addEventListener("click", (ev) => { ev.stopPropagation(); openTagDrawer(t); });
+          chips.appendChild(chip);
+        });
+        if ((entry.tags || []).length > 6) chips.appendChild(el("span", "chip empty", "+" + ((entry.tags || []).length - 6)));
+        td2.appendChild(chips);
+        const td3 = el("td", "open");
+        const aFile = el("span", "row-action", "Open");
+        aFile.addEventListener("click", (ev) => { ev.stopPropagation(); openPath(p, "file"); });
+        const aFolder = el("span", "row-action", "Folder");
+        aFolder.addEventListener("click", (ev) => { ev.stopPropagation(); openPath(p, "folder"); });
+        td3.appendChild(aFile); td3.appendChild(aFolder);
+        tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+        body.appendChild(tr);
+      });
+    } catch (e) { summary.textContent = "failed: " + (e.message || e); }
+  }
+
+  async function refreshDead(dry) {
+    const body = $("deadBody");
+    const summary = $("deadSummary");
+    body.innerHTML = "";
+    summary.textContent = dry ? "scanning…" : "cleaning…";
+    try {
+      const j = await jpost("/api/v1/clean", { dry_run: dry });
+      $("cntDead").textContent = j.count || 0;
+      summary.textContent = j.message || "";
+      const list = j.missing || [];
+      $("btnCleanDead").disabled = !dry || !list.length;
+      if (!list.length) {
+        const tr = el("tr"); const td = el("td");
+        td.style.textAlign = "center"; td.style.padding = "1.5rem";
+        td.className = "text-faint"; td.textContent = "no dead records";
+        tr.appendChild(td); body.appendChild(tr);
+        return;
+      }
+      list.forEach(p => {
+        const tr = el("tr");
+        const td = el("td", "path"); td.textContent = p;
+        tr.appendChild(td); body.appendChild(tr);
+      });
+      if (!dry) {
+        await refreshArchive();
+      }
+    } catch (e) { summary.textContent = "failed: " + (e.message || e); }
+  }
+
+  /* ─── §02 Tag-all-results / Untag-all-results (C) ────────── */
+  function visibleResultPaths() {
+    const ids = [];
+    $("searchBody").querySelectorAll("tr").forEach(tr => {
+      const firstCell = tr.querySelector("td.path");
+      if (firstCell) ids.push(firstCell.textContent);
+    });
+    return ids;
+  }
+
+  function refreshSearchActionRow() {
+    const has = visibleResultPaths().length > 0;
+    $("srAction").classList.toggle("shown", has);
+    if (!has) { $("srTags").value = ""; $("srProgress").textContent = ""; }
+  }
+
+  async function applyTagsToResults(remove) {
+    const paths = visibleResultPaths();
+    const tags = tok($("srTags").value);
+    if (!paths.length) { status("No results to act on.", true); return; }
+    if (!tags.length) { status("Enter at least one subject.", true); return; }
+    if (paths.length > 500) {
+      if (!confirm(`This will touch ${paths.length} records — proceed?`)) return;
+    } else {
+      const verb = remove ? "Remove " : "Tag ";
+      if (!confirm(`${verb}${tags.length} subject(s) ${remove ? "from" : "on"} ${paths.length} records?`)) return;
+    }
+    let done = 0, failed = 0;
+    const prog = $("srProgress");
+    for (const p of paths) {
+      try {
+        if (remove) {
+          // Strip each tag one at a time via the existing remove endpoint.
+          for (const t of tags) {
+            await jpost("/api/v1/gui/remove", { path: p, mode: "one_tag", tag: t, dry_run: false });
+          }
+        } else {
+          await jpost("/api/v1/gui/add-tags", { path: p, tags, dry_run: false });
+        }
+      } catch (e) { failed++; }
+      done++;
+      prog.textContent = `${done} / ${paths.length}` + (failed ? ` · ${failed} failed` : "");
+    }
+    await refreshArchive();
+    await runSearch();   // re-render results with updated chips
+    status(`${remove ? "Removed" : "Tagged"} on ${done - failed} record(s)` + (failed ? `, ${failed} failed` : "."));
+  }
+
+  /* ─── Shortcuts modal (H) ─────────────────────────────────── */
+  const modalEl = () => $("modalBackdrop");
+  function openModal() {
+    modalEl().classList.add("is-open");
+    modalEl().setAttribute("aria-hidden", "false");
+  }
+  function closeModal() {
+    modalEl().classList.remove("is-open");
+    modalEl().setAttribute("aria-hidden", "true");
+  }
+  function jumpToSection(idx) {
+    const ids = ["sec-record", "sec-search", "sec-bulk", "sec-archive", "sec-authority", "sec-stats", "sec-cleanup"];
+    const id = ids[idx - 1];
+    if (id) document.getElementById(id).scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  /* ─── Footer log toggle (J) ──────────────────────────────── */
+  function toggleLog() {
+    const pill = $("logPill");
+    const body = $("logBody");
+    const open = !body.classList.contains("is-open");
+    body.classList.toggle("is-open", open);
+    pill.classList.toggle("is-open", open);
+    pill.firstChild.textContent = open ? "▴ log " : "▾ log ";
+  }
+
+  /* ─── Bootstrap ───────────────────────────────────────────── */
+  async function bootstrap() {
+    hdrSetup();
+    reveal();
+    railSpy();
+
+    [
+      ["newtags", "newtagsPop"],
+      ["qall",    "qallPop"],
+      ["qany",    "qanyPop"],
+      ["qnot",    "qnotPop"],
+      ["btags",   "btagsPop"],
+    ].forEach(([i, p]) => attachAutocomplete($(i), $(p), tagsSource));
+    attachPathAutocomplete($("fpath"), $("fpathPop"), pathsSource);
+
+    $("btnLoad").addEventListener("click", () => loadPath());
+    $("fpath").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && $("fpathPop").classList.contains("hidden")) loadPath();
+    });
+    $("btnAdd").addEventListener("click", addTags);
+    $("newtags").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && $("newtagsPop").classList.contains("hidden")) addTags();
+    });
+    $("btnOpenFile").addEventListener("click", () => openPath(loadedPath, "file"));
+    $("btnOpenFolder").addEventListener("click", () => openPath(loadedPath, "folder"));
+    $("btnClear").addEventListener("click", clearTags);
+    $("btnDrop").addEventListener("click", dropPath);
+
+    $("btnSearch").addEventListener("click", runSearch);
+    ["qall", "qany", "qnot", "qpath"].forEach(id => {
+      $(id).addEventListener("keydown", (e) => {
+        const pop = $(id + "Pop");
+        if (e.key === "Enter" && (!pop || pop.classList.contains("hidden"))) runSearch();
+      });
+    });
+    $("btnSearchClear").addEventListener("click", resetSearch);
+
+    $("btnBulkPreview").addEventListener("click", bulkPreview);
+    $("btnBulkApply").addEventListener("click", bulkApply);
+
+    $("archiveFilter").addEventListener("input", () => renderArchiveTable($("archiveFilter").value));
+
+    $("btnAliasAdd").addEventListener("click", addAlias);
+    $("aliasOut").addEventListener("keydown", (e) => { if (e.key === "Enter") addAlias(); });
+    $("btnPresetAdd").addEventListener("click", addPreset);
+    $("presetTags").addEventListener("keydown", (e) => { if (e.key === "Enter") addPreset(); });
+
+    // §07 Cleanup wiring -------------------------------------------------
+    document.querySelectorAll(".tab").forEach(t => {
+      t.addEventListener("click", () => setActiveTab(t.dataset.tab));
+    });
+    $("btnRefreshDup").addEventListener("click", refreshDuplicates);
+    $("btnRefreshOrph").addEventListener("click", refreshOrphans);
+    $("btnRefreshClu").addEventListener("click", refreshClusters);
+    $("cluMin").addEventListener("change", refreshClusters);
+    $("btnRefreshIso").addEventListener("click", refreshIsolated);
+    $("isoMax").addEventListener("change", refreshIsolated);
+    $("btnRefreshDead").addEventListener("click", () => refreshDead(true));
+    $("btnCleanDead").addEventListener("click", () => {
+      if (confirm("Permanently remove these dead-record entries from the catalogue?")) {
+        refreshDead(false);
+      }
+    });
+
+    // §02 search-action row ---------------------------------------------
+    attachAutocomplete($("srTags"), $("srTagsPop"), tagsSource);
+    $("btnSrTag").addEventListener("click", () => applyTagsToResults(false));
+    $("btnSrUntag").addEventListener("click", () => applyTagsToResults(true));
+
+    // Tag drawer ---------------------------------------------------------
+    $("drawerClose").addEventListener("click", closeDrawer);
+    $("drawerBackdrop").addEventListener("click", closeDrawer);
+
+    // Modal --------------------------------------------------------------
+    $("modalBackdrop").addEventListener("click", (e) => {
+      if (e.target === $("modalBackdrop")) closeModal();
+    });
+
+    // Footer log pill ----------------------------------------------------
+    $("logPill").addEventListener("click", toggleLog);
+
+    // Recent / suggested chips: also redraw whenever the all-tags cache
+    // updates (refreshArchive emits no event, but it runs on init + every
+    // mutation so we call render explicitly after that).
+
+    document.addEventListener("keydown", (e) => {
+      // Esc always closes layered surfaces.
+      if (e.key === "Escape") {
+        if (drawerOpen()) { closeDrawer(); e.preventDefault(); return; }
+        if (modalEl().classList.contains("is-open")) { closeModal(); e.preventDefault(); return; }
+        if ($("logBody").classList.contains("is-open")) { toggleLog(); e.preventDefault(); return; }
+      }
+      // The rest only fire outside form fields.
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      if (e.key === "?") {
+        e.preventDefault();
+        if (modalEl().classList.contains("is-open")) closeModal(); else openModal();
+        return;
+      }
+      if (e.key === "/") {
+        e.preventDefault();
+        document.getElementById("sec-search").scrollIntoView({ behavior: "smooth" });
+        setTimeout(() => $("qall").focus(), 220);
+        return;
+      }
+      if (e.key === "g" || e.key === "G") {
+        e.preventDefault();
+        document.getElementById("sec-record").scrollIntoView({ behavior: "smooth" });
+        setTimeout(() => $("fpath").focus(), 220);
+        return;
+      }
+      if (e.key === "d" || e.key === "D") {
+        const box = $("dry");
+        box.checked = !box.checked;
+        // Trigger any listeners depending on .checked.
+        box.dispatchEvent(new Event("change"));
+        status("Dry-run · " + (box.checked ? "on" : "off"));
+        e.preventDefault();
+        return;
+      }
+      if (e.key >= "1" && e.key <= "7") {
+        e.preventDefault();
+        jumpToSection(parseInt(e.key, 10));
+        return;
+      }
+    });
+
+    try {
+      const [aRes, pRes] = await Promise.all([
+        jget("/api/v1/aliases"),
+        jget("/api/v1/presets"),
+      ]);
+      aliases = aRes.aliases || {};
+      presets = pRes.presets || {};
+      renderAliases();
+      renderPresets();
+    } catch (e) {
+      status("Auth data unavailable: " + (e.message || e), true);
+    }
+    await refreshArchive();
+    status("Bureau open · " + allPaths.length + " record(s) on file.");
+  }
+
+  document.addEventListener("DOMContentLoaded", bootstrap);
 })();
-  </script>
+</script>
 </body>
 </html>

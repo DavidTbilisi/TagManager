@@ -103,6 +103,39 @@ class _TagManagerHandler(BaseHTTPRequestHandler):
                 return
             _json_response(self, 200, {"files": res})
             return
+        if parsed.path == "/api/v1/all-tags":
+            _json_response(self, 200, gui_handlers.get_all_tags_with_counts())
+            return
+        if parsed.path == "/api/v1/stats":
+            _json_response(self, 200, gui_handlers.get_stats())
+            return
+        if parsed.path == "/api/v1/aliases":
+            _json_response(self, 200, gui_handlers.get_aliases_handler())
+            return
+        if parsed.path == "/api/v1/presets":
+            _json_response(self, 200, gui_handlers.get_presets_handler())
+            return
+        if parsed.path.startswith("/api/v1/stats/tag/"):
+            tag = urllib.parse.unquote(parsed.path[len("/api/v1/stats/tag/"):])
+            out = gui_handlers.get_tag_stats_handler(tag)
+            _json_response(self, 200 if out.get("ok") else 400, out)
+            return
+        if parsed.path == "/api/v1/filter/duplicates":
+            _json_response(self, 200, gui_handlers.filter_duplicates_handler())
+            return
+        if parsed.path == "/api/v1/filter/orphans":
+            _json_response(self, 200, gui_handlers.filter_orphans_handler())
+            return
+        if parsed.path == "/api/v1/filter/clusters":
+            qs = urllib.parse.parse_qs(parsed.query)
+            ms = (qs.get("min_size") or ["2"])[0]
+            _json_response(self, 200, gui_handlers.filter_clusters_handler(ms))
+            return
+        if parsed.path == "/api/v1/filter/isolated":
+            qs = urllib.parse.parse_qs(parsed.query)
+            mx = (qs.get("max_shared") or ["1"])[0]
+            _json_response(self, 200, gui_handlers.filter_isolated_handler(mx))
+            return
         if parsed.path in ("/", "/api"):
             _json_response(
                 self,
@@ -115,7 +148,16 @@ class _TagManagerHandler(BaseHTTPRequestHandler):
                         "GET /gui",
                         "GET /preview",
                         "GET /api/v1/tags",
-                        "GET /api/v1/search?tags=a,b&match_all=0",
+                        "GET /api/v1/all-tags",
+                        "GET /api/v1/stats",
+                        "GET /api/v1/stats/tag/<name>",
+                        "GET /api/v1/aliases",
+                        "GET /api/v1/presets",
+                        "GET /api/v1/filter/duplicates",
+                        "GET /api/v1/filter/orphans",
+                        "GET /api/v1/filter/clusters?min_size=N",
+                        "GET /api/v1/filter/isolated?max_shared=N",
+                        "GET /api/v1/search?tags=a,b&match_all=0&exclude=c&path=",
                         "GET /api/v1/gui/path-tags?path=",
                         "GET /api/v1/files/tags?path=",
                     ],
@@ -123,6 +165,14 @@ class _TagManagerHandler(BaseHTTPRequestHandler):
                     "gui_post": [
                         "POST /api/v1/gui/add-tags",
                         "POST /api/v1/gui/remove",
+                        "POST /api/v1/aliases/set     {alias, canonical}",
+                        "POST /api/v1/aliases/delete  {alias}",
+                        "POST /api/v1/presets/set     {name, tags}",
+                        "POST /api/v1/presets/delete  {name}",
+                        "POST /api/v1/bulk/preview    {pattern, tags, base_path}",
+                        "POST /api/v1/bulk/add        {pattern, tags, base_path}",
+                        "POST /api/v1/open            {path, mode: 'file'|'folder'}",
+                        "POST /api/v1/clean           {dry_run: bool}",
                     ],
                 },
             )
@@ -155,6 +205,69 @@ class _TagManagerHandler(BaseHTTPRequestHandler):
                 tag=body.get("tag"),
                 dry_run=bool(body.get("dry_run")),
             )
+            _json_response(self, 200 if out.get("ok") else 400, out)
+            return
+        if parsed.path == "/api/v1/aliases/set":
+            body = _read_post_json(self)
+            out = gui_handlers.set_alias_handler(
+                str(body.get("alias") or ""),
+                str(body.get("canonical") or ""),
+            )
+            _json_response(self, 200 if out.get("ok") else 400, out)
+            return
+        if parsed.path == "/api/v1/aliases/delete":
+            body = _read_post_json(self)
+            out = gui_handlers.delete_alias_handler(str(body.get("alias") or ""))
+            _json_response(self, 200 if out.get("ok") else 400, out)
+            return
+        if parsed.path == "/api/v1/presets/set":
+            body = _read_post_json(self)
+            tags = body.get("tags") or []
+            if not isinstance(tags, list):
+                tags = []
+            out = gui_handlers.set_preset_handler(
+                str(body.get("name") or ""), [str(t) for t in tags],
+            )
+            _json_response(self, 200 if out.get("ok") else 400, out)
+            return
+        if parsed.path == "/api/v1/presets/delete":
+            body = _read_post_json(self)
+            out = gui_handlers.delete_preset_handler(str(body.get("name") or ""))
+            _json_response(self, 200 if out.get("ok") else 400, out)
+            return
+        if parsed.path == "/api/v1/bulk/preview":
+            body = _read_post_json(self)
+            tags = body.get("tags") or []
+            if not isinstance(tags, list):
+                tags = []
+            out = gui_handlers.bulk_preview_handler(
+                str(body.get("pattern") or ""), [str(t) for t in tags],
+                str(body.get("base_path") or "."),
+            )
+            _json_response(self, 200 if out.get("ok") else 400, out)
+            return
+        if parsed.path == "/api/v1/bulk/add":
+            body = _read_post_json(self)
+            tags = body.get("tags") or []
+            if not isinstance(tags, list):
+                tags = []
+            out = gui_handlers.bulk_apply_handler(
+                str(body.get("pattern") or ""), [str(t) for t in tags],
+                str(body.get("base_path") or "."),
+            )
+            _json_response(self, 200 if out.get("ok") else 400, out)
+            return
+        if parsed.path == "/api/v1/open":
+            body = _read_post_json(self)
+            out = gui_handlers.open_path_handler(
+                str(body.get("path") or ""),
+                str(body.get("mode") or "file"),
+            )
+            _json_response(self, 200 if out.get("ok") else 400, out)
+            return
+        if parsed.path == "/api/v1/clean":
+            body = _read_post_json(self)
+            out = gui_handlers.clean_handler(dry_run=bool(body.get("dry_run", True)))
             _json_response(self, 200 if out.get("ok") else 400, out)
             return
         if parsed.path != "/api/v1/rpc":
