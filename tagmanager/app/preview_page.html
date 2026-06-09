@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The TagManager · Dry-Run Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" />
+  <style>
+    /* Mirror /gui palette and type. */
+    :root {
+      --paper:        #efe6d2;
+      --paper-deep:   #e7dcc1;
+      --ink:          #1c1610;
+      --ink-soft:     #3a2f23;
+      --ink-mute:     #5c4a3a;
+      --ink-faint:    #92775a;
+      --rule:         #b89867;
+      --rule-soft:    #ccb287;
+      --stamp:        #a82a1f;
+      --stamp-soft:   rgba(168, 42, 31, .12);
+      --stamp-deep:   #781a13;
+      --leaf:         #4a6e2f;
+      --display: "Fraunces", "EB Garamond", Georgia, serif;
+      --mono:    "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--display);
+      font-feature-settings: "kern", "liga", "onum";
+      font-variation-settings: "opsz" 14, "SOFT" 50;
+      font-size: 17px;
+      line-height: 1.5;
+    }
+    body::before {
+      content: "";
+      position: fixed; inset: 0;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.11  0 0 0 0 0.087  0 0 0 0 0.063  0 0 0 0.10 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/></svg>");
+      mix-blend-mode: multiply;
+      opacity: .3;
+      z-index: 1;
+    }
+
+    .page { position: relative; z-index: 2; max-width: 64rem; margin: 0 auto; padding: 3.5rem 1.6rem 5rem; }
+    header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding-bottom: 1.4rem; border-bottom: 1px solid var(--rule); flex-wrap: wrap; }
+    h1 {
+      font-family: var(--display);
+      margin: 0;
+      font-size: clamp(2.2rem, 5vw, 3.6rem);
+      font-variation-settings: "opsz" 144, "SOFT" 35, "WONK" 0;
+      font-weight: 460;
+      letter-spacing: -.02em;
+    }
+    h1 em { font-style: italic; font-variation-settings: "opsz" 144, "SOFT" 100, "WONK" 1; color: var(--ink-soft); }
+    .sub { font-style: italic; color: var(--ink-mute); font-variation-settings: "opsz" 14, "SOFT" 100, "WONK" 1; }
+    .stamp {
+      display: inline-block;
+      transform: rotate(-7deg);
+      border: 2.5px solid var(--stamp);
+      color: var(--stamp);
+      padding: .35rem .65rem .25rem;
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: .7rem;
+      letter-spacing: .25em;
+      mix-blend-mode: multiply;
+    }
+    nav.crumbs { font-family: var(--mono); font-size: .72rem; letter-spacing: .15em; text-transform: uppercase; color: var(--ink-faint); margin-top: .4rem; }
+    nav.crumbs a { color: var(--stamp); text-decoration: none; border-bottom: 1px solid var(--stamp-soft); }
+    nav.crumbs a:hover { background: var(--stamp-soft); }
+
+    section { margin-top: 2.6rem; }
+    .sec-head { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1rem; }
+    .sec-num { font-family: var(--display); font-style: italic; font-size: 1.4rem; color: var(--ink-faint); font-variation-settings: "opsz" 36, "SOFT" 100, "WONK" 1; font-feature-settings: "tnum"; }
+    .sec-title { font-family: var(--mono); font-size: .85rem; letter-spacing: .22em; text-transform: uppercase; }
+    .sec-lead { flex: 1; border-bottom: 1px dotted var(--rule); transform: translateY(-.3rem); }
+    .sec-hint { font-style: italic; font-variation-settings: "opsz" 14, "SOFT" 100, "WONK" 1; color: var(--ink-mute); }
+
+    label.field-label, .field-label {
+      display: block;
+      font-family: var(--mono);
+      font-size: .68rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin: 0 0 .35rem;
+    }
+    input[type="text"], select {
+      width: 100%;
+      background: transparent;
+      border: 0;
+      border-bottom: 1.5px solid var(--rule);
+      padding: .55rem .1rem;
+      font-family: var(--mono);
+      font-size: .9rem;
+      color: var(--ink);
+      outline: none;
+    }
+    input[type="text"]:focus, select:focus { border-bottom-color: var(--ink); }
+    input::placeholder { color: var(--ink-faint); font-style: italic; }
+
+    .row { display: flex; flex-wrap: wrap; gap: .55rem; align-items: center; margin-top: .8rem; }
+    .toggle { display: inline-flex; align-items: center; gap: .4rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .15em; text-transform: uppercase; color: var(--ink-mute); cursor: pointer; }
+    .toggle input { margin: 0; }
+
+    .btn {
+      font-family: var(--mono);
+      font-size: .72rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      padding: .6rem 1rem .5rem;
+      border: 1.5px solid var(--ink);
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 500;
+      transition: background .15s, color .15s;
+    }
+    .btn:hover { background: var(--ink); color: var(--paper); }
+    .btn.primary { background: var(--stamp); border-color: var(--stamp); color: var(--paper); }
+    .btn.primary:hover { background: var(--stamp-deep); border-color: var(--stamp-deep); }
+
+    .chips { display: flex; flex-wrap: wrap; gap: .35rem; margin: .5rem 0; }
+    .chip {
+      font-family: var(--mono);
+      font-size: .72rem;
+      letter-spacing: .08em;
+      padding: .22rem .55rem .18rem;
+      border: 1px solid var(--rule);
+      background: var(--paper);
+      color: var(--ink);
+    }
+    .chip.before { border-color: var(--ink-faint); color: var(--ink-mute); }
+    .chip.after  { border-color: var(--stamp); color: var(--ink); }
+    .chip.gain   { border-color: var(--leaf); color: var(--leaf); }
+    .chip.gain::before { content: "+ "; font-family: var(--mono); }
+
+    .stats-line { font-family: var(--mono); font-size: .78rem; color: var(--ink-mute); }
+    .stats-line b { color: var(--stamp); font-weight: 500; font-feature-settings: "tnum"; }
+
+    .records {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: .8rem;
+    }
+    .records th {
+      text-align: left;
+      font-family: var(--mono);
+      font-size: .65rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      font-weight: 500;
+      border-bottom: 1.5px solid var(--rule);
+      padding: .35rem .55rem;
+      background: var(--paper-deep);
+      position: sticky; top: 0;
+    }
+    .records td {
+      padding: .45rem .55rem;
+      border-bottom: 1px dotted var(--rule-soft);
+      vertical-align: top;
+    }
+    .records td.path { color: var(--ink); word-break: break-all; }
+    .records-frame { max-height: 22rem; overflow-y: auto; border: 1px solid var(--rule-soft); background: var(--paper-deep); padding: 0 .8rem; margin-top: .8rem; }
+
+    pre {
+      background: var(--paper-deep);
+      border: 1px dashed var(--rule);
+      padding: .8rem 1rem;
+      font-family: var(--mono);
+      font-size: .78rem;
+      color: var(--ink);
+      overflow: auto;
+      margin-top: .8rem;
+    }
+
+    #msg {
+      position: fixed;
+      bottom: 1.5rem; left: 50%;
+      transform: translate(-50%, 12px);
+      background: var(--ink);
+      color: var(--paper);
+      padding: .55rem 1rem .5rem;
+      font-family: var(--mono);
+      font-size: .75rem;
+      letter-spacing: .12em;
+      box-shadow: 0 6px 24px -8px rgba(28, 22, 16, .5);
+      opacity: 0;
+      transition: opacity .2s, transform .25s;
+      z-index: 50;
+      pointer-events: none;
+    }
+    #msg.shown { opacity: 1; transform: translate(-50%, 0); }
+    #msg.err { background: var(--stamp); }
+
+    *::-webkit-scrollbar { width: 10px; height: 10px; }
+    *::-webkit-scrollbar-thumb { background: var(--rule-soft); border: 2px solid var(--paper); }
+    *::-webkit-scrollbar-thumb:hover { background: var(--rule); }
+
+    .hint { font-family: var(--display); font-style: italic; color: var(--ink-mute); font-variation-settings: "opsz" 14, "SOFT" 100, "WONK" 1; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div>
+      <h1>The Tag<em>Manager</em> · Dry-Run</h1>
+      <p class="sub" style="margin:.3rem 0 0;">A read-only desk for examining what would change.</p>
+      <nav class="crumbs">For live edits → <a href="/gui">main bureau</a> &nbsp;·&nbsp; JSON → <a href="/api">index</a></nav>
+    </div>
+    <div class="stamp">PREVIEW · NOT SAVED</div>
+  </header>
+
+  <!-- Saved DB snapshot -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">§ 01</span>
+      <span class="sec-title">Saved catalogue (read-only)</span>
+      <span class="sec-lead"></span>
+      <span class="sec-hint">every path · every subject</span>
+    </div>
+    <div class="row">
+      <button type="button" id="btnRefreshDb" class="btn primary">Refresh from server</button>
+      <span class="stats-line" id="dbStats"></span>
+    </div>
+    <label class="field-label" for="dbFilter" style="margin-top:1rem">Filter (path or subject text)</label>
+    <input id="dbFilter" type="text" placeholder="e.g. .py · or · work" autocomplete="off" />
+    <div class="records-frame">
+      <table class="records" id="dbTable">
+        <thead><tr><th>Path</th><th>Subjects</th></tr></thead>
+        <tbody id="dbBody"></tbody>
+      </table>
+    </div>
+    <label class="field-label" style="margin-top:1.2rem">All distinct subject names</label>
+    <div id="allTags" class="chips"></div>
+  </section>
+
+  <!-- Preview add -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">§ 02</span>
+      <span class="sec-title">Preview · add subjects</span>
+      <span class="sec-lead"></span>
+      <span class="sec-hint">simulate a merge</span>
+    </div>
+
+    <label class="field-label" for="apath">File path</label>
+    <input id="apath" type="text" placeholder="absolute or relative path to a file" autocomplete="off" />
+    <div class="row">
+      <button type="button" id="btnLoad" class="btn primary">Load current subjects</button>
+    </div>
+
+    <label class="field-label" for="ptags" style="margin-top:1.2rem">Subjects to add (comma-separated)</label>
+    <input id="ptags" type="text" placeholder="work, python" />
+
+    <div class="row" style="gap:1.3rem; margin-top:.7rem">
+      <label class="toggle"><input id="pnoauto" type="checkbox" /> No auto-tag</label>
+      <label class="toggle"><input id="pnoalias" type="checkbox" /> No aliases</label>
+      <label class="toggle"><input id="pnocontent" type="checkbox" /> No content rules</label>
+    </div>
+
+    <div class="row" style="margin-top:1rem">
+      <button type="button" id="btnPreviewAdd" class="btn primary">Preview merge</button>
+    </div>
+    <div id="addOut" style="margin-top:1rem"></div>
+  </section>
+
+  <!-- Preview remove -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">§ 03</span>
+      <span class="sec-title">Preview · remove or withdraw</span>
+      <span class="sec-lead"></span>
+      <span class="sec-hint">no save · result returned as JSON</span>
+    </div>
+
+    <label class="field-label" for="rpath">File path</label>
+    <input id="rpath" type="text" placeholder="same path as above" autocomplete="off" />
+
+    <label class="field-label" for="rmode" style="margin-top:1rem">Mode</label>
+    <select id="rmode">
+      <option value="one_tag">Remove one subject (enter name below)</option>
+      <option value="clear_tags">Clear all subjects (keep entry)</option>
+      <option value="path">Withdraw record from catalogue</option>
+    </select>
+
+    <label class="field-label" for="rtag" style="margin-top:1rem">Subject name <span class="hint">(only for 'remove one')</span></label>
+    <input id="rtag" type="text" placeholder="e.g. draft" />
+
+    <div class="row" style="margin-top:1rem">
+      <button type="button" id="btnPreviewRm" class="btn primary">Preview action</button>
+    </div>
+    <pre id="rmOut"></pre>
+  </section>
+
+</div>
+
+<div id="msg" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  const msg = (t, ok) => {
+    const el = document.getElementById("msg");
+    if (!t) { el.classList.remove("shown"); return; }
+    el.textContent = t;
+    el.classList.toggle("err", !ok);
+    el.classList.add("shown");
+    clearTimeout(msg._t);
+    msg._t = setTimeout(() => el.classList.remove("shown"), ok ? 3200 : 5500);
+  };
+
+  let _dbRows = [];
+
+  const renderDbFilter = () => {
+    const q = (document.getElementById("dbFilter").value || "").trim().toLowerCase();
+    _dbRows.forEach(({ tr, path, tags }) => {
+      const hay = (path + " " + (tags || []).join(" ")).toLowerCase();
+      tr.style.display = (!q || hay.includes(q)) ? "" : "none";
+    });
+  };
+
+  const loadFullDatabase = async () => {
+    msg("", true);
+    const body = document.getElementById("dbBody");
+    const stats = document.getElementById("dbStats");
+    const allTagsEl = document.getElementById("allTags");
+    body.innerHTML = "";
+    allTagsEl.innerHTML = "";
+    stats.textContent = "Loading…";
+    _dbRows = [];
+    try {
+      const r = await fetch("/api/v1/tags");
+      const data = await r.json();
+      if (!r.ok || typeof data !== "object" || data === null) throw new Error("invalid response");
+      const paths = Object.keys(data).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+      const tagSet = new Set();
+      paths.forEach((p) => {
+        const tags = Array.isArray(data[p]) ? data[p] : [];
+        tags.forEach((t) => tagSet.add(String(t)));
+        const tr = document.createElement("tr");
+        const td1 = document.createElement("td");
+        td1.className = "path";
+        td1.textContent = p;
+        const td2 = document.createElement("td");
+        const chipRow = document.createElement("div");
+        chipRow.className = "chips";
+        chipRow.style.margin = "0";
+        tags.forEach((t) => {
+          const s = document.createElement("span");
+          s.className = "chip";
+          s.textContent = t;
+          chipRow.appendChild(s);
+        });
+        td2.appendChild(chipRow);
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        body.appendChild(tr);
+        _dbRows.push({ tr, path: p, tags });
+      });
+      const sortedTags = Array.from(tagSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+      sortedTags.forEach((t) => {
+        const s = document.createElement("span");
+        s.className = "chip";
+        s.textContent = t;
+        allTagsEl.appendChild(s);
+      });
+      stats.innerHTML = `<b>${paths.length}</b> path(s) · <b>${sortedTags.length}</b> distinct subject(s)`;
+      renderDbFilter();
+      msg("Snapshot loaded.", true);
+    } catch (e) {
+      stats.textContent = "";
+      msg(String(e.message || e), false);
+    }
+  };
+
+  document.getElementById("btnRefreshDb").onclick = () => { loadFullDatabase(); };
+  document.getElementById("dbFilter").addEventListener("input", renderDbFilter);
+
+  const jpost = async (url, body) => {
+    const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.ok === false) throw new Error(j.error || j.message || "request failed");
+    return j;
+  };
+  const chips = (el, tags, cls) => {
+    el.innerHTML = "";
+    (tags || []).forEach((t) => {
+      const s = document.createElement("span");
+      s.className = "chip " + (cls || "");
+      s.textContent = t;
+      el.appendChild(s);
+    });
+  };
+  document.getElementById("btnLoad").onclick = async () => {
+    msg("", true);
+    const path = document.getElementById("apath").value.trim();
+    if (!path) { msg("Enter a path.", false); return; }
+    try {
+      const r = await fetch("/api/v1/gui/path-tags?path=" + encodeURIComponent(path));
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || "failed");
+      document.getElementById("apath").value = j.path;
+      document.getElementById("rpath").value = j.path;
+      const out = document.getElementById("addOut");
+      out.innerHTML = "<div class='field-label'>Current subjects</div>";
+      const row = document.createElement("div");
+      row.className = "chips";
+      out.appendChild(row);
+      chips(row, j.tags, "before");
+      msg("Loaded.", true);
+    } catch (e) { msg(String(e.message || e), false); }
+  };
+  document.getElementById("btnPreviewAdd").onclick = async () => {
+    msg("", true);
+    const path = document.getElementById("apath").value.trim();
+    const tags = document.getElementById("ptags").value.split(",").map((s) => s.trim()).filter(Boolean);
+    if (!path) { msg("Enter a path.", false); return; }
+    const out = document.getElementById("addOut");
+    out.innerHTML = "";
+    try {
+      const j = await jpost("/api/v1/gui/add-tags", {
+        path, tags, dry_run: true,
+        no_auto: document.getElementById("pnoauto").checked,
+        no_aliases: document.getElementById("pnoalias").checked,
+        no_content: document.getElementById("pnocontent").checked,
+      });
+      const before = j.tags_before || [];
+      const after = j.tags_after_preview || j.tags || [];
+      const beforeSet = new Set(before.map(s => s.toLowerCase()));
+      out.innerHTML =
+        "<div class='field-label'>Before</div><div class='chips' id='chBefore'></div>" +
+        "<div class='field-label' style='margin-top:1rem'>After preview (merged)</div><div class='chips' id='chAfter'></div>";
+      chips(document.getElementById("chBefore"), before, "before");
+      const afterEl = document.getElementById("chAfter");
+      after.forEach((t) => {
+        const s = document.createElement("span");
+        const gain = !beforeSet.has(t.toLowerCase());
+        s.className = "chip " + (gain ? "gain" : "after");
+        s.textContent = t;
+        afterEl.appendChild(s);
+      });
+      msg("Preview only — nothing was saved.", true);
+    } catch (e) {
+      out.textContent = "";
+      msg(String(e.message || e), false);
+    }
+  };
+  document.getElementById("btnPreviewRm").onclick = async () => {
+    msg("", true);
+    const path = document.getElementById("rpath").value.trim();
+    const mode = document.getElementById("rmode").value;
+    const tag = document.getElementById("rtag").value.trim();
+    const pre = document.getElementById("rmOut");
+    pre.textContent = "";
+    if (!path) { msg("Enter a path.", false); return; }
+    if (mode === "one_tag" && !tag) { msg("Enter a subject name for remove-one.", false); return; }
+    try {
+      const body = { path, mode, dry_run: true };
+      if (mode === "one_tag") body.tag = tag;
+      const j = await jpost("/api/v1/gui/remove", body);
+      pre.textContent = JSON.stringify(j, null, 2);
+      msg("Preview only — nothing was saved.", true);
+    } catch (e) {
+      msg(String(e.message || e), false);
+    }
+  };
+
+  loadFullDatabase();
+})();
+</script>
+</body>
+</html>
