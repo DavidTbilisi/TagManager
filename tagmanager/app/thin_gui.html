@@ -2554,9 +2554,11 @@
   }
 
   /* ─── §07 Cleanup section (B) ────────────────────────────── */
+  let deadScanned = false;
   function setActiveTab(name) {
     document.querySelectorAll(".tab").forEach(t => t.classList.toggle("is-active", t.dataset.tab === name));
     document.querySelectorAll(".tab-pane").forEach(p => p.classList.toggle("is-active", p.dataset.pane === name));
+    if (name === "dead" && !deadScanned) { deadScanned = true; refreshDead(true); }
   }
 
   async function refreshDuplicates() {
