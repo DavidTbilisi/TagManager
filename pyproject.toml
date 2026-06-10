@@ -52,13 +52,10 @@ dependencies = [
 
 [project.optional-dependencies]
 mcp = [
-    "mcp>=1.0.0"
+    "mcp>=1.4.0"
 ]
 watch = [
     "watchdog>=2.0.0"
-]
-mcp = [
-    "mcp>=1.4.0"
 ]
 test = [
     "pytest>=7.0.0",

@@ -24,7 +24,58 @@ def gui_allowed_root() -> Optional[str]:
 
 
 def normalize_gui_path(path: str) -> str:
+    """Return an OS-native absolute path.
+
+    ``os.path.join(cwd, path)`` is intentional: it makes relative paths
+    resolve from the server's working directory while leaving absolute
+    paths unchanged (``os.path.join`` discards the first component when
+    the second is absolute on both Windows and POSIX).
+    """
     return os.path.normpath(os.path.abspath(os.path.join(os.getcwd(), path.strip())))
+
+
+def _path_candidates(path: str) -> List[str]:
+    """Return a list of candidate path strings to try against the DB.
+
+    Preserves the *exact* raw string first so that paths stored with
+    non-native separators (e.g. forward-slash keys on Windows) still
+    match.  Subsequent candidates normalise separators and resolve
+    absolute paths to maximise coverage.  Deduplication keeps the list
+    short (≤5 items).
+    """
+    raw = path.strip()
+    candidates: List[str] = []
+    seen: set = set()
+
+    def _add(p: str) -> None:
+        if p not in seen:
+            seen.add(p)
+            candidates.append(p)
+
+    # 1. Exact raw string — handles paths stored verbatim (incl. Unix-style
+    #    keys like "/home/user/file" or "/test/file.py" in a Windows DB).
+    _add(raw)
+    # 2. Forward-slash variant.
+    _add(raw.replace("\\", "/"))
+    # 3. Backslash variant.
+    _add(raw.replace("/", "\\"))
+    # 4. OS-normalised (normpath converts separator but keeps relative).
+    _add(os.path.normpath(raw))
+    # 5. Fully resolved absolute path (cwd-relative for relative inputs).
+    _add(os.path.normpath(os.path.abspath(os.path.join(os.getcwd(), raw))))
+    return candidates
+
+
+def _resolve_db_path(path: str) -> Optional[str]:
+    """Return the first DB key that matches any candidate representation of *path*.
+
+    Returns ``None`` when no DB key matches any candidate.
+    """
+    db = load_tags()
+    for candidate in _path_candidates(path):
+        if candidate in db:
+            return candidate
+    return None
 
 
 def path_allowed(path_abs: str, allowed_root: Optional[str]) -> Tuple[bool, str]:
@@ -38,12 +89,20 @@ def path_allowed(path_abs: str, allowed_root: Optional[str]) -> Tuple[bool, str]
 
 def get_path_tags(path: str) -> Dict[str, Any]:
     allowed = gui_allowed_root()
+    # Try to find an exact DB match first (handles legacy relative or
+    # cross-platform paths stored without OS normalisation).
+    db_key = _resolve_db_path(path)
+    if db_key is not None:
+        ok, msg = path_allowed(db_key, allowed)
+        if not ok:
+            return {"ok": False, "error": msg, "path": db_key, "tags": []}
+        return {"ok": True, "path": db_key, "tags": list(load_tags().get(db_key, []))}
+    # Fall back to the OS-resolved path (the file may not be tagged yet).
     abs_path = normalize_gui_path(path)
     ok, msg = path_allowed(abs_path, allowed)
     if not ok:
         return {"ok": False, "error": msg, "path": abs_path, "tags": []}
-    tags = list(load_tags().get(abs_path, []))
-    return {"ok": True, "path": abs_path, "tags": tags}
+    return {"ok": True, "path": abs_path, "tags": []}
 
 
 def _compute_add_preview(
@@ -380,14 +439,32 @@ def open_path_handler(path: str, mode: str = "file") -> Dict[str, Any]:
     if not path or not str(path).strip():
         return {"ok": False, "error": "path required"}
 
-    abs_path = normalize_gui_path(str(path))
+    raw = str(path).strip()
+    abs_path = normalize_gui_path(raw)
     allowed = gui_allowed_root()
+
+    # If the primary resolved path doesn't exist on disk, try the raw key and
+    # common fallback locations (e.g. relative paths stored without a cwd prefix).
+    if not os.path.exists(abs_path):
+        fallbacks: List[str] = [raw]
+        # Relative path → try home directory as base.
+        if not os.path.isabs(raw):
+            fallbacks.append(os.path.join(os.path.expanduser("~"), raw))
+        # Slash-swap variant (for paths stored with the opposite separator style).
+        alt = raw.replace("\\", "/") if "\\" in raw else raw.replace("/", "\\")
+        if alt != raw:
+            fallbacks.append(os.path.normpath(alt))
+        for candidate in fallbacks:
+            if os.path.exists(candidate):
+                abs_path = os.path.normpath(candidate)
+                break
+
     ok, msg = path_allowed(abs_path, allowed)
     if not ok:
         return {"ok": False, "error": msg, "path": abs_path}
 
     if not os.path.exists(abs_path):
-        return {"ok": False, "error": "path does not exist on disk", "path": abs_path}
+        return {"ok": False, "error": "not found", "path": abs_path}
 
     mode = (mode or "file").strip().lower()
     if mode not in ("file", "folder"):
