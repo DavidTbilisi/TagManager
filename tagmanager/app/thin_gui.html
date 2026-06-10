@@ -1208,8 +1208,18 @@
             <button type="button" class="btn ghost" id="btnOpenFile" disabled>Open file</button>
             <button type="button" class="btn ghost" id="btnOpenFolder" disabled>Open folder</button>
             <span style="flex:1"></span>
+            <button type="button" class="btn ghost" id="btnRelocateToggle" title="Update the stored path when a file has been moved">Relocate…</button>
             <button type="button" class="btn ghost" id="btnClear">Clear all subjects</button>
             <button type="button" class="btn danger" id="btnDrop">Withdraw record</button>
+          </div>
+        </div>
+
+        <div class="card-section" id="relocateSection" style="display:none">
+          <div class="card-head"><span>Relocate record</span><span class="card-head-sub" style="margin-left:.5rem;color:var(--ink-faint);font-weight:400;font-size:.75rem">— update the stored path when a file has been moved</span></div>
+          <div style="display:flex;gap:.6rem;align-items:center;margin-top:.5rem;">
+            <input type="text" id="relocateNewPath" class="path-input" style="flex:1" placeholder="New full path…" />
+            <button type="button" class="btn" id="btnRelocate">Relocate</button>
+            <button type="button" class="btn ghost" id="btnRelocateCancel">Cancel</button>
           </div>
         </div>
 
@@ -1858,6 +1868,9 @@
     const hasRecord = !!loadedPath;
     $("btnOpenFile").disabled = !hasRecord;
     $("btnOpenFolder").disabled = !hasRecord;
+    // Hide relocate panel whenever the loaded record changes.
+    $("relocateSection").style.display = "none";
+    $("relocateNewPath").value = "";
     // Refresh suggestion chips above the add-subjects input.
     suggCacheKey = "";  // force re-render even if anchor unchanged
     renderSuggestions();
@@ -2849,6 +2862,39 @@
     $("btnOpenFolder").addEventListener("click", () => openPath(loadedPath, "folder"));
     $("btnClear").addEventListener("click", clearTags);
     $("btnDrop").addEventListener("click", dropPath);
+
+    /* ── Relocate record ──────────────────────────────────────── */
+    $("btnRelocateToggle").addEventListener("click", () => {
+      const sec = $("relocateSection");
+      const open = sec.style.display !== "none";
+      sec.style.display = open ? "none" : "";
+      if (!open) {
+        // Pre-fill with the current loaded path so users can edit it in place.
+        $("relocateNewPath").value = loadedPath || "";
+        $("relocateNewPath").focus();
+        $("relocateNewPath").select();
+      }
+    });
+    // Wire the panel buttons.
+    $("btnRelocate").addEventListener("click", async () => {
+      const newPath = ($("relocateNewPath").value || "").trim();
+      if (!newPath) { status("Enter the new path first.", true); return; }
+      try {
+        const j = await jpost("/api/v1/gui/relocate", { old_path: loadedPath, new_path: newPath });
+        $("relocateSection").style.display = "none";
+        $("relocateNewPath").value = "";
+        // Switch the loaded record to the new path and reload.
+        loadedPath = j.new;
+        $("fpath").value = j.new;
+        await loadPath(j.new);
+        await refreshDb();
+        status("Relocated · " + j.message);
+      } catch (e) { status("Relocate failed: " + (e.message || e), true); }
+    });
+    $("btnRelocateCancel").addEventListener("click", () => {
+      $("relocateSection").style.display = "none";
+      $("relocateNewPath").value = "";
+    });
 
     $("btnSearch").addEventListener("click", runSearch);
     ["qall", "qany", "qnot", "qpath"].forEach(id => {

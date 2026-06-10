@@ -207,6 +207,14 @@ class _TagManagerHandler(BaseHTTPRequestHandler):
             )
             _json_response(self, 200 if out.get("ok") else 400, out)
             return
+        if parsed.path == "/api/v1/gui/relocate":
+            body = _read_post_json(self)
+            out = gui_handlers.relocate_path_handler(
+                str(body.get("old_path") or ""),
+                str(body.get("new_path") or ""),
+            )
+            _json_response(self, 200 if out.get("ok") else 400, out)
+            return
         if parsed.path == "/api/v1/aliases/set":
             body = _read_post_json(self)
             out = gui_handlers.set_alias_handler(

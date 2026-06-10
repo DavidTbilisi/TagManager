@@ -421,6 +421,52 @@ def bulk_preview_handler(pattern: str, tags: List[str], base_path: str = ".") ->
 
 
 # ---------------------------------------------------------------------------
+# Relocate a record (update its DB key without touching the file on disk)
+# ---------------------------------------------------------------------------
+
+
+def relocate_path_handler(old_path: str, new_path: str) -> Dict[str, Any]:
+    """Rename a tag-database key from *old_path* to *new_path*.
+
+    Does NOT move the actual file — only updates the stored key so that the
+    record (and all its subjects) follows the file to its new location.
+    Useful when a file has been moved outside of TagManager's knowledge.
+
+    Resolves *old_path* via ``_resolve_db_path`` so that records stored with
+    non-native separators (e.g. Unix-style keys on Windows) are found
+    correctly.  *new_path* is resolved to a canonical absolute path.
+    """
+    old_path = str(old_path or "").strip()
+    new_path = str(new_path or "").strip()
+    if not old_path:
+        return {"ok": False, "error": "old_path required"}
+    if not new_path:
+        return {"ok": False, "error": "new_path required"}
+
+    db_key = _resolve_db_path(old_path)
+    if db_key is None:
+        return {"ok": False, "error": f"No record found for: {old_path}"}
+
+    new_abs = normalize_gui_path(new_path)
+    allowed = gui_allowed_root()
+    ok, msg = path_allowed(new_abs, allowed)
+    if not ok:
+        return {"ok": False, "error": msg}
+
+    tags = load_tags()
+    if new_abs in tags:
+        return {"ok": False, "error": f"A record already exists at the new path; withdraw it first."}
+    tags[new_abs] = tags.pop(db_key)
+    save_tags(tags)
+    return {
+        "ok": True,
+        "old": db_key,
+        "new": new_abs,
+        "message": f"Record relocated: {os.path.basename(db_key)} → {new_abs}",
+    }
+
+
+# ---------------------------------------------------------------------------
 # Open file / containing folder via the OS shell
 # ---------------------------------------------------------------------------
 
