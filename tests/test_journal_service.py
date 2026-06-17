@@ -33,7 +33,7 @@ class TestJournalService(unittest.TestCase):
         with open(self.test_tags_file, "w", encoding="utf-8") as f:
             json.dump({"/f": ["t"]}, f)
 
-        with self._patch_path(), patch.dict(os.environ, {"TAGMANAGER_JOURNAL": "1"}):
+        with self._patch_path(), patch.dict(os.environ, {"FILETAGGER_JOURNAL": "1"}):
             self.assertEqual(load_tags(), {"/f": ["t"]})
             append_entry("add_tags", {"paths": {"/f": None}})
             ok, msg, n = undo_last(1)
@@ -44,7 +44,7 @@ class TestJournalService(unittest.TestCase):
     def test_undo_empty_journal(self):
         from filetagger.app.journal.service import undo_last
 
-        with self._patch_path(), patch.dict(os.environ, {"TAGMANAGER_JOURNAL": "1"}):
+        with self._patch_path(), patch.dict(os.environ, {"FILETAGGER_JOURNAL": "1"}):
             open(self.test_tags_file, "w", encoding="utf-8").write("{}")
             ok, msg, n = undo_last(1)
             self.assertFalse(ok)

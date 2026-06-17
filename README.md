@@ -24,8 +24,8 @@ Folder hierarchies force you to put a file in one place. Tags let a file belong 
 
 ```bash
 # One command to tag — one command to find
-tm add report.pdf --tags work client-a q1 2024 final
-tm search --tags work q1        # instantly surface it
+ftag add report.pdf --tags work client-a q1 2024 final
+ftag search --tags work q1        # instantly surface it
 ```
 
 FileTagger stores tags in a lightweight JSON sidecar (`~/file_tags.json`) — no database, no daemon required — and ships a full command set for search, bulk operations, smart filtering, an interactive network graph, and a file-system watcher that tags new files automatically.
@@ -45,10 +45,10 @@ FileTagger stores tags in a lightweight JSON sidecar (`~/file_tags.json`) — no
 | **Stats** | Tag frequency, co-occurrence, ASCII bar charts & histograms |
 | **Visualizer** | Interactive 2D/3D network graph in your browser — click to open files |
 | **Watch mode** | Auto-tag files the moment they land in a directory |
-| **Move tracking** | `tm mv` keeps tag records in sync when you rename files |
+| **Move tracking** | `ftag mv` keeps tag records in sync when you rename files |
 | **Config** | Full dot-notation config system with export/import |
-| **Thin GUI** | `tm gui` — local browser UI for tags + search (`/gui`); dry-run **preview** page at `/preview` |
-| **Shell completion** | Typer/bash/zsh tab-complete tags, presets, aliases; **Fish:** [completions/tm.fish](completions/tm.fish) |
+| **Thin GUI** | `ftag gui` — local browser UI for tags + search (`/gui`); dry-run **preview** page at `/preview` |
+| **Shell completion** | Typer/bash/zsh tab-complete tags, presets, aliases; **Fish:** [completions/ftag.fish](completions/ftag.fish) |
 
 ---
 
@@ -58,7 +58,7 @@ FileTagger stores tags in a lightweight JSON sidecar (`~/file_tags.json`) — no
 pip install filetagger-cli
 ```
 
-Commands are available as both `tm` (short) and `filetagger` (long form).
+Commands are available as both `ftag` (short) and `filetagger` (long form).
 
 ### Optional: Watch mode
 
@@ -103,9 +103,9 @@ CI and hook examples (GitHub Actions, `uvx`, sample pre-commit): [tasks/recipes/
 FileTagger ships a **Model Context Protocol** server (`filetagger/mcp_stdio.py`) that exposes tools such as listing tags, searching files by tag, reading tags for a path, and adding tags (default **dry run**). You can run it manually as:
 
 ```bash
-tm-mcp          # console script, if installed
+ftag-mcp          # console script, if installed
 # or
-tm mcp          # same server via the main CLI
+ftag mcp          # same server via the main CLI
 ```
 
 ### Cursor
@@ -146,13 +146,13 @@ Claude Desktop reads **its own** MCP config file (not `.cursor/mcp.json`). In th
 }
 ```
 
-If `filetagger-cli[mcp]` is installed in that Python environment and imports resolve globally, you can omit `env` and use only `"command": "python"` and `"args": ["-m", "filetagger.mcp_stdio"]`. Alternatively, if the `tm-mcp` script is on `PATH` for the same environment:
+If `filetagger-cli[mcp]` is installed in that Python environment and imports resolve globally, you can omit `env` and use only `"command": "python"` and `"args": ["-m", "filetagger.mcp_stdio"]`. Alternatively, if the `ftag-mcp` script is on `PATH` for the same environment:
 
 ```json
 {
   "mcpServers": {
     "filetagger": {
-      "command": "tm-mcp",
+      "command": "ftag-mcp",
       "args": []
     }
   }
@@ -205,45 +205,45 @@ Further reading: [Cursor MCP](https://cursor.com/docs/mcp), [Connecting local MC
 
 ```bash
 # Tag a file (auto-tags by extension too)
-tm add main.py --tags backend core
+ftag add main.py --tags backend core
 
 # Tag everything matching a glob
-tm bulk add "src/**/*.py" --tags python
+ftag bulk add "src/**/*.py" --tags python
 
 # Find files
-tm search --tags backend core     # either tag
-tm search --tags backend --match-all core  # both tags
+ftag search --tags backend core     # either tag
+ftag search --tags backend --match-all core  # both tags
 
 # Visual overview
-tm ls --tree
-tm tags --cloud
-tm stats --chart
+ftag ls --tree
+ftag tags --cloud
+ftag stats --chart
 
 # Interactive network graph (opens in browser)
-tm graph
+ftag graph
 
 # Watch a directory — auto-tag as files arrive
-tm watch ~/Downloads --tags inbox
+ftag watch ~/Downloads --tags inbox
 
 # Portable export (paths relative to project root)
-tm export -o tags.json --relative-to .
+ftag export -o tags.json --relative-to .
 
 # Thin browser GUI (localhost; opens browser — same tag DB as CLI)
-tm gui
-# tm gui --no-browser --port 8844
-# Optional path jail: TAGMANAGER_GUI_ROOT=C:\your\project
+ftag gui
+# ftag gui --no-browser --port 8844
+# Optional path jail: FILETAGGER_GUI_ROOT=C:\your\project
 ```
 
-### Thin browser GUI (`tm gui`)
+### Thin browser GUI (`ftag gui`)
 
-The web UI is a **single page** served over HTTP on your machine. It uses the **same tag file** as `tm add`, `tm search`, etc.—nothing is stored in the cloud.
+The web UI is a **single page** served over HTTP on your machine. It uses the **same tag file** as `ftag add`, `ftag search`, etc.—nothing is stored in the cloud.
 
 #### Start and stop
 
-1. Run **`tm gui`** in a terminal. By default the server listens on **`127.0.0.1:8844`**, your browser opens to **`http://127.0.0.1:8844/gui`**, and the UI loads.
+1. Run **`ftag gui`** in a terminal. By default the server listens on **`127.0.0.1:8844`**, your browser opens to **`http://127.0.0.1:8844/gui`**, and the UI loads.
 2. **Stop** the server with **Ctrl+C** in that terminal (the process exits; refresh the tab afterward and it will fail to connect—that is expected).
-3. **Without auto-opening a browser:** `tm gui --no-browser` (same host/port; open `/gui` yourself).
-4. **Custom bind or port:** `tm gui --host 127.0.0.1 --port 8844` (defaults are loopback + **8844**).
+3. **Without auto-opening a browser:** `ftag gui --no-browser` (same host/port; open `/gui` yourself).
+4. **Custom bind or port:** `ftag gui --host 127.0.0.1 --port 8844` (defaults are loopback + **8844**).
 
 #### Preview page (`/preview`)
 
@@ -255,7 +255,7 @@ A second page on the **same server**: **`http://127.0.0.1:8844/preview`** (adjus
 
 The main **`/gui`** page links here; the terminal banner also prints the preview URL when the server starts.
 
-**JSON-only HTTP** (no HTML page): **`tm serve`** or **`tm server`** on port **8765** by default—the same API routes work (`/api/v1/...`). Use that when you only need scripts or `curl`, not the browser form.
+**JSON-only HTTP** (no HTML page): **`ftag serve`** or **`ftag server`** on port **8765** by default—the same API routes work (`/api/v1/...`). Use that when you only need scripts or `curl`, not the browser form.
 
 #### Page layout: “File” and “Search”
 
@@ -265,22 +265,22 @@ The main **`/gui`** page links here; the terminal banner also prints the preview
 |--------|----------------|
 | **Path** | Absolute or relative path to the file. After **Load tags**, the server may echo back a **normalized absolute path**. |
 | **Dry-run** | When checked, **Add tags** and remove actions **do not write** the database; you get a preview-style success message. Uncheck to apply changes. |
-| **Load tags** | `GET` current tags for that path (same data as `tm path` for that file). |
-| **Tags to add** | Comma-separated list, same idea as `tm add … --tags a,b`. Then **Add tags**. |
-| **No auto-tag / No aliases / No content rules** | Match `tm add`’s `--no-auto`, `--no-aliases`, and skipping content-based rules—useful when you want **only** the tags you typed. |
+| **Load tags** | `GET` current tags for that path (same data as `ftag path` for that file). |
+| **Tags to add** | Comma-separated list, same idea as `ftag add … --tags a,b`. Then **Add tags**. |
+| **No auto-tag / No aliases / No content rules** | Match `ftag add`’s `--no-auto`, `--no-aliases`, and skipping content-based rules—useful when you want **only** the tags you typed. |
 | **Remove one tag…** | Prompts for a tag name; removes that tag from the file (like removing one chip). |
-| **Clear all tags on file** | Empties the tag list but **keeps** the path in the database (`tm remove --path … --all-tags`). Confirms before running. |
-| **Remove file from DB** | Drops the path entirely from the tag store (`tm remove --path …` without `--all-tags`). Confirms before running—this is stronger than “clear tags”. |
+| **Clear all tags on file** | Empties the tag list but **keeps** the path in the database (`ftag remove --path … --all-tags`). Confirms before running. |
+| **Remove file from DB** | Drops the path entirely from the tag store (`ftag remove --path …` without `--all-tags`). Confirms before running—this is stronger than “clear tags”. |
 
 **Search** — same tag logic as the CLI for a multi-tag query:
 
 | Control | What it does |
 |--------|----------------|
 | **Tags** | Comma-separated tag names to search for. |
-| **Match all (AND)** | Checked: file must have **every** listed tag. Unchecked: file needs **any** listed tag (**OR**), same spirit as `tm search` without `--match-all`. |
-| **Search** | Lists matching file paths below the button (paths may be truncated per your `tm ls` / list display config). |
+| **Match all (AND)** | Checked: file must have **every** listed tag. Unchecked: file needs **any** listed tag (**OR**), same spirit as `ftag search` without `--match-all`. |
+| **Search** | Lists matching file paths below the button (paths may be truncated per your `ftag ls` / list display config). |
 
-Status text (green/red) under the form shows the last result or error. If **`TAGMANAGER_GUI_ROOT`** is set to an absolute directory, paths **outside** that tree are rejected for GUI operations (safety rail for shared machines).
+Status text (green/red) under the form shows the last result or error. If **`FILETAGGER_GUI_ROOT`** is set to an absolute directory, paths **outside** that tree are rejected for GUI operations (safety rail for shared machines).
 
 #### Security (read this once)
 
@@ -295,61 +295,61 @@ Mutations go through **`filetagger/app/gui_handlers.py`** (same **`load_tags` / 
 
 ## 📖 Commands
 
-### `tm add` — Tag files
+### `ftag add` — Tag files
 
 ```bash
-tm add <file> --tags <tag> [<tag>...]   # basic
-tm add <file> --tags python --preset webproject  # combine with preset
-tm add <file> --no-auto                 # skip extension-based auto-tags
-tm add <file> --no-aliases              # skip alias resolution
+ftag add <file> --tags <tag> [<tag>...]   # basic
+ftag add <file> --tags python --preset webproject  # combine with preset
+ftag add <file> --no-auto                 # skip extension-based auto-tags
+ftag add <file> --no-aliases              # skip alias resolution
 ```
 
-### `tm search` — Find files
+### `ftag search` — Find files
 
 ```bash
-tm search --tags python web            # files with EITHER tag
-tm search --tags python --match-all    # files with ALL listed tags
-tm search --path /projects/            # by path fragment
-tm search --tags python --exact        # exact tag match (no fuzzy)
+ftag search --tags python web            # files with EITHER tag
+ftag search --tags python --match-all    # files with ALL listed tags
+ftag search --path /projects/            # by path fragment
+ftag search --tags python --exact        # exact tag match (no fuzzy)
 ```
 
-### `tm ls` — List tagged files
+### `ftag ls` — List tagged files
 
 ```bash
-tm ls           # flat table
-tm ls --tree    # directory tree with inline tags
+ftag ls           # flat table
+ftag ls --tree    # directory tree with inline tags
 ```
 
-### `tm tags` — Explore tags
+### `ftag tags` — Explore tags
 
 ```bash
-tm tags                  # list all tags
-tm tags --search py      # filter tags by name
-tm tags --cloud          # frequency cloud
-tm tags --where python   # which files carry this tag
+ftag tags                  # list all tags
+ftag tags --search py      # filter tags by name
+ftag tags --cloud          # frequency cloud
+ftag tags --where python   # which files carry this tag
 ```
 
-### `tm stats` — Analytics
+### `ftag stats` — Analytics
 
 ```bash
-tm stats              # summary
-tm stats --chart      # ASCII bar charts
-tm stats --tag python # deep-dive on one tag (co-occurrence, file types)
+ftag stats              # summary
+ftag stats --chart      # ASCII bar charts
+ftag stats --tag python # deep-dive on one tag (co-occurrence, file types)
 ```
 
-### `tm graph` — Interactive network visualizer
+### `ftag graph` — Interactive network visualizer
 
 Opens a self-contained HTML graph in your default browser.
 
 ```bash
-tm graph                        # tag co-occurrence graph, 2D
-tm graph --3d                   # start in 3D (toggle button in UI too)
-tm graph --mode file            # file similarity graph (Jaccard)
-tm graph --mode mixed           # bipartite file↔tag graph
-tm graph --export gexf          # also export tag_network.gexf (Gephi)
-tm graph --export graphml       # for Cytoscape / yEd
-tm graph --min-weight 2         # only show edges with ≥2 co-occurrences
-tm graph --output ~/graph.html  # save to a specific path
+ftag graph                        # tag co-occurrence graph, 2D
+ftag graph --3d                   # start in 3D (toggle button in UI too)
+ftag graph --mode file            # file similarity graph (Jaccard)
+ftag graph --mode mixed           # bipartite file↔tag graph
+ftag graph --export gexf          # also export tag_network.gexf (Gephi)
+ftag graph --export graphml       # for Cytoscape / yEd
+ftag graph --min-weight 2         # only show edges with ≥2 co-occurrences
+ftag graph --output ~/graph.html  # save to a specific path
 ```
 
 **In the browser UI:**
@@ -358,73 +358,73 @@ tm graph --output ~/graph.html  # save to a specific path
 - Click any file node → opens it in your OS file explorer
 - Download GEXF / GraphML buttons (embedded, no server needed)
 
-### `tm watch` — Auto-tag new files
+### `ftag watch` — Auto-tag new files
 
 Monitors a directory with [watchdog](https://pypi.org/project/watchdog/) and tags files as they arrive.
 
 ```bash
-tm watch                         # watch current dir
-tm watch ~/Downloads             # watch a specific dir
-tm watch . --tags inbox          # always add "inbox" to every new file
-tm watch . --preset webproject   # apply a saved preset
-tm watch . --no-auto             # skip extension auto-tagging
-tm watch . --clean-on-delete     # remove tag entry when file is deleted
-tm watch . --no-recursive        # top-level only
-tm watch . --ignore "*.log"      # extra ignore patterns
-tm watch . --plain               # plain text output (no Rich live display)
+ftag watch                         # watch current dir
+ftag watch ~/Downloads             # watch a specific dir
+ftag watch . --tags inbox          # always add "inbox" to every new file
+ftag watch . --preset webproject   # apply a saved preset
+ftag watch . --no-auto             # skip extension auto-tagging
+ftag watch . --clean-on-delete     # remove tag entry when file is deleted
+ftag watch . --no-recursive        # top-level only
+ftag watch . --ignore "*.log"      # extra ignore patterns
+ftag watch . --plain               # plain text output (no Rich live display)
 ```
 
 Rich live display shows a colour-coded event log (`✚ created`, `→ moved`, `✖ deleted`) with resolved tags. Press **Ctrl+C** to stop.
 
-### `tm filter` — Smart analysis
+### `ftag filter` — Smart analysis
 
 ```bash
-tm filter duplicates             # files with identical tag sets
-tm filter orphans                # files with no tags
-tm filter similar <file>         # files similar to this one (Jaccard)
-tm filter clusters               # group files by shared tag
-tm filter isolated               # files that share few tags with others
+ftag filter duplicates             # files with identical tag sets
+ftag filter orphans                # files with no tags
+ftag filter similar <file>         # files similar to this one (Jaccard)
+ftag filter clusters               # group files by shared tag
+ftag filter isolated               # files that share few tags with others
 ```
 
-### `tm bulk` — Mass operations
+### `ftag bulk` — Mass operations
 
 ```bash
-tm bulk add "*.py" --tags python          # tag by glob
-tm bulk remove --tag deprecated           # remove a tag from all files
-tm bulk retag --from js --to javascript   # rename a tag everywhere
+ftag bulk add "*.py" --tags python          # tag by glob
+ftag bulk remove --tag deprecated           # remove a tag from all files
+ftag bulk retag --from js --to javascript   # rename a tag everywhere
 # All bulk commands support --dry-run
-# With journal on (TAGMANAGER_JOURNAL=1 or journal.enabled), retag is undoable: tm undo
-# Aliases (tm alias) normalize names at tag time; retag rewrites stored tags in the DB
+# With journal on (FILETAGGER_JOURNAL=1 or journal.enabled), retag is undoable: ftag undo
+# Aliases (ftag alias) normalize names at tag time; retag rewrites stored tags in the DB
 ```
 
 ### Aliases, Presets, Move tracking
 
 ```bash
 # Aliases — normalize tag variants
-tm alias add py python
-tm alias list
-tm alias remove py
+ftag alias add py python
+ftag alias list
+ftag alias remove py
 
 # Presets — named tag bundles
-tm preset save webproject --tags python django web
-tm preset apply webproject app.py
-tm preset list
+ftag preset save webproject --tags python django web
+ftag preset apply webproject app.py
+ftag preset list
 
 # Move tracking — keep the DB in sync
-tm mv old/path.py new/path.py
-tm clean             # remove entries for deleted files
-tm clean --dry-run   # preview
+ftag mv old/path.py new/path.py
+ftag clean             # remove entries for deleted files
+ftag clean --dry-run   # preview
 ```
 
 ### Config
 
 ```bash
-tm config list                         # all settings
-tm config set display.emojis false
-tm config set search.fuzzy_threshold 0.8
-tm config export --file settings.json
-tm config import team_settings.json
-tm config reset                        # back to defaults
+ftag config list                         # all settings
+ftag config set display.emojis false
+ftag config set search.fuzzy_threshold 0.8
+ftag config export --file settings.json
+ftag config import team_settings.json
+ftag config reset                        # back to defaults
 ```
 
 ---
@@ -479,19 +479,19 @@ Press Ctrl+C to stop.
 filetagger/
 ├── cli.py                  # Typer CLI — all commands registered here
 └── app/
-    ├── add/                # tm add
-    ├── bulk/               # tm bulk
-    ├── filter/             # tm filter
-    ├── search/             # tm search
-    ├── stats/              # tm stats
-    ├── graph/              # tm graph  (HTML generator, GEXF/GraphML export)
-    ├── watch/              # tm watch  (watchdog integration)
-    ├── alias/              # tm alias
-    ├── preset/             # tm preset
+    ├── add/                # ftag add
+    ├── bulk/               # ftag bulk
+    ├── filter/             # ftag filter
+    ├── search/             # ftag search
+    ├── stats/              # ftag stats
+    ├── graph/              # ftag graph  (HTML generator, GEXF/GraphML export)
+    ├── watch/              # ftag watch  (watchdog integration)
+    ├── alias/              # ftag alias
+    ├── preset/             # ftag preset
     ├── autotag/            # extension → tag mappings
-    ├── move/               # tm mv / tm clean
+    ├── move/               # ftag mv / ftag clean
     ├── visualization/      # tree, cloud, ASCII charts
-    ├── config/             # tm config
+    ├── config/             # ftag config
     └── helpers.py          # load_tags() / save_tags() — atomic JSON I/O
 ```
 

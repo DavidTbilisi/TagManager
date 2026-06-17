@@ -32,7 +32,7 @@ jobs:
   pytest-windows:
     runs-on: windows-latest
     env:
-      TAGMANAGER_WIN_SHELL_E2E: "1"
+      FILETAGGER_WIN_SHELL_E2E: "1"
     steps:
       - uses: actions/checkout@v4
 

@@ -379,7 +379,7 @@ class TestBulkService(unittest.TestCase):
         self.assertNotIn("Old-Tag", file_tags)
 
     def test_bulk_retag_journal_undo(self):
-        """bulk_retag records journal inverse when TAGMANAGER_JOURNAL=1."""
+        """bulk_retag records journal inverse when FILETAGGER_JOURNAL=1."""
         from filetagger.app.bulk.service import bulk_retag
         from filetagger.app.helpers import load_tags, save_tags
         from filetagger.app.journal.service import undo_last
@@ -388,7 +388,7 @@ class TestBulkService(unittest.TestCase):
         np = os.path.normpath(py_file)
         save_tags({np: ["old-tag", "keep"]})
 
-        with patch.dict(os.environ, {"TAGMANAGER_JOURNAL": "1"}):
+        with patch.dict(os.environ, {"FILETAGGER_JOURNAL": "1"}):
             result = bulk_retag("old-tag", "renamed")
         self.assertTrue(result["success"])
 
@@ -396,7 +396,7 @@ class TestBulkService(unittest.TestCase):
         self.assertIn("renamed", tags[np])
         self.assertNotIn("old-tag", tags[np])
 
-        with patch.dict(os.environ, {"TAGMANAGER_JOURNAL": "1"}):
+        with patch.dict(os.environ, {"FILETAGGER_JOURNAL": "1"}):
             ok, msg, n = undo_last(1)
         self.assertTrue(ok, msg)
         self.assertEqual(n, 1)

@@ -47,7 +47,7 @@ def _find_shellext_dll() -> Path:
     """Locate the prebuilt shell extension DLL.
 
     Search order:
-      1. TAGMANAGER_SHELLEXT_DLL env var (escape hatch / packaging).
+      1. FILETAGGER_SHELLEXT_DLL env var (escape hatch / packaging).
       2. filetagger_shellext/target/release/<dll> in the source checkout.
       3. <package_dir>/_shellext/<dll> — where wheel builds drop it.
     """

@@ -4,7 +4,7 @@
     "filetagger": {
       "command": "py",
       "args": ["-m", "filetagger.mcp_server"],
-      "cwd": "D:\\Code\\TagManager"
+      "cwd": "C:\\path\\to\\FileTagger"
     }
   }
 }

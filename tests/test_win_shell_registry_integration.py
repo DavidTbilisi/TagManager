@@ -9,7 +9,7 @@ Three test classes:
   Explorer never sees the keys.  Verifies the cascade-parent pattern and leaf
   command round-trips using real winreg.
 
-* **TestWinShellExplorerKeysE2E** — runs when ``TAGMANAGER_WIN_SHELL_E2E=1``
+* **TestWinShellExplorerKeysE2E** — runs when ``FILETAGGER_WIN_SHELL_E2E=1``
   or in CI.  Does a full install → deep registry read-back → uninstall using
   real ``HKCU\\Software\\Classes\\...`` so the CI Windows job proves the
   exact keys Explorer reads are correct.
@@ -36,7 +36,7 @@ sys.path.insert(0, project_root)
 WIN32 = sys.platform == "win32"
 RUN_SHELL_E2E = (
     os.environ.get("CI", "").lower() in ("1", "true", "yes")
-    or os.environ.get("TAGMANAGER_WIN_SHELL_E2E", "").lower() in ("1", "true", "yes")
+    or os.environ.get("FILETAGGER_WIN_SHELL_E2E", "").lower() in ("1", "true", "yes")
 )
 
 
@@ -259,7 +259,7 @@ class TestWinShellLauncherBatch(unittest.TestCase):
 # Class 3: full E2E against real HKCU\Software\Classes — gated on env var / CI
 # ---------------------------------------------------------------------------
 
-@unittest.skipUnless(WIN32 and RUN_SHELL_E2E, "set TAGMANAGER_WIN_SHELL_E2E=1 or run in CI")
+@unittest.skipUnless(WIN32 and RUN_SHELL_E2E, "set FILETAGGER_WIN_SHELL_E2E=1 or run in CI")
 class TestWinShellExplorerKeysE2E(unittest.TestCase):
     """
     Full install → registry read-back → uninstall.

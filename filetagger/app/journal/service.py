@@ -18,7 +18,7 @@ def _journal_file_path() -> str:
 
 
 def journal_enabled() -> bool:
-    env = os.environ.get("TAGMANAGER_JOURNAL", "").lower()
+    env = os.environ.get("FILETAGGER_JOURNAL", "").lower()
     if env in ("1", "true", "yes", "on"):
         return True
     if env in ("0", "false", "no", "off"):

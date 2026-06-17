@@ -1,5 +1,5 @@
 # Fish completions for FileTagger (`ftag` / `filetagger`).
-# Install:  cp completions/tm.fish ~/.config/fish/completions/ftag.fish
+# Install:  cp completions/ftag.fish ~/.config/fish/completions/ftag.fish
 #           (or symlink). Reload the shell or run: complete -C ftag
 
 complete -c ftag -f
