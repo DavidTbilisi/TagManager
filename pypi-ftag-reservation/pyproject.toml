@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ftag"
+version = "0.0.1"
+description = "Reserved name for the FileTagger project. Install 'filetagger-cli' to get the 'ftag' command."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [{name = "David Chincharashvili"}]
+keywords = ["filetagger", "file-tagging", "placeholder"]
+classifiers = [
+    "Development Status :: 7 - Inactive",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+Homepage = "https://github.com/DavidTbilisi/FileTagger"
+"Real package" = "https://pypi.org/project/filetagger-cli/"
+
+[tool.setuptools]
+py-modules = ["ftag"]
