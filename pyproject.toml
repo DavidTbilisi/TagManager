@@ -9,10 +9,10 @@ description = "The Ultimate Command-Line File Tagging System - Transform chaos i
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "David Chincharashvili", email = "david@example.com"}
+    {name = "David Chincharashvili", email = "davidchincharashvili@gmail.com"}
 ]
 maintainers = [
-    {name = "David Chincharashvili", email = "david@example.com"}
+    {name = "David Chincharashvili", email = "davidchincharashvili@gmail.com"}
 ]
 keywords = [
     "file-management", 
