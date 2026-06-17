@@ -1,0 +1,16 @@
+name = "filetagger-license-verify"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+# Set these with `wrangler secret put`:
+#   PADDLE_API_KEY
+#   ED25519_PRIVATE_JWK
+#
+# Set these in [vars] below (non-secret config):
+
+[vars]
+PADDLE_PRICE_IDS = "pri_01ksjg1y70y6ccy52cjpxqsdnq"
+ATTESTATION_TTL_DAYS = "30"
+PADDLE_ENV = "sandbox"

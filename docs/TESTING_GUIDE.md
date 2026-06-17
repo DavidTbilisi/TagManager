@@ -1,6 +1,6 @@
-# TagManager Tests
+# FileTagger Tests
 
-This directory contains unit tests for the TagManager project.
+This directory contains unit tests for the FileTagger project.
 
 ## Running Tests
 
@@ -26,7 +26,7 @@ pytest tests/
 ## Test Files
 
 - `test_basic.py` - Basic functionality tests that don't require full module imports
-- `test_tagmanager.py` - Comprehensive tests for TagManager functionality (requires dependencies)
+- `test_filetagger.py` - Comprehensive tests for FileTagger functionality (requires dependencies)
 
 ## Test Structure
 
@@ -40,7 +40,7 @@ The tests are organized into several categories:
 - Search simulation
 - Project structure validation
 
-### TagManager Integration Tests
+### FileTagger Integration Tests
 
 - Add/remove tags functionality
 - Search operations
@@ -66,5 +66,5 @@ To run tests with coverage:
 
 ```bash
 pip install pytest-cov
-pytest --cov=tagmanager tests/
+pytest --cov=filetagger tests/
 ```

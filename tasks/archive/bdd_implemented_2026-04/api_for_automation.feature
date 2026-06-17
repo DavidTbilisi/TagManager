@@ -1,7 +1,7 @@
 Feature: API or CLI for scripting/integration
   As a developer or automation tool
   I want a simple API or CLI endpoints for managing tags
-  So that I can integrate TagManager with other tools and automate workflows
+  So that I can integrate FileTagger with other tools and automate workflows
 
   Scenario: List tags for a file via API
     Given a file in the system

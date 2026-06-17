@@ -3,15 +3,15 @@ include README.md
 include LICENSE
 
 # Include configuration files
-include tagmanager/config.ini
-include tagmanager/configReader.py
+include filetagger/config.ini
+include filetagger/configReader.py
 
 # Include all Python files
-recursive-include tagmanager *.py
+recursive-include filetagger *.py
 
 # Include package data
-recursive-include tagmanager *.ini
-recursive-include tagmanager *.json
+recursive-include filetagger *.ini
+recursive-include filetagger *.json
 
 # Exclude unnecessary files
 global-exclude *.pyc

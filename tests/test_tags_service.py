@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive tests for tagmanager.app.tags.service
+Comprehensive tests for filetagger.app.tags.service
 Testing every function, edge case, and error condition
 """
 
@@ -25,7 +25,7 @@ class TestTagsService(unittest.TestCase):
         self.test_dir = tempfile.mkdtemp()
         
         # Mock the helpers module
-        self.helpers_patcher = patch('tagmanager.app.tags.service.load_tags')
+        self.helpers_patcher = patch('filetagger.app.tags.service.load_tags')
         self.mock_load_tags = self.helpers_patcher.start()
         
     def tearDown(self):
@@ -35,7 +35,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_list_all_tags_multiple_files(self):
         """Test listing all unique tags from multiple files"""
-        from tagmanager.app.tags.service import list_all_tags
+        from filetagger.app.tags.service import list_all_tags
         
         # Mock tags database
         self.mock_load_tags.return_value = {
@@ -54,7 +54,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_list_all_tags_empty_database(self):
         """Test listing tags from empty database"""
-        from tagmanager.app.tags.service import list_all_tags
+        from filetagger.app.tags.service import list_all_tags
         
         # Mock empty database
         self.mock_load_tags.return_value = {}
@@ -67,7 +67,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_list_all_tags_duplicate_tags(self):
         """Test that duplicate tags are not included multiple times"""
-        from tagmanager.app.tags.service import list_all_tags
+        from filetagger.app.tags.service import list_all_tags
         
         # Mock database with duplicate tags
         self.mock_load_tags.return_value = {
@@ -86,7 +86,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_list_all_tags_empty_tag_lists(self):
         """Test listing tags when some files have empty tag lists"""
-        from tagmanager.app.tags.service import list_all_tags
+        from filetagger.app.tags.service import list_all_tags
         
         # Mock database with empty tag lists
         self.mock_load_tags.return_value = {
@@ -105,7 +105,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_list_all_tags_unicode_tags(self):
         """Test listing tags with Unicode characters"""
-        from tagmanager.app.tags.service import list_all_tags
+        from filetagger.app.tags.service import list_all_tags
         
         # Mock database with Unicode tags
         self.mock_load_tags.return_value = {
@@ -123,7 +123,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_list_all_tags_special_characters(self):
         """Test listing tags with special characters"""
-        from tagmanager.app.tags.service import list_all_tags
+        from filetagger.app.tags.service import list_all_tags
         
         # Mock database with special character tags
         self.mock_load_tags.return_value = {
@@ -141,7 +141,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_list_all_tags_whitespace_tags(self):
         """Test listing tags with whitespace"""
-        from tagmanager.app.tags.service import list_all_tags
+        from filetagger.app.tags.service import list_all_tags
         
         # Mock database with whitespace tags
         self.mock_load_tags.return_value = {
@@ -158,7 +158,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_list_all_tags_empty_string_tags(self):
         """Test listing tags including empty strings"""
-        from tagmanager.app.tags.service import list_all_tags
+        from filetagger.app.tags.service import list_all_tags
         
         # Mock database with empty string tags
         self.mock_load_tags.return_value = {
@@ -176,7 +176,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_list_all_tags_case_sensitivity(self):
         """Test that tag listing preserves case sensitivity"""
-        from tagmanager.app.tags.service import list_all_tags
+        from filetagger.app.tags.service import list_all_tags
         
         # Mock database with different cases
         self.mock_load_tags.return_value = {
@@ -194,7 +194,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_list_all_tags_large_database(self):
         """Test listing tags from large database"""
-        from tagmanager.app.tags.service import list_all_tags
+        from filetagger.app.tags.service import list_all_tags
         
         # Create large database
         large_db = {}
@@ -216,10 +216,10 @@ class TestTagsService(unittest.TestCase):
         self.assertIn("tag_0", result)
         self.assertIn("unique_0", result)
     
-    @patch('tagmanager.app.tags.service.load_tags', side_effect=Exception("Load error"))
+    @patch('filetagger.app.tags.service.load_tags', side_effect=Exception("Load error"))
     def test_list_all_tags_load_exception(self, mock_load):
         """Test handling of exception in load_tags"""
-        from tagmanager.app.tags.service import list_all_tags
+        from filetagger.app.tags.service import list_all_tags
         
         # Execute - should raise exception
         with self.assertRaises(Exception):
@@ -227,7 +227,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_get_files_by_tag_single_match(self):
         """Test getting files by tag with single match"""
-        from tagmanager.app.tags.service import get_files_by_tag
+        from filetagger.app.tags.service import get_files_by_tag
         
         # Mock tags database
         self.mock_load_tags.return_value = {
@@ -244,7 +244,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_get_files_by_tag_multiple_matches(self):
         """Test getting files by tag with multiple matches"""
-        from tagmanager.app.tags.service import get_files_by_tag
+        from filetagger.app.tags.service import get_files_by_tag
         
         # Mock tags database
         self.mock_load_tags.return_value = {
@@ -264,7 +264,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_get_files_by_tag_no_matches(self):
         """Test getting files by tag with no matches"""
-        from tagmanager.app.tags.service import get_files_by_tag
+        from filetagger.app.tags.service import get_files_by_tag
         
         # Mock tags database
         self.mock_load_tags.return_value = {
@@ -280,7 +280,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_get_files_by_tag_empty_database(self):
         """Test getting files by tag from empty database"""
-        from tagmanager.app.tags.service import get_files_by_tag
+        from filetagger.app.tags.service import get_files_by_tag
         
         # Mock empty database
         self.mock_load_tags.return_value = {}
@@ -293,7 +293,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_get_files_by_tag_case_sensitivity(self):
         """Test that get_files_by_tag is case-sensitive"""
-        from tagmanager.app.tags.service import get_files_by_tag
+        from filetagger.app.tags.service import get_files_by_tag
         
         # Mock database with different cases
         self.mock_load_tags.return_value = {
@@ -314,7 +314,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_get_files_by_tag_unicode_tag(self):
         """Test getting files by Unicode tag"""
-        from tagmanager.app.tags.service import get_files_by_tag
+        from filetagger.app.tags.service import get_files_by_tag
         
         # Mock database with Unicode tags
         self.mock_load_tags.return_value = {
@@ -335,7 +335,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_get_files_by_tag_special_characters(self):
         """Test getting files by tag with special characters"""
-        from tagmanager.app.tags.service import get_files_by_tag
+        from filetagger.app.tags.service import get_files_by_tag
         
         # Mock database with special character tags
         self.mock_load_tags.return_value = {
@@ -356,7 +356,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_get_files_by_tag_whitespace_tag(self):
         """Test getting files by tag with whitespace"""
-        from tagmanager.app.tags.service import get_files_by_tag
+        from filetagger.app.tags.service import get_files_by_tag
         
         # Mock database with whitespace tags
         self.mock_load_tags.return_value = {
@@ -377,7 +377,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_get_files_by_tag_empty_string(self):
         """Test getting files by empty string tag"""
-        from tagmanager.app.tags.service import get_files_by_tag
+        from filetagger.app.tags.service import get_files_by_tag
         
         # Mock database with empty string tags
         self.mock_load_tags.return_value = {
@@ -395,7 +395,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_get_files_by_tag_none_input(self):
         """Test getting files by None tag"""
-        from tagmanager.app.tags.service import get_files_by_tag
+        from filetagger.app.tags.service import get_files_by_tag
         
         self.mock_load_tags.return_value = {
             "/path/file1.py": ["python", "backend"]
@@ -412,7 +412,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_get_files_by_tag_large_database(self):
         """Test getting files by tag from large database"""
-        from tagmanager.app.tags.service import get_files_by_tag
+        from filetagger.app.tags.service import get_files_by_tag
         
         # Create large database
         large_db = {}
@@ -435,10 +435,10 @@ class TestTagsService(unittest.TestCase):
         self.assertNotIn("/path/file_1.py", result)
         self.assertNotIn("/path/file_3.py", result)
     
-    @patch('tagmanager.app.tags.service.load_tags', side_effect=Exception("Load error"))
+    @patch('filetagger.app.tags.service.load_tags', side_effect=Exception("Load error"))
     def test_get_files_by_tag_load_exception(self, mock_load):
         """Test handling of exception in load_tags for get_files_by_tag"""
-        from tagmanager.app.tags.service import get_files_by_tag
+        from filetagger.app.tags.service import get_files_by_tag
         
         # Execute - should raise exception
         with self.assertRaises(Exception):
@@ -446,7 +446,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_get_files_by_tag_order_consistency(self):
         """Test that get_files_by_tag returns consistent order"""
-        from tagmanager.app.tags.service import get_files_by_tag
+        from filetagger.app.tags.service import get_files_by_tag
         
         # Mock database with multiple matches
         self.mock_load_tags.return_value = {
@@ -467,7 +467,7 @@ class TestTagsService(unittest.TestCase):
     
     def test_get_files_by_tag_performance_many_tags_per_file(self):
         """Test performance when files have many tags"""
-        from tagmanager.app.tags.service import get_files_by_tag
+        from filetagger.app.tags.service import get_files_by_tag
         
         # Create files with many tags
         many_tags = [f"tag_{i}" for i in range(1000)]

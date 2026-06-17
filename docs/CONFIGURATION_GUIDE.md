@@ -1,24 +1,24 @@
 # ⚙️ Configuration Management Guide
 
-TagManager includes a comprehensive configuration system that allows you to customize behavior, set defaults, and manage preferences across all features.
+FileTagger includes a comprehensive configuration system that allows you to customize behavior, set defaults, and manage preferences across all features.
 
 ## 🚀 **Quick Start**
 
 ```bash
 # View all available configuration options
-tagmanager config list --show-defaults
+filetagger config list --show-defaults
 
 # Get configuration information
-tagmanager config info
+filetagger config info
 
 # Set a configuration value
-tagmanager config set display.emojis false
+filetagger config set display.emojis false
 
 # Get a specific configuration value
-tagmanager config get display.emojis
+filetagger config get display.emojis
 
 # List configurations by category
-tagmanager config list --category display
+filetagger config list --category display
 ```
 
 ## 📋 **Available Commands**
@@ -27,61 +27,61 @@ tagmanager config list --category display
 
 ```bash
 # Get a configuration value
-tagmanager config get <key>
+filetagger config get <key>
 
 # Set a configuration value
-tagmanager config set <key> <value>
+filetagger config set <key> <value>
 
 # Delete a configuration value (revert to default)
-tagmanager config delete <key>
+filetagger config delete <key>
 
 # List all configuration values
-tagmanager config list
+filetagger config list
 
 # List with default values shown
-tagmanager config list --show-defaults
+filetagger config list --show-defaults
 
 # List by category
-tagmanager config list --category display
+filetagger config list --category display
 ```
 
 ### **Management Operations**
 
 ```bash
 # Reset specific key to default
-tagmanager config reset <key>
+filetagger config reset <key>
 
 # Reset ALL configuration to defaults (use with caution!)
-tagmanager config reset
+filetagger config reset
 
 # Show configuration system information
-tagmanager config info
+filetagger config info
 
 # Show available categories
-tagmanager config categories
+filetagger config categories
 
 # Validate current configuration
-tagmanager config validate
+filetagger config validate
 ```
 
 ### **Import/Export**
 
 ```bash
 # Export configuration to file
-tagmanager config export --file my_config.json
+filetagger config export --file my_config.json
 
 # Import configuration from file (merge with existing)
-tagmanager config import my_config.json
+filetagger config import my_config.json
 
 # Import configuration (replace existing)
-tagmanager config import my_config.json --replace
+filetagger config import my_config.json --replace
 ```
 
 ## 🎛️ **Configuration Categories**
 
 ### **🎨 Display Settings**
 
-Control how TagManager displays information:
+Control how FileTagger displays information:
 
 | Key                  | Default | Description                        |
 | -------------------- | ------- | ---------------------------------- |
@@ -94,13 +94,13 @@ Control how TagManager displays information:
 
 ```bash
 # Disable emojis for Windows compatibility
-tagmanager config set display.emojis false
+filetagger config set display.emojis false
 
 # Increase display limit
-tagmanager config set display.max_items 200
+filetagger config set display.max_items 200
 
 # Disable colors for plain text output
-tagmanager config set display.colors false
+filetagger config set display.colors false
 ```
 
 ### **🔍 Search Settings**
@@ -117,10 +117,10 @@ Configure search behavior:
 
 ```bash
 # Make search more strict
-tagmanager config set search.fuzzy_threshold 0.8
+filetagger config set search.fuzzy_threshold 0.8
 
 # Enable case-sensitive search by default
-tagmanager config set search.case_sensitive true
+filetagger config set search.case_sensitive true
 ```
 
 ### **🏷️ Tag Settings**
@@ -138,10 +138,10 @@ Control tag behavior and validation:
 
 ```bash
 # Increase tag limit
-tagmanager config set tags.max_per_file 100
+filetagger config set tags.max_per_file 100
 
 # Change tag separator
-tagmanager config set tags.separator ","
+filetagger config set tags.separator ","
 ```
 
 ### **📁 File Settings**
@@ -158,10 +158,10 @@ Configure file processing behavior:
 
 ```bash
 # Include hidden files
-tagmanager config set files.include_hidden true
+filetagger config set files.include_hidden true
 
 # Increase file size limit
-tagmanager config set files.max_size_mb 500
+filetagger config set files.max_size_mb 500
 ```
 
 ### **📤 Output Settings**
@@ -178,10 +178,10 @@ Control output formatting:
 
 ```bash
 # Default to JSON output
-tagmanager config set output.format json
+filetagger config set output.format json
 
 # Use ISO date format
-tagmanager config set output.date_format "%Y-%m-%dT%H:%M:%S"
+filetagger config set output.date_format "%Y-%m-%dT%H:%M:%S"
 ```
 
 ### **⚡ Performance Settings**
@@ -198,10 +198,10 @@ Optimize performance for your use case:
 
 ```bash
 # Disable caching for real-time accuracy
-tagmanager config set performance.cache_enabled false
+filetagger config set performance.cache_enabled false
 
 # Increase batch size for large operations
-tagmanager config set performance.batch_size 5000
+filetagger config set performance.batch_size 5000
 ```
 
 ### **💾 Backup Settings**
@@ -218,10 +218,10 @@ Configure automatic backup behavior:
 
 ```bash
 # Increase backup retention
-tagmanager config set backup.count 10
+filetagger config set backup.count 10
 
 # Disable auto-backup for bulk operations
-tagmanager config set backup.on_bulk_operations false
+filetagger config set backup.on_bulk_operations false
 ```
 
 ### **🔧 Advanced Settings**
@@ -232,16 +232,16 @@ Developer and debugging options:
 | --------------------------- | ------- | ----------------------------------------------------- |
 | `advanced.debug_mode`       | `false` | Enable debug mode with verbose output                 |
 | `advanced.log_level`        | `INFO`  | Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
-| `advanced.plugin_directory` | `""`    | Directory for TagManager plugins                      |
+| `advanced.plugin_directory` | `""`    | Directory for FileTagger plugins                      |
 
 **Examples:**
 
 ```bash
 # Enable debug mode
-tagmanager config set advanced.debug_mode true
+filetagger config set advanced.debug_mode true
 
 # Set verbose logging
-tagmanager config set advanced.log_level DEBUG
+filetagger config set advanced.log_level DEBUG
 ```
 
 ## 🏠 **Configuration Storage**
@@ -250,9 +250,9 @@ tagmanager config set advanced.log_level DEBUG
 
 Configuration is stored in platform-specific locations:
 
-- **Windows**: `%LOCALAPPDATA%\TagManager\config.json`
-- **macOS**: `~/.config/tagmanager/config.json`
-- **Linux**: `~/.config/tagmanager/config.json`
+- **Windows**: `%LOCALAPPDATA%\FileTagger\config.json`
+- **macOS**: `~/.config/filetagger/config.json`
+- **Linux**: `~/.config/filetagger/config.json`
 
 ### **Format**
 
@@ -274,7 +274,7 @@ Configuration is stored as JSON:
 
 ### **Legacy Configuration**
 
-TagManager automatically migrates from the old INI-based configuration:
+FileTagger automatically migrates from the old INI-based configuration:
 
 - Old `config.ini` files are automatically converted
 - Settings are mapped to the new hierarchical structure
@@ -292,45 +292,45 @@ TagManager automatically migrates from the old INI-based configuration:
 
 ```bash
 # Export current config
-tagmanager config export --file production.json
+filetagger config export --file production.json
 
 # Set multiple values
-tagmanager config set display.emojis false
-tagmanager config set display.colors false
-tagmanager config set output.format json
+filetagger config set display.emojis false
+filetagger config set display.colors false
+filetagger config set output.format json
 
 # Validate all settings
-tagmanager config validate
+filetagger config validate
 ```
 
 ### **Environment-Specific Configs**
 
 ```bash
 # Development environment
-tagmanager config set advanced.debug_mode true
-tagmanager config set advanced.log_level DEBUG
-tagmanager config export --file dev_config.json
+filetagger config set advanced.debug_mode true
+filetagger config set advanced.log_level DEBUG
+filetagger config export --file dev_config.json
 
 # Production environment
-tagmanager config set advanced.debug_mode false
-tagmanager config set performance.cache_enabled true
-tagmanager config export --file prod_config.json
+filetagger config set advanced.debug_mode false
+filetagger config set performance.cache_enabled true
+filetagger config export --file prod_config.json
 
 # Switch environments
-tagmanager config import dev_config.json --replace
+filetagger config import dev_config.json --replace
 ```
 
 ### **Team Configuration**
 
 ```bash
 # Create team standard
-tagmanager config set display.emojis false  # Windows compatibility
-tagmanager config set output.format table
-tagmanager config set tags.max_per_file 25
-tagmanager config export --file team_standard.json
+filetagger config set display.emojis false  # Windows compatibility
+filetagger config set output.format table
+filetagger config set tags.max_per_file 25
+filetagger config export --file team_standard.json
 
 # Team members import
-tagmanager config import team_standard.json
+filetagger config import team_standard.json
 ```
 
 ## 🚨 **Troubleshooting**
@@ -341,45 +341,45 @@ tagmanager config import team_standard.json
 
 ```bash
 # Check if value is set correctly
-tagmanager config get <key>
+filetagger config get <key>
 
 # Validate configuration
-tagmanager config validate
+filetagger config validate
 
 # Reset to defaults if corrupted
-tagmanager config reset
+filetagger config reset
 ```
 
 **Invalid values:**
 
 ```bash
 # Validation will show errors
-tagmanager config validate
+filetagger config validate
 
 # Reset specific invalid key
-tagmanager config reset <key>
+filetagger config reset <key>
 ```
 
 **Permission issues:**
 
 ```bash
 # Check configuration info
-tagmanager config info
+filetagger config info
 
 # Ensure config directory is writable
-# Windows: Check %LOCALAPPDATA%\TagManager permissions
-# Unix: Check ~/.config/tagmanager permissions
+# Windows: Check %LOCALAPPDATA%\FileTagger permissions
+# Unix: Check ~/.config/filetagger permissions
 ```
 
 ### **Recovery**
 
 ```bash
 # Reset all configuration to defaults
-tagmanager config reset --yes
+filetagger config reset --yes
 
 # Or manually delete config file and restart
-# Windows: del "%LOCALAPPDATA%\TagManager\config.json"
-# Unix: rm ~/.config/tagmanager/config.json
+# Windows: del "%LOCALAPPDATA%\FileTagger\config.json"
+# Unix: rm ~/.config/filetagger/config.json
 ```
 
 ## 📚 **Integration Examples**
@@ -391,30 +391,30 @@ tagmanager config reset --yes
 # Setup script for new users
 
 # Configure for terminal use
-tagmanager config set display.emojis true
-tagmanager config set display.colors true
+filetagger config set display.emojis true
+filetagger config set display.colors true
 
 # Optimize for performance
-tagmanager config set performance.batch_size 2000
-tagmanager config set performance.cache_enabled true
+filetagger config set performance.batch_size 2000
+filetagger config set performance.cache_enabled true
 
 # Set reasonable limits
-tagmanager config set tags.max_per_file 30
-tagmanager config set display.max_items 50
+filetagger config set tags.max_per_file 30
+filetagger config set display.max_items 50
 
-echo "TagManager configured for optimal terminal use!"
+echo "FileTagger configured for optimal terminal use!"
 ```
 
 ### **CI/CD Integration**
 
 ```bash
-# .github/workflows/tagmanager.yml
-- name: Configure TagManager
+# .github/workflows/filetagger.yml
+- name: Configure FileTagger
   run: |
-    tagmanager config set display.emojis false
-    tagmanager config set display.colors false
-    tagmanager config set output.format json
-    tagmanager config set advanced.log_level ERROR
+    filetagger config set display.emojis false
+    filetagger config set display.colors false
+    filetagger config set output.format json
+    filetagger config set advanced.log_level ERROR
 ```
 
 ## 🎯 **Best Practices**
@@ -428,7 +428,7 @@ echo "TagManager configured for optimal terminal use!"
 
 ## 🎉 **Success!**
 
-You now have complete control over TagManager's behavior through the powerful configuration system. Customize it to match your workflow and preferences!
+You now have complete control over FileTagger's behavior through the powerful configuration system. Customize it to match your workflow and preferences!
 
 **Pro Tips:**
 

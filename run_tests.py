@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test runner for TagManager
+Test runner for FileTagger
 """
 
 import unittest
@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def run_tests():
     """Run all tests"""
-    print("🧪 TagManager Comprehensive Test Suite")
+    print("🧪 FileTagger Comprehensive Test Suite")
     print("=" * 50)
     
     # Discover and run tests

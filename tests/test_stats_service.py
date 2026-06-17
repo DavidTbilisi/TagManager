@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive tests for tagmanager.app.stats.service
+Comprehensive tests for filetagger.app.stats.service
 Testing every function, edge case, and error condition
 """
 
@@ -30,11 +30,11 @@ class TestStatsService(unittest.TestCase):
         self.test_tag_file = os.path.join(self.test_dir, "test_tags.json")
         
         # Patch the TAG_FILE to use our test file
-        self.tag_file_patcher = patch('tagmanager.app.helpers.get_tag_file_path', return_value=self.test_tag_file)
+        self.tag_file_patcher = patch('filetagger.app.helpers.get_tag_file_path', return_value=self.test_tag_file)
         self.tag_file_patcher.start()
         
         # Clear any existing tag data before each test
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.helpers import save_tags
         save_tags({})  # Start with clean tag data
 
     def tearDown(self):
@@ -45,7 +45,7 @@ class TestStatsService(unittest.TestCase):
 
     def _setup_test_data(self):
         """Setup comprehensive test data for statistics"""
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.helpers import save_tags
         
         test_data = {
             "/project/main.py": ["python", "backend", "api", "main"],
@@ -66,7 +66,7 @@ class TestStatsService(unittest.TestCase):
 
     def test_get_overall_statistics_comprehensive(self):
         """Test overall statistics with comprehensive data"""
-        from tagmanager.app.stats.service import get_overall_statistics
+        from filetagger.app.stats.service import get_overall_statistics
         
         self._setup_test_data()
         
@@ -98,7 +98,7 @@ class TestStatsService(unittest.TestCase):
 
     def test_get_overall_statistics_empty_database(self):
         """Test overall statistics with empty database"""
-        from tagmanager.app.stats.service import get_overall_statistics
+        from filetagger.app.stats.service import get_overall_statistics
         
         stats = get_overall_statistics()
         
@@ -113,8 +113,8 @@ class TestStatsService(unittest.TestCase):
 
     def test_get_overall_statistics_all_files_without_tags(self):
         """Test overall statistics when all files have no tags"""
-        from tagmanager.app.stats.service import get_overall_statistics
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.stats.service import get_overall_statistics
+        from filetagger.app.helpers import save_tags
         
         test_data = {
             "/file1.txt": [],
@@ -133,8 +133,8 @@ class TestStatsService(unittest.TestCase):
 
     def test_get_overall_statistics_least_common_tags(self):
         """Test that least common tags are calculated correctly"""
-        from tagmanager.app.stats.service import get_overall_statistics
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.stats.service import get_overall_statistics
+        from filetagger.app.helpers import save_tags
         
         # Create data with many unique tags (more than 10)
         test_data = {}
@@ -157,7 +157,7 @@ class TestStatsService(unittest.TestCase):
 
     def test_get_tag_statistics_existing_tag(self):
         """Test statistics for an existing tag"""
-        from tagmanager.app.stats.service import get_tag_statistics
+        from filetagger.app.stats.service import get_tag_statistics
         
         self._setup_test_data()
         
@@ -179,7 +179,7 @@ class TestStatsService(unittest.TestCase):
 
     def test_get_tag_statistics_case_insensitive(self):
         """Test that tag statistics are case-insensitive"""
-        from tagmanager.app.stats.service import get_tag_statistics
+        from filetagger.app.stats.service import get_tag_statistics
         
         self._setup_test_data()
         
@@ -193,7 +193,7 @@ class TestStatsService(unittest.TestCase):
 
     def test_get_tag_statistics_nonexistent_tag(self):
         """Test statistics for a tag that doesn't exist"""
-        from tagmanager.app.stats.service import get_tag_statistics
+        from filetagger.app.stats.service import get_tag_statistics
         
         self._setup_test_data()
         
@@ -208,7 +208,7 @@ class TestStatsService(unittest.TestCase):
 
     def test_get_tag_statistics_empty_database(self):
         """Test tag statistics with empty database"""
-        from tagmanager.app.stats.service import get_tag_statistics
+        from filetagger.app.stats.service import get_tag_statistics
         
         stats = get_tag_statistics("any_tag")
         
@@ -221,8 +221,8 @@ class TestStatsService(unittest.TestCase):
 
     def test_get_tag_statistics_files_without_extension(self):
         """Test tag statistics with files that have no extension"""
-        from tagmanager.app.stats.service import get_tag_statistics
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.stats.service import get_tag_statistics
+        from filetagger.app.helpers import save_tags
         
         test_data = {
             "/path/to/makefile": ["build", "config"],
@@ -239,8 +239,8 @@ class TestStatsService(unittest.TestCase):
 
     def test_get_tag_statistics_co_occurring_analysis(self):
         """Test that co-occurring tags are analyzed correctly"""
-        from tagmanager.app.stats.service import get_tag_statistics
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.stats.service import get_tag_statistics
+        from filetagger.app.helpers import save_tags
         
         test_data = {
             "/file1.py": ["target", "common", "frequent"],
@@ -263,7 +263,7 @@ class TestStatsService(unittest.TestCase):
 
     def test_get_file_count_distribution_success(self):
         """Test file count distribution with normal data"""
-        from tagmanager.app.stats.service import get_file_count_distribution
+        from filetagger.app.stats.service import get_file_count_distribution
         
         self._setup_test_data()
         
@@ -284,7 +284,7 @@ class TestStatsService(unittest.TestCase):
 
     def test_get_file_count_distribution_empty_database(self):
         """Test file count distribution with empty database"""
-        from tagmanager.app.stats.service import get_file_count_distribution
+        from filetagger.app.stats.service import get_file_count_distribution
         
         stats = get_file_count_distribution()
         
@@ -294,8 +294,8 @@ class TestStatsService(unittest.TestCase):
 
     def test_get_file_count_distribution_single_occurrence_tags(self):
         """Test distribution when all tags appear only once"""
-        from tagmanager.app.stats.service import get_file_count_distribution
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.stats.service import get_file_count_distribution
+        from filetagger.app.helpers import save_tags
         
         test_data = {
             "/file1.txt": ["unique1", "unique2"],
@@ -319,7 +319,7 @@ class TestStatsService(unittest.TestCase):
 
     def test_format_overall_statistics_comprehensive(self):
         """Test formatting overall statistics"""
-        from tagmanager.app.stats.service import format_overall_statistics
+        from filetagger.app.stats.service import format_overall_statistics
         
         stats = {
             "total_files": 10,
@@ -343,7 +343,7 @@ class TestStatsService(unittest.TestCase):
 
     def test_format_tag_statistics_with_files(self):
         """Test formatting tag-specific statistics"""
-        from tagmanager.app.stats.service import format_tag_statistics
+        from filetagger.app.stats.service import format_tag_statistics
         
         stats = {
             "tag_name": "python",
@@ -365,7 +365,7 @@ class TestStatsService(unittest.TestCase):
 
     def test_format_tag_statistics_no_files(self):
         """Test formatting when tag has no files"""
-        from tagmanager.app.stats.service import format_tag_statistics
+        from filetagger.app.stats.service import format_tag_statistics
         
         stats = {
             "tag_name": "nonexistent",
@@ -383,7 +383,7 @@ class TestStatsService(unittest.TestCase):
 
     def test_format_file_count_distribution_success(self):
         """Test formatting file count distribution"""
-        from tagmanager.app.stats.service import format_file_count_distribution
+        from filetagger.app.stats.service import format_file_count_distribution
         
         stats = {
             "total_tags": 10,
@@ -400,7 +400,7 @@ class TestStatsService(unittest.TestCase):
 
     def test_format_file_count_distribution_empty(self):
         """Test formatting when no tags exist"""
-        from tagmanager.app.stats.service import format_file_count_distribution
+        from filetagger.app.stats.service import format_file_count_distribution
         
         stats = {
             "total_tags": 0,
@@ -414,8 +414,8 @@ class TestStatsService(unittest.TestCase):
         self.assertIn("No tags found", output)
 
     def test_get_namespace_statistics(self):
-        from tagmanager.app.helpers import save_tags
-        from tagmanager.app.stats.service import (
+        from filetagger.app.helpers import save_tags
+        from filetagger.app.stats.service import (
             format_namespace_statistics,
             get_namespace_statistics,
         )

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive tests for tagmanager.app.bulk.service
+Comprehensive tests for filetagger.app.bulk.service
 Testing every function, edge case, and error condition
 """
 
@@ -30,11 +30,11 @@ class TestBulkService(unittest.TestCase):
         self.test_tag_file = os.path.join(self.test_dir, "test_tags.json")
         
         # Patch the TAG_FILE to use our test file
-        self.tag_file_patcher = patch('tagmanager.app.helpers.get_tag_file_path', return_value=self.test_tag_file)
+        self.tag_file_patcher = patch('filetagger.app.helpers.get_tag_file_path', return_value=self.test_tag_file)
         self.tag_file_patcher.start()
         
         # Clear any existing tag data before each test
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.helpers import save_tags
         save_tags({})  # Start with clean tag data
         
         # Create test files
@@ -66,7 +66,7 @@ class TestBulkService(unittest.TestCase):
 
     def test_find_files_by_pattern_simple_extension(self):
         """Test finding files by simple extension pattern"""
-        from tagmanager.app.bulk.service import find_files_by_pattern
+        from filetagger.app.bulk.service import find_files_by_pattern
         
         # Find all Python files
         py_files = find_files_by_pattern("*.py")
@@ -79,7 +79,7 @@ class TestBulkService(unittest.TestCase):
 
     def test_find_files_by_pattern_recursive(self):
         """Test finding files recursively"""
-        from tagmanager.app.bulk.service import find_files_by_pattern
+        from filetagger.app.bulk.service import find_files_by_pattern
         
         # Find all files recursively
         all_files = find_files_by_pattern("**/*")
@@ -90,14 +90,14 @@ class TestBulkService(unittest.TestCase):
 
     def test_find_files_by_pattern_no_matches(self):
         """Test pattern that matches no files"""
-        from tagmanager.app.bulk.service import find_files_by_pattern
+        from filetagger.app.bulk.service import find_files_by_pattern
         
         result = find_files_by_pattern("*.nonexistent")
         self.assertEqual(result, [])
 
     def test_find_files_by_pattern_with_path(self):
         """Test pattern with path component"""
-        from tagmanager.app.bulk.service import find_files_by_pattern
+        from filetagger.app.bulk.service import find_files_by_pattern
         
         # Find files in subdir only
         sub_files = find_files_by_pattern("subdir/*.py")
@@ -111,8 +111,8 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_add_tags_success(self):
         """Test successful bulk tag addition"""
-        from tagmanager.app.bulk.service import bulk_add_tags
-        from tagmanager.app.helpers import load_tags
+        from filetagger.app.bulk.service import bulk_add_tags
+        from filetagger.app.helpers import load_tags
         
         # Add tags to all Python files
         result = bulk_add_tags("*.py", ["python", "code"])
@@ -133,8 +133,8 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_add_tags_dry_run(self):
         """Test bulk tag addition in dry run mode"""
-        from tagmanager.app.bulk.service import bulk_add_tags
-        from tagmanager.app.helpers import load_tags
+        from filetagger.app.bulk.service import bulk_add_tags
+        from filetagger.app.helpers import load_tags
         
         # Test dry run
         result = bulk_add_tags("*.py", ["test"], dry_run=True)
@@ -149,7 +149,7 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_add_tags_no_files_found(self):
         """Test bulk tag addition when no files match pattern"""
-        from tagmanager.app.bulk.service import bulk_add_tags
+        from filetagger.app.bulk.service import bulk_add_tags
         
         result = bulk_add_tags("*.nonexistent", ["test"])
         
@@ -159,8 +159,8 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_add_tags_existing_tags(self):
         """Test adding tags to files that already have tags"""
-        from tagmanager.app.bulk.service import bulk_add_tags
-        from tagmanager.app.helpers import load_tags, save_tags
+        from filetagger.app.bulk.service import bulk_add_tags
+        from filetagger.app.helpers import load_tags, save_tags
         
         # Pre-populate with some tags
         py_file = [f for f in self.test_files if f.endswith('.py')][0]
@@ -179,10 +179,10 @@ class TestBulkService(unittest.TestCase):
         self.assertIn("new", file_tags)
         self.assertEqual(file_tags.count("existing"), 1)  # No duplicates
 
-    @patch('tagmanager.app.bulk.service.save_tags')
+    @patch('filetagger.app.bulk.service.save_tags')
     def test_bulk_add_tags_save_failure(self, mock_save):
         """Test handling of save failure"""
-        from tagmanager.app.bulk.service import bulk_add_tags
+        from filetagger.app.bulk.service import bulk_add_tags
         
         mock_save.return_value = False
         
@@ -197,8 +197,8 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_remove_by_tag_success(self):
         """Test successful bulk removal by tag"""
-        from tagmanager.app.bulk.service import bulk_remove_by_tag
-        from tagmanager.app.helpers import save_tags, load_tags
+        from filetagger.app.bulk.service import bulk_remove_by_tag
+        from filetagger.app.helpers import save_tags, load_tags
         
         # Setup: Add files with tags
         py_files = [f for f in self.test_files if f.endswith('.py')]
@@ -229,8 +229,8 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_remove_by_tag_dry_run(self):
         """Test bulk removal by tag in dry run mode"""
-        from tagmanager.app.bulk.service import bulk_remove_by_tag
-        from tagmanager.app.helpers import save_tags, load_tags
+        from filetagger.app.bulk.service import bulk_remove_by_tag
+        from filetagger.app.helpers import save_tags, load_tags
         
         # Setup
         py_file = [f for f in self.test_files if f.endswith('.py')][0]
@@ -249,8 +249,8 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_remove_by_tag_no_files(self):
         """Test bulk removal when no files have the tag"""
-        from tagmanager.app.bulk.service import bulk_remove_by_tag
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.bulk.service import bulk_remove_by_tag
+        from filetagger.app.helpers import save_tags
         
         # Setup with different tags
         py_file = [f for f in self.test_files if f.endswith('.py')][0]
@@ -263,7 +263,7 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_remove_by_tag_empty_database(self):
         """Test bulk removal from empty database"""
-        from tagmanager.app.bulk.service import bulk_remove_by_tag
+        from filetagger.app.bulk.service import bulk_remove_by_tag
         
         result = bulk_remove_by_tag("any-tag")
         
@@ -272,8 +272,8 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_remove_by_tag_case_insensitive(self):
         """Test that bulk removal is case-insensitive"""
-        from tagmanager.app.bulk.service import bulk_remove_by_tag
-        from tagmanager.app.helpers import save_tags, load_tags
+        from filetagger.app.bulk.service import bulk_remove_by_tag
+        from filetagger.app.helpers import save_tags, load_tags
         
         # Setup with mixed case
         py_file = [f for f in self.test_files if f.endswith('.py')][0]
@@ -291,8 +291,8 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_retag_success(self):
         """Test successful tag renaming"""
-        from tagmanager.app.bulk.service import bulk_retag
-        from tagmanager.app.helpers import save_tags, load_tags
+        from filetagger.app.bulk.service import bulk_retag
+        from filetagger.app.helpers import save_tags, load_tags
         
         # Setup
         py_files = [f for f in self.test_files if f.endswith('.py')]
@@ -318,8 +318,8 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_retag_dry_run(self):
         """Test tag renaming in dry run mode"""
-        from tagmanager.app.bulk.service import bulk_retag
-        from tagmanager.app.helpers import save_tags, load_tags
+        from filetagger.app.bulk.service import bulk_retag
+        from filetagger.app.helpers import save_tags, load_tags
         
         # Setup
         py_file = [f for f in self.test_files if f.endswith('.py')][0]
@@ -338,8 +338,8 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_retag_no_duplicates(self):
         """Test that renaming handles existing target tag"""
-        from tagmanager.app.bulk.service import bulk_retag
-        from tagmanager.app.helpers import save_tags, load_tags
+        from filetagger.app.bulk.service import bulk_retag
+        from filetagger.app.helpers import save_tags, load_tags
         
         # Setup with target tag already existing
         py_file = [f for f in self.test_files if f.endswith('.py')][0]
@@ -361,8 +361,8 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_retag_case_insensitive(self):
         """Test that bulk retag is case-insensitive"""
-        from tagmanager.app.bulk.service import bulk_retag
-        from tagmanager.app.helpers import save_tags, load_tags
+        from filetagger.app.bulk.service import bulk_retag
+        from filetagger.app.helpers import save_tags, load_tags
         
         # Setup
         py_file = [f for f in self.test_files if f.endswith('.py')][0]
@@ -380,9 +380,9 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_retag_journal_undo(self):
         """bulk_retag records journal inverse when TAGMANAGER_JOURNAL=1."""
-        from tagmanager.app.bulk.service import bulk_retag
-        from tagmanager.app.helpers import load_tags, save_tags
-        from tagmanager.app.journal.service import undo_last
+        from filetagger.app.bulk.service import bulk_retag
+        from filetagger.app.helpers import load_tags, save_tags
+        from filetagger.app.journal.service import undo_last
 
         py_file = [f for f in self.test_files if f.endswith(".py")][0]
         np = os.path.normpath(py_file)
@@ -411,8 +411,8 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_remove_tag_from_files_success(self):
         """Test successful tag removal from files"""
-        from tagmanager.app.bulk.service import bulk_remove_tag_from_files
-        from tagmanager.app.helpers import save_tags, load_tags
+        from filetagger.app.bulk.service import bulk_remove_tag_from_files
+        from filetagger.app.helpers import save_tags, load_tags
         
         # Setup
         py_files = [f for f in self.test_files if f.endswith('.py')]
@@ -437,8 +437,8 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_remove_tag_files_with_no_tags_left(self):
         """Test removing tag when files end up with no tags"""
-        from tagmanager.app.bulk.service import bulk_remove_tag_from_files
-        from tagmanager.app.helpers import save_tags, load_tags
+        from filetagger.app.bulk.service import bulk_remove_tag_from_files
+        from filetagger.app.helpers import save_tags, load_tags
         
         # Setup: file with only one tag
         py_file = [f for f in self.test_files if f.endswith('.py')][0]
@@ -464,8 +464,8 @@ class TestBulkService(unittest.TestCase):
 
     def test_bulk_remove_tag_from_files_dry_run(self):
         """Test tag removal from files in dry run mode"""
-        from tagmanager.app.bulk.service import bulk_remove_tag_from_files
-        from tagmanager.app.helpers import save_tags, load_tags
+        from filetagger.app.bulk.service import bulk_remove_tag_from_files
+        from filetagger.app.helpers import save_tags, load_tags
         
         # Setup
         py_file = [f for f in self.test_files if f.endswith('.py')][0]
@@ -483,11 +483,11 @@ class TestBulkService(unittest.TestCase):
         self.assertIn("remove", file_tags)
         self.assertIn("keep", file_tags)
 
-    @patch('tagmanager.app.bulk.service.save_tags')
+    @patch('filetagger.app.bulk.service.save_tags')
     def test_bulk_operations_save_failure(self, mock_save):
         """Test handling of save failure in bulk operations"""
-        from tagmanager.app.bulk.service import bulk_remove_by_tag, bulk_retag, bulk_remove_tag_from_files
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.bulk.service import bulk_remove_by_tag, bulk_retag, bulk_remove_tag_from_files
+        from filetagger.app.helpers import save_tags
         
         # Setup
         py_file = [f for f in self.test_files if f.endswith('.py')][0]

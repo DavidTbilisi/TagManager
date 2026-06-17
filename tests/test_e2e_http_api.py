@@ -1,4 +1,4 @@
-"""End-to-end tests for the TagManager HTTP API.
+"""End-to-end tests for the FileTagger HTTP API.
 
 A real ``ThreadingHTTPServer`` is started on an ephemeral port once per test
 class.  All service-layer calls that touch the filesystem are mocked inside
@@ -31,7 +31,7 @@ _PROJECT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT not in sys.path:
     sys.path.insert(0, _PROJECT)
 
-from tagmanager.app.http_api import _TagManagerHandler  # noqa: E402
+from filetagger.app.http_api import _FileTaggerHandler  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -181,7 +181,7 @@ class _ServerBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         port = _free_port()
-        cls._server = ThreadingHTTPServer(("127.0.0.1", port), _TagManagerHandler)
+        cls._server = ThreadingHTTPServer(("127.0.0.1", port), _FileTaggerHandler)
         cls._base = f"http://127.0.0.1:{port}"
         t = threading.Thread(target=cls._server.serve_forever, daemon=True)
         t.start()
@@ -211,7 +211,7 @@ class TestGetIndex(_ServerBase):
 
     def test_root_json_has_service_key(self):
         _, body = self.get("/")
-        self.assertEqual(body["service"], "tagmanager-cli")
+        self.assertEqual(body["service"], "filetagger-cli")
 
     def test_api_alias_matches_root(self):
         _, root = self.get("/")
@@ -303,24 +303,24 @@ class TestGetHtmlAssets(_ServerBase):
 
 
 class TestGetTags(_ServerBase):
-    @patch("tagmanager.app.http_api.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.http_api.load_tags", return_value=dict(_STORE))
     def test_returns_200_with_store(self, _mock):
         status, body = self.get("/api/v1/tags")
         self.assertEqual(status, 200)
         self.assertIn(_E2E_ALPHA, body)
 
-    @patch("tagmanager.app.http_api.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.http_api.load_tags", return_value=dict(_STORE))
     def test_file_tags_are_lists(self, _mock):
         _, body = self.get("/api/v1/tags")
         for tags in body.values():
             self.assertIsInstance(tags, list)
 
-    @patch("tagmanager.app.http_api.load_tags", return_value={})
+    @patch("filetagger.app.http_api.load_tags", return_value={})
     def test_empty_store_returns_empty_dict(self, _mock):
         _, body = self.get("/api/v1/tags")
         self.assertEqual(body, {})
 
-    @patch("tagmanager.app.http_api.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.http_api.load_tags", return_value=dict(_STORE))
     def test_content_type_is_json(self, _mock):
         req = urllib.request.Request(self._base + "/api/v1/tags")
         with urllib.request.urlopen(req, timeout=5) as resp:
@@ -335,33 +335,33 @@ class TestGetTags(_ServerBase):
 
 
 class TestGetAllTags(_ServerBase):
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
     def test_returns_ok_and_tags_list(self, _mock):
         status, body = self.get("/api/v1/all-tags")
         self.assertEqual(status, 200)
         self.assertTrue(body["ok"])
         self.assertIsInstance(body["tags"], list)
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
     def test_python_count_is_2(self, _mock):
         _, body = self.get("/api/v1/all-tags")
         by_tag = {t["tag"]: t["count"] for t in body["tags"]}
         self.assertEqual(by_tag["python"], 2)
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
     def test_sorted_descending_by_count(self, _mock):
         _, body = self.get("/api/v1/all-tags")
         counts = [t["count"] for t in body["tags"]]
         self.assertEqual(counts, sorted(counts, reverse=True))
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
     def test_unique_and_total_files_fields_present(self, _mock):
         _, body = self.get("/api/v1/all-tags")
         self.assertIn("unique", body)
         self.assertIn("total_files", body)
         self.assertEqual(body["total_files"], 3)
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value={})
+    @patch("filetagger.app.gui_handlers.load_tags", return_value={})
     def test_empty_store_returns_empty_list(self, _mock):
         _, body = self.get("/api/v1/all-tags")
         self.assertTrue(body["ok"])
@@ -374,7 +374,7 @@ class TestGetAllTags(_ServerBase):
 
 
 class TestGetStats(_ServerBase):
-    @patch("tagmanager.app.stats.service.get_overall_statistics",
+    @patch("filetagger.app.stats.service.get_overall_statistics",
            return_value=dict(_OVERALL_STATS))
     def test_returns_ok_and_stats(self, _mock):
         status, body = self.get("/api/v1/stats")
@@ -382,13 +382,13 @@ class TestGetStats(_ServerBase):
         self.assertTrue(body["ok"])
         self.assertEqual(body["total_files"], 3)
 
-    @patch("tagmanager.app.stats.service.get_overall_statistics",
+    @patch("filetagger.app.stats.service.get_overall_statistics",
            return_value=dict(_OVERALL_STATS))
     def test_unique_tags_field_present(self, _mock):
         _, body = self.get("/api/v1/stats")
         self.assertIn("unique_tags", body)
 
-    @patch("tagmanager.app.stats.service.get_overall_statistics",
+    @patch("filetagger.app.stats.service.get_overall_statistics",
            side_effect=RuntimeError("db locked"))
     def test_service_error_body_ok_false(self, _mock):
         # The /stats route always returns HTTP 200; errors are signalled in body.
@@ -404,20 +404,20 @@ class TestGetStats(_ServerBase):
 
 
 class TestGetAliasesAndPresets(_ServerBase):
-    @patch("tagmanager.app.alias.service.get_aliases", return_value=dict(_ALIASES))
+    @patch("filetagger.app.alias.service.get_aliases", return_value=dict(_ALIASES))
     def test_aliases_ok_and_map(self, _mock):
         status, body = self.get("/api/v1/aliases")
         self.assertEqual(status, 200)
         self.assertTrue(body["ok"])
         self.assertEqual(body["aliases"]["py"], "python")
 
-    @patch("tagmanager.app.alias.service.get_aliases", return_value={})
+    @patch("filetagger.app.alias.service.get_aliases", return_value={})
     def test_empty_aliases(self, _mock):
         _, body = self.get("/api/v1/aliases")
         self.assertTrue(body["ok"])
         self.assertEqual(body["aliases"], {})
 
-    @patch("tagmanager.app.preset.service.get_presets", return_value=dict(_PRESETS))
+    @patch("filetagger.app.preset.service.get_presets", return_value=dict(_PRESETS))
     def test_presets_ok_and_map(self, _mock):
         status, body = self.get("/api/v1/presets")
         self.assertEqual(status, 200)
@@ -431,7 +431,7 @@ class TestGetAliasesAndPresets(_ServerBase):
 
 
 class TestGetSearch(_ServerBase):
-    @patch("tagmanager.app.http_api.search_files_by_tags",
+    @patch("filetagger.app.http_api.search_files_by_tags",
            return_value=["/data/alpha.txt", "/data/beta.py"])
     def test_search_by_single_tag_returns_files(self, _mock):
         status, body = self.get("/api/v1/search?tags=python")
@@ -439,7 +439,7 @@ class TestGetSearch(_ServerBase):
         self.assertIn("files", body)
         self.assertEqual(len(body["files"]), 2)
 
-    @patch("tagmanager.app.http_api.search_files_by_tags",
+    @patch("filetagger.app.http_api.search_files_by_tags",
            return_value=["/data/alpha.txt"])
     def test_match_all_param_forwarded(self, mock_search):
         self.get("/api/v1/search?tags=python,docs&match_all=1")
@@ -447,7 +447,7 @@ class TestGetSearch(_ServerBase):
             ["python", "docs"], True, False, exclude_tags=None
         )
 
-    @patch("tagmanager.app.http_api.search_files_by_tags",
+    @patch("filetagger.app.http_api.search_files_by_tags",
            return_value=["/data/beta.py"])
     def test_exclude_param_forwarded(self, mock_search):
         self.get("/api/v1/search?tags=python&exclude=docs")
@@ -460,18 +460,18 @@ class TestGetSearch(_ServerBase):
         self.assertEqual(status, 400)
         self.assertIn("error", body)
 
-    @patch("tagmanager.app.http_api.combined_search",
+    @patch("filetagger.app.http_api.combined_search",
            return_value=["/data/alpha.txt"])
     def test_tags_plus_path_uses_combined_search(self, mock_combined):
         self.get("/api/v1/search?tags=python&path=data")
         mock_combined.assert_called_once()
 
-    @patch("tagmanager.app.http_api.search_files_by_tags", return_value=[])
+    @patch("filetagger.app.http_api.search_files_by_tags", return_value=[])
     def test_empty_result_returns_empty_files_list(self, _mock):
         _, body = self.get("/api/v1/search?tags=nosuchtag")
         self.assertEqual(body["files"], [])
 
-    @patch("tagmanager.app.http_api.search_files_by_tags",
+    @patch("filetagger.app.http_api.search_files_by_tags",
            return_value=["/data/alpha.txt"])
     def test_match_all_0_treated_as_false(self, mock_search):
         self.get("/api/v1/search?tags=python&match_all=0")
@@ -486,7 +486,7 @@ class TestGetSearch(_ServerBase):
 
 
 class TestGetPathTags(_ServerBase):
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_E2E_STORE))
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_E2E_STORE))
     def test_known_path_returns_tags(self, _mock):
         import urllib.parse
         # Use the same absolute path used as a key in _E2E_STORE.
@@ -502,7 +502,7 @@ class TestGetPathTags(_ServerBase):
         self.assertFalse(body["ok"])
 
     def test_files_tags_alias_returns_same_status(self):
-        with patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE)):
+        with patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE)):
             import urllib.parse
             p = urllib.parse.quote("/data/alpha.txt", safe="")
             s1, b1 = self.get(f"/api/v1/gui/path-tags?path={p}")
@@ -510,7 +510,7 @@ class TestGetPathTags(_ServerBase):
         self.assertEqual(s1, s2)
         self.assertEqual(b1["ok"], b2["ok"])
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
     def test_unknown_path_returns_empty_tags(self, _mock):
         import urllib.parse
         p = urllib.parse.quote("/data/unknown.txt", safe="")
@@ -525,7 +525,7 @@ class TestGetPathTags(_ServerBase):
 
 
 class TestGetTagStats(_ServerBase):
-    @patch("tagmanager.app.stats.service.get_tag_statistics",
+    @patch("filetagger.app.stats.service.get_tag_statistics",
            return_value=dict(_TAG_STATS))
     def test_returns_ok_and_tag_fields(self, _mock):
         status, body = self.get("/api/v1/stats/tag/python")
@@ -533,13 +533,13 @@ class TestGetTagStats(_ServerBase):
         self.assertTrue(body["ok"])
         self.assertEqual(body["files_with_tag"], 2)
 
-    @patch("tagmanager.app.stats.service.get_tag_statistics",
+    @patch("filetagger.app.stats.service.get_tag_statistics",
            return_value=dict(_TAG_STATS))
     def test_url_encoded_tag_name_decoded(self, mock_svc):
         self.get("/api/v1/stats/tag/my%20tag")
         mock_svc.assert_called_once_with("my tag")
 
-    @patch("tagmanager.app.stats.service.get_tag_statistics",
+    @patch("filetagger.app.stats.service.get_tag_statistics",
            side_effect=KeyError("not found"))
     def test_service_error_returns_400(self, _mock):
         status, body = self.get("/api/v1/stats/tag/ghost")
@@ -553,7 +553,7 @@ class TestGetTagStats(_ServerBase):
 
 
 class TestGetFilterDuplicates(_ServerBase):
-    @patch("tagmanager.app.filter.service.find_duplicate_tags",
+    @patch("filetagger.app.filter.service.find_duplicate_tags",
            return_value=dict(_DUPLICATE_RESULT))
     def test_returns_ok_and_groups(self, _mock):
         status, body = self.get("/api/v1/filter/duplicates")
@@ -562,7 +562,7 @@ class TestGetFilterDuplicates(_ServerBase):
         self.assertIsInstance(body["groups"], list)
         self.assertGreater(len(body["groups"]), 0)
 
-    @patch("tagmanager.app.filter.service.find_duplicate_tags",
+    @patch("filetagger.app.filter.service.find_duplicate_tags",
            return_value=dict(_DUPLICATE_RESULT))
     def test_group_tags_are_lists_not_tuples(self, _mock):
         """Tuple keys must be converted so the JSON round-trip works."""
@@ -570,7 +570,7 @@ class TestGetFilterDuplicates(_ServerBase):
         for grp in body["groups"]:
             self.assertIsInstance(grp["tags"], list)
 
-    @patch("tagmanager.app.filter.service.find_duplicate_tags",
+    @patch("filetagger.app.filter.service.find_duplicate_tags",
            return_value={"duplicates": {}, "duplicate_groups": 0,
                          "duplicate_files_count": 0, "total_files": 5, "message": ""})
     def test_no_duplicates_returns_empty_groups(self, _mock):
@@ -578,7 +578,7 @@ class TestGetFilterDuplicates(_ServerBase):
         self.assertTrue(body["ok"])
         self.assertEqual(body["groups"], [])
 
-    @patch("tagmanager.app.filter.service.find_duplicate_tags",
+    @patch("filetagger.app.filter.service.find_duplicate_tags",
            side_effect=RuntimeError("err"))
     def test_service_error_body_ok_false(self, _mock):
         # Filter routes always return HTTP 200; errors are in body["ok"].
@@ -586,7 +586,7 @@ class TestGetFilterDuplicates(_ServerBase):
         self.assertEqual(status, 200)
         self.assertFalse(body["ok"])
 
-    @patch("tagmanager.app.filter.service.find_duplicate_tags",
+    @patch("filetagger.app.filter.service.find_duplicate_tags",
            return_value=dict(_DUPLICATE_RESULT))
     def test_response_has_group_count_and_file_count(self, _mock):
         _, body = self.get("/api/v1/filter/duplicates")
@@ -600,7 +600,7 @@ class TestGetFilterDuplicates(_ServerBase):
 
 
 class TestGetFilterOrphans(_ServerBase):
-    @patch("tagmanager.app.filter.service.find_orphaned_files",
+    @patch("filetagger.app.filter.service.find_orphaned_files",
            return_value=dict(_ORPHAN_RESULT))
     def test_returns_ok_and_orphans(self, _mock):
         status, body = self.get("/api/v1/filter/orphans")
@@ -608,14 +608,14 @@ class TestGetFilterOrphans(_ServerBase):
         self.assertTrue(body["ok"])
         self.assertEqual(body["count"], 1)
 
-    @patch("tagmanager.app.filter.service.find_orphaned_files",
+    @patch("filetagger.app.filter.service.find_orphaned_files",
            return_value={"orphans": [], "orphan_count": 0, "total_files": 3, "message": ""})
     def test_no_orphans_returns_empty_list(self, _mock):
         _, body = self.get("/api/v1/filter/orphans")
         self.assertTrue(body["ok"])
         self.assertEqual(body["orphans"], [])
 
-    @patch("tagmanager.app.filter.service.find_orphaned_files",
+    @patch("filetagger.app.filter.service.find_orphaned_files",
            side_effect=RuntimeError("err"))
     def test_service_error_body_ok_false(self, _mock):
         status, body = self.get("/api/v1/filter/orphans")
@@ -629,7 +629,7 @@ class TestGetFilterOrphans(_ServerBase):
 
 
 class TestGetFilterClusters(_ServerBase):
-    @patch("tagmanager.app.filter.service.find_tag_clusters",
+    @patch("filetagger.app.filter.service.find_tag_clusters",
            return_value=dict(_CLUSTER_RESULT))
     def test_returns_ok_and_clusters(self, _mock):
         status, body = self.get("/api/v1/filter/clusters")
@@ -637,26 +637,26 @@ class TestGetFilterClusters(_ServerBase):
         self.assertTrue(body["ok"])
         self.assertGreater(len(body["clusters"]), 0)
 
-    @patch("tagmanager.app.filter.service.find_tag_clusters",
+    @patch("filetagger.app.filter.service.find_tag_clusters",
            return_value=dict(_CLUSTER_RESULT))
     def test_default_min_size_is_2(self, mock_svc):
         self.get("/api/v1/filter/clusters")
         mock_svc.assert_called_once_with(min_cluster_size=2)
 
-    @patch("tagmanager.app.filter.service.find_tag_clusters",
+    @patch("filetagger.app.filter.service.find_tag_clusters",
            return_value=dict(_CLUSTER_RESULT))
     def test_custom_min_size_forwarded(self, mock_svc):
         self.get("/api/v1/filter/clusters?min_size=5")
         mock_svc.assert_called_once_with(min_cluster_size=5)
 
-    @patch("tagmanager.app.filter.service.find_tag_clusters",
+    @patch("filetagger.app.filter.service.find_tag_clusters",
            return_value={"clusters": {}, "total_files": 0})
     def test_empty_clusters_returns_empty_list(self, _mock):
         _, body = self.get("/api/v1/filter/clusters")
         self.assertTrue(body["ok"])
         self.assertEqual(body["clusters"], [])
 
-    @patch("tagmanager.app.filter.service.find_tag_clusters",
+    @patch("filetagger.app.filter.service.find_tag_clusters",
            side_effect=RuntimeError("err"))
     def test_service_error_body_ok_false(self, _mock):
         status, body = self.get("/api/v1/filter/clusters")
@@ -670,7 +670,7 @@ class TestGetFilterClusters(_ServerBase):
 
 
 class TestGetFilterIsolated(_ServerBase):
-    @patch("tagmanager.app.filter.service.find_isolated_files",
+    @patch("filetagger.app.filter.service.find_isolated_files",
            return_value=dict(_ISOLATED_RESULT))
     def test_returns_ok_and_isolated(self, _mock):
         status, body = self.get("/api/v1/filter/isolated")
@@ -678,26 +678,26 @@ class TestGetFilterIsolated(_ServerBase):
         self.assertTrue(body["ok"])
         self.assertEqual(body["count"], 1)
 
-    @patch("tagmanager.app.filter.service.find_isolated_files",
+    @patch("filetagger.app.filter.service.find_isolated_files",
            return_value=dict(_ISOLATED_RESULT))
     def test_default_max_shared_is_1(self, mock_svc):
         self.get("/api/v1/filter/isolated")
         mock_svc.assert_called_once_with(max_shared_tags=1)
 
-    @patch("tagmanager.app.filter.service.find_isolated_files",
+    @patch("filetagger.app.filter.service.find_isolated_files",
            return_value=dict(_ISOLATED_RESULT))
     def test_custom_max_shared_forwarded(self, mock_svc):
         self.get("/api/v1/filter/isolated?max_shared=3")
         mock_svc.assert_called_once_with(max_shared_tags=3)
 
-    @patch("tagmanager.app.filter.service.find_isolated_files",
+    @patch("filetagger.app.filter.service.find_isolated_files",
            return_value={"isolated_files": [], "total_files": 0})
     def test_empty_returns_empty_list(self, _mock):
         _, body = self.get("/api/v1/filter/isolated")
         self.assertTrue(body["ok"])
         self.assertEqual(body["isolated"], [])
 
-    @patch("tagmanager.app.filter.service.find_isolated_files",
+    @patch("filetagger.app.filter.service.find_isolated_files",
            side_effect=RuntimeError("err"))
     def test_service_error_body_ok_false(self, _mock):
         status, body = self.get("/api/v1/filter/isolated")
@@ -734,8 +734,8 @@ class TestGetUnknownRoutes(_ServerBase):
 
 
 class TestPostAddTags(_ServerBase):
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
-    @patch("tagmanager.app.gui_handlers.add_tags", return_value=True)
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.add_tags", return_value=True)
     @patch("os.path.isfile", return_value=True)
     def test_add_tags_success(self, _isfile, _add, _load):
         status, body = self.post(
@@ -745,8 +745,8 @@ class TestPostAddTags(_ServerBase):
         self.assertEqual(status, 200)
         self.assertTrue(body["ok"])
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
-    @patch("tagmanager.app.gui_handlers.add_tags", return_value=True)
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.add_tags", return_value=True)
     @patch("os.path.isfile", return_value=True)
     def test_add_tags_add_service_called_with_correct_args(self, _isfile, mock_add, _load):
         self.post(
@@ -757,8 +757,8 @@ class TestPostAddTags(_ServerBase):
         call_args = mock_add.call_args
         self.assertIn("newtag", call_args[0][1])
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
-    @patch("tagmanager.app.gui_handlers.add_tags")
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.add_tags")
     @patch("os.path.isfile", return_value=True)
     def test_dry_run_does_not_call_add_tags(self, _isfile, mock_add, _load):
         status, body = self.post(
@@ -770,7 +770,7 @@ class TestPostAddTags(_ServerBase):
         self.assertTrue(body.get("dry_run"))
         mock_add.assert_not_called()
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
     @patch("os.path.isfile", return_value=True)
     def test_dry_run_returns_tags_before_and_after(self, _isfile, _load):
         _, body = self.post(
@@ -796,7 +796,7 @@ class TestPostAddTags(_ServerBase):
         self.assertEqual(status, 400)
         self.assertFalse(body["ok"])
 
-    @patch("tagmanager.app.gui_handlers.add_tags", return_value=False)
+    @patch("filetagger.app.gui_handlers.add_tags", return_value=False)
     @patch("os.path.isfile", return_value=True)
     def test_add_tags_failure_returns_400(self, _isfile, _add):
         status, body = self.post(
@@ -806,8 +806,8 @@ class TestPostAddTags(_ServerBase):
         self.assertEqual(status, 400)
         self.assertFalse(body["ok"])
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
-    @patch("tagmanager.app.gui_handlers.add_tags", return_value=True)
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.add_tags", return_value=True)
     @patch("os.path.isfile", return_value=True)
     def test_non_list_tags_treated_as_empty(self, _isfile, _add, _load):
         """Non-list tags value mustn't crash the server."""
@@ -824,8 +824,8 @@ class TestPostAddTags(_ServerBase):
 
 
 class TestPostRemove(_ServerBase):
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_E2E_STORE))
-    @patch("tagmanager.app.gui_handlers._remove_path", return_value=None)
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_E2E_STORE))
+    @patch("filetagger.app.gui_handlers._remove_path", return_value=None)
     def test_mode_path_success(self, mock_rm, _load):
         status, body = self.post(
             "/api/v1/gui/remove",
@@ -835,7 +835,7 @@ class TestPostRemove(_ServerBase):
         self.assertTrue(body["ok"])
         mock_rm.assert_called_once()
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value={})
+    @patch("filetagger.app.gui_handlers.load_tags", return_value={})
     def test_mode_path_not_in_db_returns_400(self, _load):
         status, body = self.post(
             "/api/v1/gui/remove",
@@ -844,7 +844,7 @@ class TestPostRemove(_ServerBase):
         self.assertEqual(status, 400)
         self.assertFalse(body["ok"])
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value={})
+    @patch("filetagger.app.gui_handlers.load_tags", return_value={})
     def test_mode_path_dry_run_returns_200_preview(self, _load):
         status, body = self.post(
             "/api/v1/gui/remove",
@@ -854,7 +854,7 @@ class TestPostRemove(_ServerBase):
         self.assertTrue(body["ok"])
         self.assertTrue(body["dry_run"])
 
-    @patch("tagmanager.app.gui_handlers.remove_all_tags",
+    @patch("filetagger.app.gui_handlers.remove_all_tags",
            return_value={"success": True, "message": "cleared"})
     def test_mode_clear_tags_success(self, mock_clear):
         status, body = self.post(
@@ -873,9 +873,9 @@ class TestPostRemove(_ServerBase):
         self.assertEqual(status, 200)
         self.assertTrue(body["dry_run"])
 
-    @patch("tagmanager.app.gui_handlers.load_tags",
+    @patch("filetagger.app.gui_handlers.load_tags",
            return_value={_E2E_ALPHA: ["python", "docs"]})
-    @patch("tagmanager.app.gui_handlers.save_tags", return_value=True)
+    @patch("filetagger.app.gui_handlers.save_tags", return_value=True)
     def test_mode_one_tag_removes_tag(self, _save, _load):
         status, body = self.post(
             "/api/v1/gui/remove",
@@ -901,7 +901,7 @@ class TestPostRemove(_ServerBase):
 
     def test_empty_path_returns_400(self):
         # empty path normalises to cwd, which is not in a restricted store
-        with patch("tagmanager.app.gui_handlers.load_tags", return_value={}):
+        with patch("filetagger.app.gui_handlers.load_tags", return_value={}):
             status, body = self.post("/api/v1/gui/remove", {"mode": "path"})
         # Should be 400 (not in DB or some other guard)
         self.assertEqual(status, 400)
@@ -913,7 +913,7 @@ class TestPostRemove(_ServerBase):
 
 
 class TestPostAliases(_ServerBase):
-    @patch("tagmanager.app.alias.service.add_alias", return_value=True)
+    @patch("filetagger.app.alias.service.add_alias", return_value=True)
     def test_set_alias_success(self, mock_add):
         status, body = self.post(
             "/api/v1/aliases/set",
@@ -936,21 +936,21 @@ class TestPostAliases(_ServerBase):
         status, body = self.post("/api/v1/aliases/set", {"alias": "py", "canonical": ""})
         self.assertEqual(status, 400)
 
-    @patch("tagmanager.app.alias.service.add_alias", return_value=False)
+    @patch("filetagger.app.alias.service.add_alias", return_value=False)
     def test_set_alias_service_false_returns_400(self, _mock):
         status, body = self.post(
             "/api/v1/aliases/set", {"alias": "x", "canonical": "x"}
         )
         self.assertEqual(status, 400)
 
-    @patch("tagmanager.app.alias.service.remove_alias", return_value=True)
+    @patch("filetagger.app.alias.service.remove_alias", return_value=True)
     def test_delete_alias_success(self, mock_rm):
         status, body = self.post("/api/v1/aliases/delete", {"alias": "py"})
         self.assertEqual(status, 200)
         self.assertTrue(body["ok"])
         mock_rm.assert_called_once_with("py")
 
-    @patch("tagmanager.app.alias.service.remove_alias", return_value=False)
+    @patch("filetagger.app.alias.service.remove_alias", return_value=False)
     def test_delete_nonexistent_alias_returns_400(self, _mock):
         status, body = self.post("/api/v1/aliases/delete", {"alias": "ghost"})
         self.assertEqual(status, 400)
@@ -966,7 +966,7 @@ class TestPostAliases(_ServerBase):
 
 
 class TestPostPresets(_ServerBase):
-    @patch("tagmanager.app.preset.service.save_preset", return_value=True)
+    @patch("filetagger.app.preset.service.save_preset", return_value=True)
     def test_set_preset_success(self, mock_save):
         status, body = self.post(
             "/api/v1/presets/set",
@@ -984,26 +984,26 @@ class TestPostPresets(_ServerBase):
         status, body = self.post("/api/v1/presets/set", {"name": "x"})
         self.assertEqual(status, 400)
 
-    @patch("tagmanager.app.preset.service.save_preset", return_value=False)
+    @patch("filetagger.app.preset.service.save_preset", return_value=False)
     def test_set_preset_service_false_returns_400(self, _mock):
         status, _ = self.post("/api/v1/presets/set", {"name": "x", "tags": ["t"]})
         self.assertEqual(status, 400)
 
     def test_set_preset_non_list_tags_handled(self):
-        with patch("tagmanager.app.preset.service.save_preset", return_value=True):
+        with patch("filetagger.app.preset.service.save_preset", return_value=True):
             status, _ = self.post(
                 "/api/v1/presets/set", {"name": "x", "tags": "not-a-list"}
             )
         self.assertIn(status, (200, 400))
 
-    @patch("tagmanager.app.preset.service.delete_preset", return_value=True)
+    @patch("filetagger.app.preset.service.delete_preset", return_value=True)
     def test_delete_preset_success(self, mock_del):
         status, body = self.post("/api/v1/presets/delete", {"name": "mypre"})
         self.assertEqual(status, 200)
         self.assertTrue(body["ok"])
         mock_del.assert_called_once_with("mypre")
 
-    @patch("tagmanager.app.preset.service.delete_preset", return_value=False)
+    @patch("filetagger.app.preset.service.delete_preset", return_value=False)
     def test_delete_nonexistent_preset_returns_400(self, _mock):
         status, _ = self.post("/api/v1/presets/delete", {"name": "ghost"})
         self.assertEqual(status, 400)
@@ -1019,7 +1019,7 @@ class TestPostPresets(_ServerBase):
 
 
 class TestPostBulk(_ServerBase):
-    @patch("tagmanager.app.bulk.service.find_files_by_pattern",
+    @patch("filetagger.app.bulk.service.find_files_by_pattern",
            return_value=["/data/a.py", "/data/b.py"])
     def test_bulk_preview_returns_files(self, mock_find):
         status, body = self.post(
@@ -1036,12 +1036,12 @@ class TestPostBulk(_ServerBase):
         status, body = self.post("/api/v1/bulk/preview", {"pattern": "*.py"})
         self.assertEqual(status, 400)
 
-    @patch("tagmanager.app.bulk.service.find_files_by_pattern", return_value=[])
+    @patch("filetagger.app.bulk.service.find_files_by_pattern", return_value=[])
     def test_bulk_preview_no_pattern_defaults_to_glob_all(self, mock_find):
         self.post("/api/v1/bulk/preview", {"tags": ["x"]})
         mock_find.assert_called_once_with("**/*", ".")
 
-    @patch("tagmanager.app.bulk.service.bulk_add_tags",
+    @patch("filetagger.app.bulk.service.bulk_add_tags",
            return_value={"success": True, "tagged_files": ["/data/a.py"],
                          "ok": True, "total_tagged": 1})
     def test_bulk_add_success(self, mock_bulk):
@@ -1064,7 +1064,7 @@ class TestPostBulk(_ServerBase):
 
 
 class TestPostOpen(_ServerBase):
-    @patch("tagmanager.app.gui_handlers.open_path_handler",
+    @patch("filetagger.app.gui_handlers.open_path_handler",
            return_value={"ok": True, "mode": "file", "path": "/data/alpha.txt",
                          "message": "opened /data/alpha.txt"})
     def test_open_file_calls_handler(self, mock_handler):
@@ -1075,7 +1075,7 @@ class TestPostOpen(_ServerBase):
         self.assertTrue(body["ok"])
         mock_handler.assert_called_once_with("/data/alpha.txt", "file")
 
-    @patch("tagmanager.app.gui_handlers.open_path_handler",
+    @patch("filetagger.app.gui_handlers.open_path_handler",
            return_value={"ok": True, "mode": "folder", "path": "/data",
                          "message": "opened folder of /data/alpha.txt"})
     def test_open_folder_calls_handler(self, mock_handler):
@@ -1085,14 +1085,14 @@ class TestPostOpen(_ServerBase):
         self.assertEqual(status, 200)
         mock_handler.assert_called_once_with("/data/alpha.txt", "folder")
 
-    @patch("tagmanager.app.gui_handlers.open_path_handler",
+    @patch("filetagger.app.gui_handlers.open_path_handler",
            return_value={"ok": False, "error": "path does not exist"})
     def test_failed_open_returns_400(self, _mock):
         status, body = self.post("/api/v1/open", {"path": "/does/not/exist"})
         self.assertEqual(status, 400)
         self.assertFalse(body["ok"])
 
-    @patch("tagmanager.app.gui_handlers.open_path_handler",
+    @patch("filetagger.app.gui_handlers.open_path_handler",
            return_value={"ok": True, "mode": "file", "path": "/data/a.txt",
                          "message": "opened"})
     def test_default_mode_is_file(self, mock_handler):
@@ -1106,7 +1106,7 @@ class TestPostOpen(_ServerBase):
 
 
 class TestPostClean(_ServerBase):
-    @patch("tagmanager.app.move.service.clean_missing",
+    @patch("filetagger.app.move.service.clean_missing",
            return_value=dict(_CLEAN_DRY_RESULT))
     def test_dry_run_returns_missing_list(self, _mock):
         status, body = self.post("/api/v1/clean", {"dry_run": True})
@@ -1116,7 +1116,7 @@ class TestPostClean(_ServerBase):
         self.assertEqual(body["count"], 2)
         self.assertEqual(len(body["missing"]), 2)
 
-    @patch("tagmanager.app.move.service.clean_missing",
+    @patch("filetagger.app.move.service.clean_missing",
            return_value=dict(_CLEAN_REAL_RESULT))
     def test_real_clean_returns_ok(self, _mock):
         status, body = self.post("/api/v1/clean", {"dry_run": False})
@@ -1124,13 +1124,13 @@ class TestPostClean(_ServerBase):
         self.assertTrue(body["ok"])
         self.assertFalse(body["dry_run"])
 
-    @patch("tagmanager.app.move.service.clean_missing",
+    @patch("filetagger.app.move.service.clean_missing",
            return_value=dict(_CLEAN_DRY_RESULT))
     def test_dry_run_defaults_to_true_when_omitted(self, mock_svc):
         self.post("/api/v1/clean", {})
         mock_svc.assert_called_once_with(dry_run=True)
 
-    @patch("tagmanager.app.move.service.clean_missing",
+    @patch("filetagger.app.move.service.clean_missing",
            return_value={"success": False, "dry_run": True,
                          "missing": [], "count": 0, "message": "failed"})
     def test_service_success_false_returns_400(self, _mock):
@@ -1138,7 +1138,7 @@ class TestPostClean(_ServerBase):
         self.assertEqual(status, 400)
         self.assertFalse(body["ok"])
 
-    @patch("tagmanager.app.move.service.clean_missing",
+    @patch("filetagger.app.move.service.clean_missing",
            side_effect=RuntimeError("disk error"))
     def test_service_exception_returns_400(self, _mock):
         status, body = self.post("/api/v1/clean", {"dry_run": True})
@@ -1152,7 +1152,7 @@ class TestPostClean(_ServerBase):
 
 
 class TestPostRpc(_ServerBase):
-    @patch("tagmanager.app.http_api.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.http_api.load_tags", return_value=dict(_STORE))
     def test_tags_list_method_returns_result(self, _mock):
         status, body = self.post(
             "/api/v1/rpc",
@@ -1162,7 +1162,7 @@ class TestPostRpc(_ServerBase):
         self.assertIn("result", body)
         self.assertNotIn("error", body)
 
-    @patch("tagmanager.app.http_api.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.http_api.load_tags", return_value=dict(_STORE))
     def test_tags_list_preserves_request_id(self, _mock):
         _, body = self.post(
             "/api/v1/rpc",
@@ -1170,7 +1170,7 @@ class TestPostRpc(_ServerBase):
         )
         self.assertEqual(body["id"], 42)
 
-    @patch("tagmanager.app.http_api.search_files_by_tags",
+    @patch("filetagger.app.http_api.search_files_by_tags",
            return_value=["/data/alpha.txt"])
     def test_search_files_method_returns_files(self, _mock):
         status, body = self.post(
@@ -1181,7 +1181,7 @@ class TestPostRpc(_ServerBase):
         self.assertEqual(status, 200)
         self.assertEqual(len(body["result"]), 1)
 
-    @patch("tagmanager.app.http_api.combined_search",
+    @patch("filetagger.app.http_api.combined_search",
            return_value=["/data/alpha.txt"])
     def test_search_files_with_path_uses_combined_search(self, mock_cs):
         self.post(
@@ -1224,7 +1224,7 @@ class TestPostRpc(_ServerBase):
         self.assertEqual(body["error"]["code"], -32700)
         self.assertIsNone(body["id"])
 
-    @patch("tagmanager.app.http_api.search_files_by_tags", return_value=[])
+    @patch("filetagger.app.http_api.search_files_by_tags", return_value=[])
     def test_exclude_parameter_forwarded_in_rpc(self, mock_search):
         self.post(
             "/api/v1/rpc",
@@ -1281,7 +1281,7 @@ class TestPostUnknownRoutes(_ServerBase):
 
 
 class TestResponseHeaders(_ServerBase):
-    @patch("tagmanager.app.http_api.load_tags", return_value={})
+    @patch("filetagger.app.http_api.load_tags", return_value={})
     def test_json_endpoint_has_json_utf8_content_type(self, _mock):
         req = urllib.request.Request(self._base + "/api/v1/tags")
         with urllib.request.urlopen(req, timeout=5) as resp:
@@ -1296,7 +1296,7 @@ class TestResponseHeaders(_ServerBase):
         self.assertIn("text/html", ct)
         self.assertIn("utf-8", ct.lower())
 
-    @patch("tagmanager.app.http_api.load_tags", return_value={})
+    @patch("filetagger.app.http_api.load_tags", return_value={})
     def test_content_length_header_is_present_and_positive(self, _mock):
         req = urllib.request.Request(self._base + "/api/v1/tags")
         with urllib.request.urlopen(req, timeout=5) as resp:
@@ -1339,7 +1339,7 @@ class TestEdgeCases(_ServerBase):
             status = exc.code
         self.assertIn(status, (200, 400))
 
-    @patch("tagmanager.app.http_api.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.http_api.load_tags", return_value=dict(_STORE))
     def test_concurrent_get_requests_all_succeed(self, _mock):
         def _req(_):
             return self.get("/api/v1/tags")[0]
@@ -1348,8 +1348,8 @@ class TestEdgeCases(_ServerBase):
             statuses = list(pool.map(_req, range(20)))
         self.assertTrue(all(s == 200 for s in statuses), statuses)
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
-    @patch("tagmanager.app.gui_handlers.add_tags", return_value=True)
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.add_tags", return_value=True)
     @patch("os.path.isfile", return_value=True)
     def test_large_tag_list_does_not_crash_server(self, _isfile, _add, _load):
         big_tags = [f"tag-{i}" for i in range(500)]
@@ -1359,19 +1359,19 @@ class TestEdgeCases(_ServerBase):
         )
         self.assertIn(status, (200, 400))
 
-    @patch("tagmanager.app.http_api.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.http_api.load_tags", return_value=dict(_STORE))
     def test_get_after_post_still_works(self, _mock):
         """Ensure the server stays healthy after handling POST requests."""
-        with patch("tagmanager.app.gui_handlers.load_tags", return_value={}):
+        with patch("filetagger.app.gui_handlers.load_tags", return_value={}):
             self.post("/api/v1/aliases/set", {"alias": "py", "canonical": "python"})
         # Now a GET should still work fine
-        with patch("tagmanager.app.http_api.load_tags", return_value=dict(_STORE)):
+        with patch("filetagger.app.http_api.load_tags", return_value=dict(_STORE)):
             status, body = self.get("/api/v1/tags")
         self.assertEqual(status, 200)
 
     def test_unicode_in_post_body_handled(self):
         """UTF-8 encoded Unicode tag names must not crash the server."""
-        with patch("tagmanager.app.alias.service.add_alias", return_value=True):
+        with patch("filetagger.app.alias.service.add_alias", return_value=True):
             status, _ = self.post(
                 "/api/v1/aliases/set",
                 {"alias": "αβγ", "canonical": "greek"},

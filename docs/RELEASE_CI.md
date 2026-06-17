@@ -6,7 +6,7 @@ Pushing a **git tag** matching `v*` (for example `v1.7.0`) runs [`.github/workfl
 
 The workflow uses **OIDC** (no `PYPI_API_TOKEN` in the repo).
 
-1. PyPI → **tagmanager-cli** → **Publishing** → trusted publisher **GitHub**: this repository, workflow **`release.yml`**, environment *(leave blank unless you use a GitHub Environment)*.
+1. PyPI → **filetagger-cli** → **Publishing** → trusted publisher **GitHub**: this repository, workflow **`release.yml`**, environment *(leave blank unless you use a GitHub Environment)*.
 2. Workflow must keep `permissions: id-token: write` (already set).
 
 Official guide: [Adding a trusted publisher to your PyPI project](https://docs.pypi.org/trusted-publishers/adding-a-publishing-source/).
@@ -28,7 +28,7 @@ Create the token at [PyPI account tokens](https://pypi.org/manage/account/token/
 
 Requires [GitHub CLI](https://cli.github.com/) (`gh`) authenticated for this repo (`gh auth login`).
 
-1. Bump version (`python bump_version.py patch|minor|major --no-git` or edit `pyproject.toml` + `tagmanager/__init__.py`).
+1. Bump version (`python bump_version.py patch|minor|major --no-git` or edit `pyproject.toml` + `filetagger/__init__.py`).
 2. Update `release_notes.md` and merge to the default branch (`main` / `master`).
 3. On that branch at the release commit, create the GitHub release (this **creates and pushes** the `v*` tag, which starts the PyPI workflow):
 
@@ -36,7 +36,7 @@ Requires [GitHub CLI](https://cli.github.com/) (`gh`) authenticated for this rep
    ./publish.sh release
    ```
 
-   Same as `gh release create vX.Y.Z --title "TagManager vX.Y.Z" --notes-file release_notes.md` with `vX.Y.Z` taken from `pyproject.toml`. Flags: `./publish.sh release --draft`, `./publish.sh release --dry-run`.
+   Same as `gh release create vX.Y.Z --title "FileTagger vX.Y.Z" --notes-file release_notes.md` with `vX.Y.Z` taken from `pyproject.toml`. Flags: `./publish.sh release --draft`, `./publish.sh release --dry-run`.
 
    Manual alternative: `gh release create …` with `--generate-notes` instead of `--notes-file`.
 

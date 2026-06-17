@@ -2,14 +2,14 @@
 
 ## 📋 **Current Status Analysis**
 
-Your TagManager project has accumulated some legacy files and build artifacts during development. Here's what can be cleaned up:
+Your FileTagger project has accumulated some legacy files and build artifacts during development. Here's what can be cleaned up:
 
 ## 🗑️ **Files That Can Be Safely Removed**
 
 ### **1. Legacy Files (Replaced by New Architecture)**
 
-- ✅ `tm.py` - Old main CLI file (replaced by `tagmanager/cli.py`)
-- ✅ `config.ini` - Old configuration (replaced by `tagmanager/config_manager.py`)
+- ✅ `tm.py` - Old main CLI file (replaced by `filetagger/cli.py`)
+- ✅ `config.ini` - Old configuration (replaced by `filetagger/config_manager.py`)
 - ✅ `configReader.py` - Old config reader (replaced by new system)
 - ✅ `configWriter.py` - Old config writer (replaced by new system)
 - ✅ `tm.bat` - Old Windows batch file
@@ -25,8 +25,8 @@ Your TagManager project has accumulated some legacy files and build artifacts du
 ### **3. Build Artifacts**
 
 - ✅ `__pycache__/` - Python bytecode cache
-- ✅ `tagmanager/app/__pycache__/` - Module cache directories
-- ✅ `tagmanager_cli.egg-info/` - Build metadata
+- ✅ `filetagger/app/__pycache__/` - Module cache directories
+- ✅ `filetagger_cli.egg-info/` - Build metadata
 - ✅ `dist/` - Distribution files (can be regenerated)
 - ✅ `build/` - Build directory (can be regenerated)
 
@@ -64,16 +64,16 @@ rm -rf tests/ tests.py
 **Remove build artifacts:**
 
 ```bash
-rm -rf __pycache__ tagmanager/app/__pycache__
-rm -rf tagmanager_cli.egg-info dist build
-find tagmanager/app -name "__pycache__" -type d -exec rm -rf {} +
+rm -rf __pycache__ filetagger/app/__pycache__
+rm -rf filetagger_cli.egg-info dist build
+find filetagger/app -name "__pycache__" -type d -exec rm -rf {} +
 ```
 
 ## 📁 **What Should Remain**
 
 ### **Essential Files**
 
-- ✅ `tagmanager/` - Main package directory
+- ✅ `filetagger/` - Main package directory
 - ✅ `pyproject.toml` - Package configuration
 - ✅ `requirements.txt` - Dependencies
 - ✅ `README.md` - Main documentation
@@ -101,8 +101,8 @@ find tagmanager/app -name "__pycache__" -type d -exec rm -rf {} +
 ### **Cleaner Project Structure**
 
 ```
-TagManager/
-├── tagmanager/           # Main package
+FileTagger/
+├── filetagger/           # Main package
 ├── *.md                  # Documentation
 ├── pyproject.toml        # Package config
 ├── requirements.txt      # Dependencies
@@ -148,7 +148,7 @@ pip install -r requirements.txt
 
 ```bash
 # Python will recreate __pycache__ automatically
-python -c "import tagmanager"
+python -c "import filetagger"
 ```
 
 ## ⚠️ **Safety Notes**
@@ -162,7 +162,7 @@ python -c "import tagmanager"
 
 ### **What to Keep**
 
-- ❌ Don't remove `tagmanager/` directory
+- ❌ Don't remove `filetagger/` directory
 - ❌ Don't remove `pyproject.toml`
 - ❌ Don't remove documentation files
 - ❌ Don't remove automation scripts
@@ -179,7 +179,7 @@ After cleanup, you'll have a **clean, professional project structure** with:
 - **Easy maintenance**
 - **Ready for distribution**
 
-Your TagManager project will be **production-ready** and **easy to understand** for new contributors!
+Your FileTagger project will be **production-ready** and **easy to understand** for new contributors!
 
 ---
 

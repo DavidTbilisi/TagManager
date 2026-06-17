@@ -1,8 +1,8 @@
 #!/bin/bash
-# TagManager Project Cleanup Script
+# FileTagger Project Cleanup Script
 # Removes unused files and folders to keep the project clean
 
-echo "🧹 TagManager Project Cleanup"
+echo "🧹 FileTagger Project Cleanup"
 echo "============================="
 
 # Function to safely remove files/directories
@@ -42,11 +42,11 @@ echo "🏗️  Removing build artifacts..."
 
 # Python cache directories
 safe_remove "__pycache__"
-safe_remove "tagmanager/app/__pycache__"
-find tagmanager/app -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+safe_remove "filetagger/app/__pycache__"
+find filetagger/app -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 
 # Build artifacts
-safe_remove "tagmanager_cli.egg-info"
+safe_remove "filetagger_cli.egg-info"
 safe_remove "dist"
 safe_remove "build"
 
@@ -59,7 +59,7 @@ echo ""
 echo "✅ Cleanup complete!"
 echo ""
 echo "📋 Remaining important files:"
-echo "   • tagmanager/ - Main package directory"
+echo "   • filetagger/ - Main package directory"
 echo "   • pyproject.toml - Package configuration"
 echo "   • requirements.txt - Dependencies"
 echo "   • README.md - Documentation"

@@ -1,9 +1,9 @@
 {
   "_comment": "Add this to your Claude Desktop claude_desktop_config.json under 'mcpServers'",
   "mcpServers": {
-    "tagmanager": {
+    "filetagger": {
       "command": "py",
-      "args": ["-m", "tagmanager.mcp_server"],
+      "args": ["-m", "filetagger.mcp_server"],
       "cwd": "D:\\Code\\TagManager"
     }
   }

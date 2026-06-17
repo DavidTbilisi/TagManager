@@ -1,6 +1,6 @@
-Feature: MCP/AI wrapper for TagManager CLI
+Feature: MCP/AI wrapper for FileTagger CLI
   As a developer or automation tool
-  I want to provide an MCP-compatible API that wraps the existing TagManager CLI
+  I want to provide an MCP-compatible API that wraps the existing FileTagger CLI
   So that I can add AI-powered features and integrate with other tools without changing the core CLI
 
   Scenario: AI-powered auto-tagging via wrapper

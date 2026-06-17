@@ -17,11 +17,11 @@ class TestBulkHandlers(unittest.TestCase):
     """Test bulk handler functions with comprehensive coverage"""
 
     @patch('typer.echo')
-    @patch('tagmanager.app.bulk.handler.format_bulk_result')
-    @patch('tagmanager.app.bulk.handler.bulk_remove_by_tag')
+    @patch('filetagger.app.bulk.handler.format_bulk_result')
+    @patch('filetagger.app.bulk.handler.bulk_remove_by_tag')
     def test_handle_bulk_remove_with_tag(self, mock_bulk_remove_by_tag, mock_format_result, mock_echo):
         """Test handle_bulk_remove when removing files by tag"""
-        from tagmanager.app.bulk.handler import handle_bulk_remove
+        from filetagger.app.bulk.handler import handle_bulk_remove
         
         # Mock the service function return value
         mock_bulk_remove_by_tag.return_value = {
@@ -48,11 +48,11 @@ class TestBulkHandlers(unittest.TestCase):
         mock_echo.assert_called_once_with("✅ Removed 2 files with tag 'deprecated'")
 
     @patch('typer.echo')
-    @patch('tagmanager.app.bulk.handler.format_bulk_result')
-    @patch('tagmanager.app.bulk.handler.bulk_remove_tag_from_files')
+    @patch('filetagger.app.bulk.handler.format_bulk_result')
+    @patch('filetagger.app.bulk.handler.bulk_remove_tag_from_files')
     def test_handle_bulk_remove_with_remove_tag(self, mock_bulk_remove_tag, mock_format_result, mock_echo):
         """Test handle_bulk_remove when removing tag from all files"""
-        from tagmanager.app.bulk.handler import handle_bulk_remove
+        from filetagger.app.bulk.handler import handle_bulk_remove
         
         # Mock the service function return value
         mock_bulk_remove_tag.return_value = {
@@ -81,7 +81,7 @@ class TestBulkHandlers(unittest.TestCase):
     @patch('typer.echo')
     def test_handle_bulk_remove_no_arguments(self, mock_echo):
         """Test handle_bulk_remove when no arguments provided"""
-        from tagmanager.app.bulk.handler import handle_bulk_remove
+        from filetagger.app.bulk.handler import handle_bulk_remove
         
         # Execute - no arguments provided
         handle_bulk_remove(tag=None, remove_tag=None, dry_run=False)
@@ -98,11 +98,11 @@ class TestBulkHandlers(unittest.TestCase):
         self.assertEqual(mock_echo.call_count, 4)
 
     @patch('typer.echo')
-    @patch('tagmanager.app.bulk.handler.format_bulk_result')
-    @patch('tagmanager.app.bulk.handler.bulk_remove_by_tag')
+    @patch('filetagger.app.bulk.handler.format_bulk_result')
+    @patch('filetagger.app.bulk.handler.bulk_remove_by_tag')
     def test_handle_bulk_remove_dry_run_mode(self, mock_bulk_remove_by_tag, mock_format_result, mock_echo):
         """Test handle_bulk_remove in dry-run mode"""
-        from tagmanager.app.bulk.handler import handle_bulk_remove
+        from filetagger.app.bulk.handler import handle_bulk_remove
         
         # Mock dry-run result
         mock_bulk_remove_by_tag.return_value = {
@@ -123,11 +123,11 @@ class TestBulkHandlers(unittest.TestCase):
         mock_echo.assert_called_once_with("🔍 DRY RUN: Would remove 2 files with tag 'test'")
 
     @patch('typer.echo')
-    @patch('tagmanager.app.bulk.handler.format_bulk_result')
-    @patch('tagmanager.app.bulk.handler.bulk_remove_by_tag', side_effect=Exception("Service error"))
+    @patch('filetagger.app.bulk.handler.format_bulk_result')
+    @patch('filetagger.app.bulk.handler.bulk_remove_by_tag', side_effect=Exception("Service error"))
     def test_handle_bulk_remove_service_error(self, mock_bulk_remove_by_tag, mock_format_result, mock_echo):
         """Test handle_bulk_remove when service raises an exception"""
-        from tagmanager.app.bulk.handler import handle_bulk_remove
+        from filetagger.app.bulk.handler import handle_bulk_remove
         
         # Execute - should handle service exception gracefully
         with self.assertRaises(Exception) as context:
@@ -144,11 +144,11 @@ class TestBulkHandlers(unittest.TestCase):
         mock_echo.assert_not_called()
 
     @patch('typer.echo')
-    @patch('tagmanager.app.bulk.handler.format_bulk_result')
-    @patch('tagmanager.app.bulk.handler.bulk_remove_by_tag')
+    @patch('filetagger.app.bulk.handler.format_bulk_result')
+    @patch('filetagger.app.bulk.handler.bulk_remove_by_tag')
     def test_handle_bulk_remove_empty_result(self, mock_bulk_remove_by_tag, mock_format_result, mock_echo):
         """Test handle_bulk_remove when no files are found/removed"""
-        from tagmanager.app.bulk.handler import handle_bulk_remove
+        from filetagger.app.bulk.handler import handle_bulk_remove
         
         # Mock empty result
         mock_bulk_remove_by_tag.return_value = {
@@ -169,7 +169,7 @@ class TestBulkHandlers(unittest.TestCase):
 
     def test_handle_bulk_remove_parameter_validation(self):
         """Test that function accepts the expected parameter types"""
-        from tagmanager.app.bulk.handler import handle_bulk_remove
+        from filetagger.app.bulk.handler import handle_bulk_remove
         
         # Test that function exists and is callable
         self.assertTrue(callable(handle_bulk_remove))
@@ -189,11 +189,11 @@ class TestBulkHandlers(unittest.TestCase):
         self.assertEqual(sig.parameters['remove_tag'].default, None)
         self.assertEqual(sig.parameters['dry_run'].default, False)
 
-    @patch("tagmanager.app.bulk.handler.runtime.emit_json")
-    @patch("tagmanager.app.bulk.handler.runtime.json_mode", return_value=True)
-    @patch("tagmanager.app.bulk.handler.bulk_add_tags")
+    @patch("filetagger.app.bulk.handler.runtime.emit_json")
+    @patch("filetagger.app.bulk.handler.runtime.json_mode", return_value=True)
+    @patch("filetagger.app.bulk.handler.bulk_add_tags")
     def test_handle_bulk_add_json_mode(self, mock_bulk_add, _mock_json_mode, mock_emit_json):
-        from tagmanager.app.bulk.handler import handle_bulk_add
+        from filetagger.app.bulk.handler import handle_bulk_add
 
         mock_bulk_add.return_value = {
             "success": True,
@@ -207,10 +207,10 @@ class TestBulkHandlers(unittest.TestCase):
         self.assertTrue(payload["success"])
         self.assertEqual(payload["files_found"], ["/a.py"])
 
-    @patch("tagmanager.app.bulk.handler.runtime.emit_json")
-    @patch("tagmanager.app.bulk.handler.runtime.json_mode", return_value=True)
+    @patch("filetagger.app.bulk.handler.runtime.emit_json")
+    @patch("filetagger.app.bulk.handler.runtime.json_mode", return_value=True)
     def test_handle_bulk_add_json_validation_no_tags(self, _mock_json_mode, mock_emit_json):
-        from tagmanager.app.bulk.handler import handle_bulk_add
+        from filetagger.app.bulk.handler import handle_bulk_add
 
         handle_bulk_add("*.py", [], ".", False)
         mock_emit_json.assert_called_once()

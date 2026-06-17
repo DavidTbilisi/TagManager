@@ -1,6 +1,6 @@
 # Automation recipes
 
-Small, copy-paste friendly snippets for CI and local workflows using TagManager.
+Small, copy-paste friendly snippets for CI and local workflows using FileTagger.
 
 | File | Purpose |
 |------|---------|

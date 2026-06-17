@@ -1,4 +1,4 @@
-"""Unit tests for tagmanager/app/gui_handlers.py.
+"""Unit tests for filetagger/app/gui_handlers.py.
 
 Every handler function is tested in isolation.  All filesystem and service
 calls are mocked so the suite runs without a real tag DB or OS shell.
@@ -18,7 +18,7 @@ _PROJECT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT not in sys.path:
     sys.path.insert(0, _PROJECT)
 
-import tagmanager.app.gui_handlers as _gh  # noqa: E402  (after sys.path edit)
+import filetagger.app.gui_handlers as _gh  # noqa: E402  (after sys.path edit)
 
 
 # ---------------------------------------------------------------------------
@@ -99,11 +99,11 @@ class TestPathAllowed(unittest.TestCase):
 
 class TestGuiAllowedRoot(unittest.TestCase):
     def test_empty_env_returns_none(self):
-        with patch.dict(os.environ, {"TAGMANAGER_GUI_ROOT": ""}, clear=False):
+        with patch.dict(os.environ, {"FILETAGGER_GUI_ROOT": ""}, clear=False):
             self.assertIsNone(_gh.gui_allowed_root())
 
     def test_set_env_returns_abs_path(self):
-        with patch.dict(os.environ, {"TAGMANAGER_GUI_ROOT": "/some/root"}, clear=False):
+        with patch.dict(os.environ, {"FILETAGGER_GUI_ROOT": "/some/root"}, clear=False):
             result = _gh.gui_allowed_root()
             self.assertIsNotNone(result)
             self.assertTrue(os.path.isabs(result))
@@ -115,29 +115,29 @@ class TestGuiAllowedRoot(unittest.TestCase):
 
 
 class TestGetPathTags(unittest.TestCase):
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
     def test_known_path_returns_tags(self, _mock):
         result = _gh.get_path_tags(_ALPHA)
         self.assertTrue(result["ok"])
         self.assertIn("python", result["tags"])
         self.assertIn("docs", result["tags"])
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
     def test_unknown_path_returns_empty_tags(self, _mock):
         result = _gh.get_path_tags(os.path.join(_TMPDIR, "nobody.txt"))
         self.assertTrue(result["ok"])
         self.assertEqual(result["tags"], [])
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
     def test_path_denied_by_root_returns_error(self, _mock):
         # Restrict to a different directory so _ALPHA is outside the allowed root.
         other_root = os.path.join(_TMPDIR, "restricted")
-        with patch.dict(os.environ, {"TAGMANAGER_GUI_ROOT": other_root}, clear=False):
+        with patch.dict(os.environ, {"FILETAGGER_GUI_ROOT": other_root}, clear=False):
             result = _gh.get_path_tags(_ALPHA)
         self.assertFalse(result["ok"])
         self.assertIn("outside", result["error"])
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
     def test_returns_list_not_other_type(self, _mock):
         result = _gh.get_path_tags(_ALPHA)
         self.assertIsInstance(result["tags"], list)
@@ -153,7 +153,7 @@ class TestPostAddTags(unittest.TestCase):
     # dry_run
     # ------------------------------------------------------------------
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value={"/tmp/f.txt": ["existing"]})
+    @patch("filetagger.app.gui_handlers.load_tags", return_value={"/tmp/f.txt": ["existing"]})
     @patch("os.path.isfile", return_value=True)
     def test_dry_run_returns_preview_without_saving(self, _isfile, _load):
         result = _gh.post_add_tags("/tmp/f.txt", ["newtag"], dry_run=True)
@@ -163,14 +163,14 @@ class TestPostAddTags(unittest.TestCase):
         self.assertIn("tags_after_preview", result)
         self.assertIn("newtag", result["tags_after_preview"])
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value={})
-    @patch("tagmanager.app.gui_handlers.add_tags")
+    @patch("filetagger.app.gui_handlers.load_tags", return_value={})
+    @patch("filetagger.app.gui_handlers.add_tags")
     @patch("os.path.isfile", return_value=True)
     def test_dry_run_does_not_call_add_tags(self, _isfile, mock_add, _load):
         _gh.post_add_tags("/tmp/f.txt", ["x"], dry_run=True)
         mock_add.assert_not_called()
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value={})
+    @patch("filetagger.app.gui_handlers.load_tags", return_value={})
     @patch("os.path.isfile", return_value=True)
     def test_dry_run_no_tags_with_no_auto_returns_error(self, _isfile, _load):
         result = _gh.post_add_tags("/tmp/f.txt", [], dry_run=True, no_auto=True)
@@ -180,15 +180,15 @@ class TestPostAddTags(unittest.TestCase):
     # real add
     # ------------------------------------------------------------------
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value={"/tmp/f.txt": ["prev"]})
-    @patch("tagmanager.app.gui_handlers.add_tags", return_value=True)
+    @patch("filetagger.app.gui_handlers.load_tags", return_value={"/tmp/f.txt": ["prev"]})
+    @patch("filetagger.app.gui_handlers.add_tags", return_value=True)
     @patch("os.path.isfile", return_value=True)
     def test_real_add_calls_add_tags(self, _isfile, mock_add, _load):
         result = _gh.post_add_tags("/tmp/f.txt", ["python"])
         self.assertTrue(result["ok"])
         mock_add.assert_called_once()
 
-    @patch("tagmanager.app.gui_handlers.add_tags", return_value=False)
+    @patch("filetagger.app.gui_handlers.add_tags", return_value=False)
     @patch("os.path.isfile", return_value=True)
     def test_add_tags_failure_returns_error(self, _isfile, _mock_add):
         result = _gh.post_add_tags("/tmp/f.txt", ["x"])
@@ -206,14 +206,14 @@ class TestPostAddTags(unittest.TestCase):
             result = _gh.post_add_tags("", ["tag"])
         self.assertFalse(result["ok"])
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value={})
+    @patch("filetagger.app.gui_handlers.load_tags", return_value={})
     def test_no_tags_no_auto_returns_error(self, _load):
         with patch("os.path.isfile", return_value=True):
             result = _gh.post_add_tags("/tmp/f.txt", [], no_auto=True)
         self.assertFalse(result["ok"])
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value={})
-    @patch("tagmanager.app.gui_handlers.add_tags", return_value=True)
+    @patch("filetagger.app.gui_handlers.load_tags", return_value={})
+    @patch("filetagger.app.gui_handlers.add_tags", return_value=True)
     @patch("os.path.isfile", return_value=True)
     def test_no_content_param_silently_discarded(self, _isfile, _add, _load):
         # The handler accepts no_content but ignores it; should not raise.
@@ -221,7 +221,7 @@ class TestPostAddTags(unittest.TestCase):
         self.assertIn("ok", result)
 
     def test_root_restriction_blocks_outside_path(self):
-        with patch.dict(os.environ, {"TAGMANAGER_GUI_ROOT": "/allowed"}, clear=False):
+        with patch.dict(os.environ, {"FILETAGGER_GUI_ROOT": "/allowed"}, clear=False):
             result = _gh.post_add_tags("/elsewhere/f.txt", ["tag"])
         self.assertFalse(result["ok"])
         self.assertIn("outside", result["error"])
@@ -237,21 +237,21 @@ class TestPostRemove(unittest.TestCase):
     # mode = path
     # ------------------------------------------------------------------
 
-    @patch("tagmanager.app.gui_handlers.load_tags",
+    @patch("filetagger.app.gui_handlers.load_tags",
            return_value={_ALPHA: ["python"]})
-    @patch("tagmanager.app.gui_handlers._remove_path", return_value=None)
+    @patch("filetagger.app.gui_handlers._remove_path", return_value=None)
     def test_mode_path_removes_entry(self, mock_rm, _load):
         result = _gh.post_remove(_ALPHA, "path")
         self.assertTrue(result["ok"])
         mock_rm.assert_called_once()
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value={})
+    @patch("filetagger.app.gui_handlers.load_tags", return_value={})
     def test_mode_path_not_in_db_returns_error(self, _load):
         result = _gh.post_remove(os.path.join(_TMPDIR, "ghost.txt"), "path")
         self.assertFalse(result["ok"])
         self.assertIn("not in tag database", result["error"])
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value={})
+    @patch("filetagger.app.gui_handlers.load_tags", return_value={})
     def test_mode_path_dry_run_returns_preview(self, _load):
         result = _gh.post_remove("/data/any.txt", "path", dry_run=True)
         self.assertTrue(result["ok"])
@@ -261,14 +261,14 @@ class TestPostRemove(unittest.TestCase):
     # mode = clear_tags
     # ------------------------------------------------------------------
 
-    @patch("tagmanager.app.gui_handlers.remove_all_tags",
+    @patch("filetagger.app.gui_handlers.remove_all_tags",
            return_value={"success": True, "message": "cleared"})
     def test_mode_clear_tags_calls_remove_all_tags(self, mock_clear):
         result = _gh.post_remove("/data/alpha.txt", "clear_tags")
         self.assertTrue(result["ok"])
         mock_clear.assert_called_once()
 
-    @patch("tagmanager.app.gui_handlers.remove_all_tags",
+    @patch("filetagger.app.gui_handlers.remove_all_tags",
            return_value={"success": False, "message": "fail"})
     def test_mode_clear_tags_service_failure(self, _mock):
         result = _gh.post_remove("/data/alpha.txt", "clear_tags")
@@ -283,16 +283,16 @@ class TestPostRemove(unittest.TestCase):
     # mode = one_tag
     # ------------------------------------------------------------------
 
-    @patch("tagmanager.app.gui_handlers.load_tags",
+    @patch("filetagger.app.gui_handlers.load_tags",
            return_value={_ALPHA: ["python", "docs"]})
-    @patch("tagmanager.app.gui_handlers.save_tags", return_value=True)
+    @patch("filetagger.app.gui_handlers.save_tags", return_value=True)
     def test_mode_one_tag_removes_specific_tag(self, _save, _load):
         result = _gh.post_remove(_ALPHA, "one_tag", tag="docs")
         self.assertTrue(result["ok"])
         self.assertNotIn("docs", result["tags"])
         self.assertIn("python", result["tags"])
 
-    @patch("tagmanager.app.gui_handlers.load_tags",
+    @patch("filetagger.app.gui_handlers.load_tags",
            return_value={_ALPHA: ["python"]})
     def test_mode_one_tag_tag_not_present_returns_error(self, _load):
         result = _gh.post_remove(_ALPHA, "one_tag", tag="nonexistent")
@@ -304,7 +304,7 @@ class TestPostRemove(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn("tag required", result["error"])
 
-    @patch("tagmanager.app.gui_handlers.load_tags",
+    @patch("filetagger.app.gui_handlers.load_tags",
            return_value={_ALPHA: ["python"]})
     def test_mode_one_tag_path_not_in_db_returns_error(self, _load):
         nobody = os.path.join(_TMPDIR, "nobody.txt")
@@ -316,9 +316,9 @@ class TestPostRemove(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertTrue(result["dry_run"])
 
-    @patch("tagmanager.app.gui_handlers.load_tags",
+    @patch("filetagger.app.gui_handlers.load_tags",
            return_value={_ALPHA: ["python", "docs"]})
-    @patch("tagmanager.app.gui_handlers.save_tags", return_value=False)
+    @patch("filetagger.app.gui_handlers.save_tags", return_value=False)
     def test_mode_one_tag_save_failure_returns_error(self, _save, _load):
         result = _gh.post_remove(_ALPHA, "one_tag", tag="docs")
         self.assertFalse(result["ok"])
@@ -334,7 +334,7 @@ class TestPostRemove(unittest.TestCase):
         self.assertIn("unknown mode", result["error"])
 
     def test_root_restriction_blocks_outside_path(self):
-        with patch.dict(os.environ, {"TAGMANAGER_GUI_ROOT": "/allowed"}, clear=False):
+        with patch.dict(os.environ, {"FILETAGGER_GUI_ROOT": "/allowed"}, clear=False):
             result = _gh.post_remove("/elsewhere/f.txt", "path")
         self.assertFalse(result["ok"])
 
@@ -345,38 +345,38 @@ class TestPostRemove(unittest.TestCase):
 
 
 class TestGetAllTagsWithCounts(unittest.TestCase):
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
     def test_returns_ok_true(self, _mock):
         result = _gh.get_all_tags_with_counts()
         self.assertTrue(result["ok"])
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
     def test_python_has_count_2(self, _mock):
         result = _gh.get_all_tags_with_counts()
         by_name = {t["tag"]: t["count"] for t in result["tags"]}
         self.assertEqual(by_name["python"], 2)
         self.assertEqual(by_name["docs"], 2)
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value=dict(_STORE))
+    @patch("filetagger.app.gui_handlers.load_tags", return_value=dict(_STORE))
     def test_sorted_descending_by_count(self, _mock):
         result = _gh.get_all_tags_with_counts()
         counts = [t["count"] for t in result["tags"]]
         self.assertEqual(counts, sorted(counts, reverse=True))
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value={})
+    @patch("filetagger.app.gui_handlers.load_tags", return_value={})
     def test_empty_store_returns_empty_list(self, _mock):
         result = _gh.get_all_tags_with_counts()
         self.assertTrue(result["ok"])
         self.assertEqual(result["tags"], [])
         self.assertEqual(result["unique"], 0)
 
-    @patch("tagmanager.app.gui_handlers.load_tags", return_value={"/f.txt": "not-a-list"})
+    @patch("filetagger.app.gui_handlers.load_tags", return_value={"/f.txt": "not-a-list"})
     def test_non_list_values_skipped(self, _mock):
         result = _gh.get_all_tags_with_counts()
         self.assertTrue(result["ok"])
         self.assertEqual(result["tags"], [])
 
-    @patch("tagmanager.app.gui_handlers.load_tags", side_effect=RuntimeError("db down"))
+    @patch("filetagger.app.gui_handlers.load_tags", side_effect=RuntimeError("db down"))
     def test_load_error_returns_empty_ok(self, _mock):
         result = _gh.get_all_tags_with_counts()
         self.assertTrue(result["ok"])
@@ -389,7 +389,7 @@ class TestGetAllTagsWithCounts(unittest.TestCase):
 
 
 class TestGetStats(unittest.TestCase):
-    @patch("tagmanager.app.stats.service.get_overall_statistics",
+    @patch("filetagger.app.stats.service.get_overall_statistics",
            return_value={"total_files": 5, "unique_tags": 3})
     def test_returns_ok_and_stats(self, _mock):
         result = _gh.get_stats()
@@ -397,7 +397,7 @@ class TestGetStats(unittest.TestCase):
         self.assertEqual(result["total_files"], 5)
         self.assertEqual(result["unique_tags"], 3)
 
-    @patch("tagmanager.app.stats.service.get_overall_statistics",
+    @patch("filetagger.app.stats.service.get_overall_statistics",
            side_effect=RuntimeError("db error"))
     def test_service_error_returns_ok_false(self, _mock):
         result = _gh.get_stats()
@@ -411,26 +411,26 @@ class TestGetStats(unittest.TestCase):
 
 
 class TestGetAliasesHandler(unittest.TestCase):
-    @patch("tagmanager.app.alias.service.get_aliases", return_value={"py": "python"})
+    @patch("filetagger.app.alias.service.get_aliases", return_value={"py": "python"})
     def test_returns_ok_and_aliases(self, _mock):
         result = _gh.get_aliases_handler()
         self.assertTrue(result["ok"])
         self.assertEqual(result["aliases"]["py"], "python")
 
-    @patch("tagmanager.app.alias.service.get_aliases", side_effect=RuntimeError("fail"))
+    @patch("filetagger.app.alias.service.get_aliases", side_effect=RuntimeError("fail"))
     def test_service_error_returns_ok_false(self, _mock):
         result = _gh.get_aliases_handler()
         self.assertFalse(result["ok"])
 
 
 class TestSetAliasHandler(unittest.TestCase):
-    @patch("tagmanager.app.alias.service.add_alias", return_value=True)
+    @patch("filetagger.app.alias.service.add_alias", return_value=True)
     def test_success_returns_ok(self, mock_add):
         result = _gh.set_alias_handler("py", "python")
         self.assertTrue(result["ok"])
         mock_add.assert_called_once_with("py", "python")
 
-    @patch("tagmanager.app.alias.service.add_alias", return_value=False)
+    @patch("filetagger.app.alias.service.add_alias", return_value=False)
     def test_add_alias_false_returns_error(self, _mock):
         result = _gh.set_alias_handler("py", "py")  # alias == canonical
         self.assertFalse(result["ok"])
@@ -443,20 +443,20 @@ class TestSetAliasHandler(unittest.TestCase):
         result = _gh.set_alias_handler("py", "")
         self.assertFalse(result["ok"])
 
-    @patch("tagmanager.app.alias.service.add_alias", side_effect=RuntimeError("bad"))
+    @patch("filetagger.app.alias.service.add_alias", side_effect=RuntimeError("bad"))
     def test_service_exception_returns_error(self, _mock):
         result = _gh.set_alias_handler("py", "python")
         self.assertFalse(result["ok"])
 
 
 class TestDeleteAliasHandler(unittest.TestCase):
-    @patch("tagmanager.app.alias.service.remove_alias", return_value=True)
+    @patch("filetagger.app.alias.service.remove_alias", return_value=True)
     def test_success_returns_ok(self, mock_rm):
         result = _gh.delete_alias_handler("py")
         self.assertTrue(result["ok"])
         mock_rm.assert_called_once_with("py")
 
-    @patch("tagmanager.app.alias.service.remove_alias", return_value=False)
+    @patch("filetagger.app.alias.service.remove_alias", return_value=False)
     def test_not_found_returns_error(self, _mock):
         result = _gh.delete_alias_handler("nonexistent")
         self.assertFalse(result["ok"])
@@ -465,7 +465,7 @@ class TestDeleteAliasHandler(unittest.TestCase):
         result = _gh.delete_alias_handler("")
         self.assertFalse(result["ok"])
 
-    @patch("tagmanager.app.alias.service.remove_alias", side_effect=RuntimeError("err"))
+    @patch("filetagger.app.alias.service.remove_alias", side_effect=RuntimeError("err"))
     def test_service_exception_returns_error(self, _mock):
         result = _gh.delete_alias_handler("py")
         self.assertFalse(result["ok"])
@@ -477,27 +477,27 @@ class TestDeleteAliasHandler(unittest.TestCase):
 
 
 class TestGetPresetsHandler(unittest.TestCase):
-    @patch("tagmanager.app.preset.service.get_presets",
+    @patch("filetagger.app.preset.service.get_presets",
            return_value={"default": ["python", "docs"]})
     def test_returns_ok_and_presets(self, _mock):
         result = _gh.get_presets_handler()
         self.assertTrue(result["ok"])
         self.assertEqual(result["presets"]["default"], ["python", "docs"])
 
-    @patch("tagmanager.app.preset.service.get_presets", side_effect=RuntimeError("fail"))
+    @patch("filetagger.app.preset.service.get_presets", side_effect=RuntimeError("fail"))
     def test_service_error_returns_ok_false(self, _mock):
         result = _gh.get_presets_handler()
         self.assertFalse(result["ok"])
 
 
 class TestSetPresetHandler(unittest.TestCase):
-    @patch("tagmanager.app.preset.service.save_preset", return_value=True)
+    @patch("filetagger.app.preset.service.save_preset", return_value=True)
     def test_success_returns_ok(self, mock_save):
         result = _gh.set_preset_handler("mypre", ["python", "docs"])
         self.assertTrue(result["ok"])
         mock_save.assert_called_once_with("mypre", ["python", "docs"])
 
-    @patch("tagmanager.app.preset.service.save_preset", return_value=False)
+    @patch("filetagger.app.preset.service.save_preset", return_value=False)
     def test_save_rejected_returns_error(self, _mock):
         result = _gh.set_preset_handler("mypre", ["x"])
         self.assertFalse(result["ok"])
@@ -514,20 +514,20 @@ class TestSetPresetHandler(unittest.TestCase):
         result = _gh.set_preset_handler("mypre", ["  ", "  "])
         self.assertFalse(result["ok"])
 
-    @patch("tagmanager.app.preset.service.save_preset", side_effect=RuntimeError("e"))
+    @patch("filetagger.app.preset.service.save_preset", side_effect=RuntimeError("e"))
     def test_service_exception_returns_error(self, _mock):
         result = _gh.set_preset_handler("x", ["t"])
         self.assertFalse(result["ok"])
 
 
 class TestDeletePresetHandler(unittest.TestCase):
-    @patch("tagmanager.app.preset.service.delete_preset", return_value=True)
+    @patch("filetagger.app.preset.service.delete_preset", return_value=True)
     def test_success_returns_ok(self, mock_del):
         result = _gh.delete_preset_handler("mypre")
         self.assertTrue(result["ok"])
         mock_del.assert_called_once_with("mypre")
 
-    @patch("tagmanager.app.preset.service.delete_preset", return_value=False)
+    @patch("filetagger.app.preset.service.delete_preset", return_value=False)
     def test_not_found_returns_error(self, _mock):
         result = _gh.delete_preset_handler("ghost")
         self.assertFalse(result["ok"])
@@ -536,7 +536,7 @@ class TestDeletePresetHandler(unittest.TestCase):
         result = _gh.delete_preset_handler("")
         self.assertFalse(result["ok"])
 
-    @patch("tagmanager.app.preset.service.delete_preset", side_effect=RuntimeError("err"))
+    @patch("filetagger.app.preset.service.delete_preset", side_effect=RuntimeError("err"))
     def test_service_exception_returns_error(self, _mock):
         result = _gh.delete_preset_handler("x")
         self.assertFalse(result["ok"])
@@ -548,7 +548,7 @@ class TestDeletePresetHandler(unittest.TestCase):
 
 
 class TestBulkPreviewHandler(unittest.TestCase):
-    @patch("tagmanager.app.bulk.service.find_files_by_pattern",
+    @patch("filetagger.app.bulk.service.find_files_by_pattern",
            return_value=["/tmp/a.py", "/tmp/b.py"])
     def test_returns_ok_and_files(self, mock_find):
         result = _gh.bulk_preview_handler("*.py", ["python"], "/tmp")
@@ -566,22 +566,22 @@ class TestBulkPreviewHandler(unittest.TestCase):
         result = _gh.bulk_preview_handler("*.py", ["   "])
         self.assertFalse(result["ok"])
 
-    @patch("tagmanager.app.bulk.service.find_files_by_pattern", return_value=[])
+    @patch("filetagger.app.bulk.service.find_files_by_pattern", return_value=[])
     def test_empty_pattern_defaults_to_glob_all(self, mock_find):
         _gh.bulk_preview_handler("", ["python"])
         # The handler normalises "" to "**/*"
         mock_find.assert_called_once_with("**/*", ".")
 
-    @patch("tagmanager.app.bulk.service.find_files_by_pattern",
+    @patch("filetagger.app.bulk.service.find_files_by_pattern",
            side_effect=RuntimeError("err"))
     def test_service_exception_returns_error(self, _mock):
         result = _gh.bulk_preview_handler("*.py", ["tag"])
         self.assertFalse(result["ok"])
 
-    @patch("tagmanager.app.bulk.service.find_files_by_pattern",
+    @patch("filetagger.app.bulk.service.find_files_by_pattern",
            return_value=["/allowed/a.py", "/forbidden/b.py"])
     def test_root_restriction_filters_files(self, _mock):
-        with patch.dict(os.environ, {"TAGMANAGER_GUI_ROOT": "/allowed"}, clear=False):
+        with patch.dict(os.environ, {"FILETAGGER_GUI_ROOT": "/allowed"}, clear=False):
             result = _gh.bulk_preview_handler("*.py", ["tag"])
         self.assertTrue(result["ok"])
         self.assertEqual(len(result["files"]), 1)
@@ -589,7 +589,7 @@ class TestBulkPreviewHandler(unittest.TestCase):
 
 
 class TestBulkApplyHandler(unittest.TestCase):
-    @patch("tagmanager.app.bulk.service.bulk_add_tags",
+    @patch("filetagger.app.bulk.service.bulk_add_tags",
            return_value={"success": True, "tagged_files": ["/tmp/a.py"], "ok": True})
     def test_calls_bulk_add_tags(self, mock_bulk):
         result = _gh.bulk_apply_handler("*.py", ["python"], "/tmp")
@@ -600,24 +600,24 @@ class TestBulkApplyHandler(unittest.TestCase):
         result = _gh.bulk_apply_handler("*.py", [])
         self.assertFalse(result["ok"])
 
-    @patch("tagmanager.app.bulk.service.bulk_add_tags",
+    @patch("filetagger.app.bulk.service.bulk_add_tags",
            side_effect=RuntimeError("err"))
     def test_service_exception_returns_error(self, _mock):
         result = _gh.bulk_apply_handler("*.py", ["tag"])
         self.assertFalse(result["ok"])
 
-    @patch("tagmanager.app.bulk.service.find_files_by_pattern",
+    @patch("filetagger.app.bulk.service.find_files_by_pattern",
            return_value=["/allowed/a.py"])
-    @patch("tagmanager.app.gui_handlers.add_tags", return_value=True)
+    @patch("filetagger.app.gui_handlers.add_tags", return_value=True)
     def test_root_restriction_uses_per_file_add(self, mock_add, _mock_find):
-        with patch.dict(os.environ, {"TAGMANAGER_GUI_ROOT": "/allowed"}, clear=False):
+        with patch.dict(os.environ, {"FILETAGGER_GUI_ROOT": "/allowed"}, clear=False):
             result = _gh.bulk_apply_handler("*.py", ["python"])
         self.assertTrue(result["ok"])
         mock_add.assert_called_once()
 
-    @patch("tagmanager.app.bulk.service.find_files_by_pattern", return_value=[])
+    @patch("filetagger.app.bulk.service.find_files_by_pattern", return_value=[])
     def test_root_restriction_no_files_returns_error(self, _mock):
-        with patch.dict(os.environ, {"TAGMANAGER_GUI_ROOT": "/allowed"}, clear=False):
+        with patch.dict(os.environ, {"FILETAGGER_GUI_ROOT": "/allowed"}, clear=False):
             result = _gh.bulk_apply_handler("*.py", ["python"])
         self.assertFalse(result["ok"])
 
@@ -647,7 +647,7 @@ class TestOpenPathHandler(unittest.TestCase):
 
     @patch("os.path.exists", return_value=True)
     def test_root_restriction_blocks_outside_path(self, _mock):
-        with patch.dict(os.environ, {"TAGMANAGER_GUI_ROOT": "/allowed"}, clear=False):
+        with patch.dict(os.environ, {"FILETAGGER_GUI_ROOT": "/allowed"}, clear=False):
             result = _gh.open_path_handler("/elsewhere/f.txt", "file")
         self.assertFalse(result["ok"])
         self.assertIn("outside", result["error"])
@@ -722,7 +722,7 @@ class TestGetTagStatsHandler(unittest.TestCase):
         "file_types": {".txt": 1, ".py": 1},
     }
 
-    @patch("tagmanager.app.stats.service.get_tag_statistics", return_value=_SAMPLE)
+    @patch("filetagger.app.stats.service.get_tag_statistics", return_value=_SAMPLE)
     def test_returns_ok_and_tag_info(self, mock_svc):
         result = _gh.get_tag_stats_handler("python")
         self.assertTrue(result["ok"])
@@ -734,7 +734,7 @@ class TestGetTagStatsHandler(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn("tag required", result["error"])
 
-    @patch("tagmanager.app.stats.service.get_tag_statistics",
+    @patch("filetagger.app.stats.service.get_tag_statistics",
            side_effect=KeyError("unknown"))
     def test_service_error_returns_ok_false(self, _mock):
         result = _gh.get_tag_stats_handler("nonexistent")
@@ -757,34 +757,34 @@ class TestFilterDuplicatesHandler(unittest.TestCase):
         "message": "1 group found",
     }
 
-    @patch("tagmanager.app.filter.service.find_duplicate_tags",
+    @patch("filetagger.app.filter.service.find_duplicate_tags",
            return_value=_DUP_RESULT)
     def test_returns_ok_and_groups(self, _mock):
         result = _gh.filter_duplicates_handler()
         self.assertTrue(result["ok"])
         self.assertEqual(len(result["groups"]), 1)
 
-    @patch("tagmanager.app.filter.service.find_duplicate_tags",
+    @patch("filetagger.app.filter.service.find_duplicate_tags",
            return_value=_DUP_RESULT)
     def test_tuple_keys_converted_to_lists(self, _mock):
         result = _gh.filter_duplicates_handler()
         for grp in result["groups"]:
             self.assertIsInstance(grp["tags"], list)
 
-    @patch("tagmanager.app.filter.service.find_duplicate_tags",
+    @patch("filetagger.app.filter.service.find_duplicate_tags",
            return_value={"duplicates": {}, "total_files": 0, "message": ""})
     def test_no_duplicates_returns_empty_groups(self, _mock):
         result = _gh.filter_duplicates_handler()
         self.assertTrue(result["ok"])
         self.assertEqual(result["groups"], [])
 
-    @patch("tagmanager.app.filter.service.find_duplicate_tags",
+    @patch("filetagger.app.filter.service.find_duplicate_tags",
            side_effect=RuntimeError("err"))
     def test_service_exception_returns_ok_false(self, _mock):
         result = _gh.filter_duplicates_handler()
         self.assertFalse(result["ok"])
 
-    @patch("tagmanager.app.filter.service.find_duplicate_tags",
+    @patch("filetagger.app.filter.service.find_duplicate_tags",
            return_value=_DUP_RESULT)
     def test_group_count_and_file_count_fields_present(self, _mock):
         result = _gh.filter_duplicates_handler()
@@ -798,7 +798,7 @@ class TestFilterDuplicatesHandler(unittest.TestCase):
 
 
 class TestFilterOrphansHandler(unittest.TestCase):
-    @patch("tagmanager.app.filter.service.find_orphaned_files",
+    @patch("filetagger.app.filter.service.find_orphaned_files",
            return_value={"orphans": ["/missing/a.txt"], "orphan_count": 1, "total_files": 5})
     def test_returns_ok_and_orphans(self, _mock):
         result = _gh.filter_orphans_handler()
@@ -806,14 +806,14 @@ class TestFilterOrphansHandler(unittest.TestCase):
         self.assertEqual(result["count"], 1)
         self.assertIn("/missing/a.txt", result["orphans"])
 
-    @patch("tagmanager.app.filter.service.find_orphaned_files",
+    @patch("filetagger.app.filter.service.find_orphaned_files",
            return_value={"orphans": [], "orphan_count": 0, "total_files": 3})
     def test_no_orphans_returns_empty_list(self, _mock):
         result = _gh.filter_orphans_handler()
         self.assertTrue(result["ok"])
         self.assertEqual(result["orphans"], [])
 
-    @patch("tagmanager.app.filter.service.find_orphaned_files",
+    @patch("filetagger.app.filter.service.find_orphaned_files",
            side_effect=RuntimeError("err"))
     def test_service_exception_returns_ok_false(self, _mock):
         result = _gh.filter_orphans_handler()
@@ -833,38 +833,38 @@ class TestFilterClustersHandler(unittest.TestCase):
         "total_files": 30,
     }
 
-    @patch("tagmanager.app.filter.service.find_tag_clusters",
+    @patch("filetagger.app.filter.service.find_tag_clusters",
            return_value=_CLUSTER_RESULT)
     def test_returns_ok_and_clusters(self, _mock):
         result = _gh.filter_clusters_handler()
         self.assertTrue(result["ok"])
         self.assertEqual(len(result["clusters"]), 1)
 
-    @patch("tagmanager.app.filter.service.find_tag_clusters",
+    @patch("filetagger.app.filter.service.find_tag_clusters",
            return_value=_CLUSTER_RESULT)
     def test_custom_min_size_passed_through(self, mock_svc):
         _gh.filter_clusters_handler(min_size=5)
         mock_svc.assert_called_once_with(min_cluster_size=5)
 
-    @patch("tagmanager.app.filter.service.find_tag_clusters",
+    @patch("filetagger.app.filter.service.find_tag_clusters",
            return_value=_CLUSTER_RESULT)
     def test_min_size_below_2_clamped_to_2(self, mock_svc):
         _gh.filter_clusters_handler(min_size=0)
         mock_svc.assert_called_once_with(min_cluster_size=2)
 
-    @patch("tagmanager.app.filter.service.find_tag_clusters",
+    @patch("filetagger.app.filter.service.find_tag_clusters",
            return_value=_CLUSTER_RESULT)
     def test_invalid_min_size_string_defaults_to_2(self, mock_svc):
         _gh.filter_clusters_handler(min_size="bad")
         mock_svc.assert_called_once_with(min_cluster_size=2)
 
-    @patch("tagmanager.app.filter.service.find_tag_clusters",
+    @patch("filetagger.app.filter.service.find_tag_clusters",
            side_effect=RuntimeError("err"))
     def test_service_exception_returns_ok_false(self, _mock):
         result = _gh.filter_clusters_handler()
         self.assertFalse(result["ok"])
 
-    @patch("tagmanager.app.filter.service.find_tag_clusters",
+    @patch("filetagger.app.filter.service.find_tag_clusters",
            return_value=_CLUSTER_RESULT)
     def test_cluster_items_have_required_fields(self, _mock):
         result = _gh.filter_clusters_handler()
@@ -881,7 +881,7 @@ class TestFilterClustersHandler(unittest.TestCase):
 
 
 class TestFilterIsolatedHandler(unittest.TestCase):
-    @patch("tagmanager.app.filter.service.find_isolated_files",
+    @patch("filetagger.app.filter.service.find_isolated_files",
            return_value={"isolated_files": ["/lone/wolf.txt"], "total_files": 10})
     def test_returns_ok_and_isolated(self, _mock):
         result = _gh.filter_isolated_handler()
@@ -889,32 +889,32 @@ class TestFilterIsolatedHandler(unittest.TestCase):
         self.assertEqual(result["count"], 1)
         self.assertIn("/lone/wolf.txt", result["isolated"])
 
-    @patch("tagmanager.app.filter.service.find_isolated_files",
+    @patch("filetagger.app.filter.service.find_isolated_files",
            return_value={"isolated_files": [], "total_files": 5})
     def test_no_isolated_returns_empty(self, _mock):
         result = _gh.filter_isolated_handler()
         self.assertTrue(result["ok"])
         self.assertEqual(result["isolated"], [])
 
-    @patch("tagmanager.app.filter.service.find_isolated_files",
+    @patch("filetagger.app.filter.service.find_isolated_files",
            return_value={"isolated_files": [], "total_files": 0})
     def test_custom_max_shared_passed_through(self, mock_svc):
         _gh.filter_isolated_handler(max_shared=3)
         mock_svc.assert_called_once_with(max_shared_tags=3)
 
-    @patch("tagmanager.app.filter.service.find_isolated_files",
+    @patch("filetagger.app.filter.service.find_isolated_files",
            return_value={"isolated_files": [], "total_files": 0})
     def test_negative_max_shared_clamped_to_0(self, mock_svc):
         _gh.filter_isolated_handler(max_shared=-5)
         mock_svc.assert_called_once_with(max_shared_tags=0)
 
-    @patch("tagmanager.app.filter.service.find_isolated_files",
+    @patch("filetagger.app.filter.service.find_isolated_files",
            return_value={"isolated_files": [], "total_files": 0})
     def test_invalid_max_shared_string_defaults_to_1(self, mock_svc):
         _gh.filter_isolated_handler(max_shared="oops")
         mock_svc.assert_called_once_with(max_shared_tags=1)
 
-    @patch("tagmanager.app.filter.service.find_isolated_files",
+    @patch("filetagger.app.filter.service.find_isolated_files",
            side_effect=RuntimeError("err"))
     def test_service_exception_returns_ok_false(self, _mock):
         result = _gh.filter_isolated_handler()
@@ -927,7 +927,7 @@ class TestFilterIsolatedHandler(unittest.TestCase):
 
 
 class TestCleanHandler(unittest.TestCase):
-    @patch("tagmanager.app.move.service.clean_missing",
+    @patch("filetagger.app.move.service.clean_missing",
            return_value={"success": True, "dry_run": True,
                          "missing": ["/gone/a.txt"], "count": 1, "message": "1 found"})
     def test_dry_run_true_passed_to_service(self, mock_svc):
@@ -937,7 +937,7 @@ class TestCleanHandler(unittest.TestCase):
         self.assertEqual(result["count"], 1)
         mock_svc.assert_called_once_with(dry_run=True)
 
-    @patch("tagmanager.app.move.service.clean_missing",
+    @patch("filetagger.app.move.service.clean_missing",
            return_value={"success": True, "dry_run": False,
                          "missing": [], "count": 0, "message": "done"})
     def test_dry_run_false_passed_to_service(self, mock_svc):
@@ -946,21 +946,21 @@ class TestCleanHandler(unittest.TestCase):
         self.assertFalse(result["dry_run"])
         mock_svc.assert_called_once_with(dry_run=False)
 
-    @patch("tagmanager.app.move.service.clean_missing",
+    @patch("filetagger.app.move.service.clean_missing",
            return_value={"success": True, "dry_run": True,
                          "missing": ["/x.txt", "/y.txt"], "count": 2, "message": ""})
     def test_missing_list_returned_correctly(self, _mock):
         result = _gh.clean_handler(dry_run=True)
         self.assertEqual(len(result["missing"]), 2)
 
-    @patch("tagmanager.app.move.service.clean_missing",
+    @patch("filetagger.app.move.service.clean_missing",
            return_value={"success": False, "dry_run": False,
                          "missing": [], "count": 0, "message": ""})
     def test_service_success_false_maps_to_ok_false(self, _mock):
         result = _gh.clean_handler(dry_run=False)
         self.assertFalse(result["ok"])
 
-    @patch("tagmanager.app.move.service.clean_missing",
+    @patch("filetagger.app.move.service.clean_missing",
            side_effect=RuntimeError("db locked"))
     def test_service_exception_returns_ok_false(self, _mock):
         result = _gh.clean_handler()

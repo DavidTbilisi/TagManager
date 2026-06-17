@@ -16,10 +16,10 @@ sys.path.insert(0, project_root)
 class TestHandlers(unittest.TestCase):
     """Test handler functions that exist and work"""
 
-    @patch('tagmanager.app.add.handler.add_tags')
+    @patch('filetagger.app.add.handler.add_tags')
     def test_add_handler_exists(self, mock_add_tags):
         """Test that add handler can be imported and called"""
-        from tagmanager.app.add.handler import handle_add_command
+        from filetagger.app.add.handler import handle_add_command
         
         # Mock args object
         mock_args = MagicMock()
@@ -41,23 +41,23 @@ class TestHandlers(unittest.TestCase):
 
     def test_remove_handler_exists(self):
         """Test that remove handler can be imported"""
-        from tagmanager.app.remove.handler import handle_remove_command
+        from filetagger.app.remove.handler import handle_remove_command
         self.assertTrue(callable(handle_remove_command))
 
     def test_search_handler_exists(self):
         """Test that search handler can be imported"""
-        from tagmanager.app.search.handler import handle_search_command
+        from filetagger.app.search.handler import handle_search_command
         self.assertTrue(callable(handle_search_command))
 
     def test_tags_handler_exists(self):
         """Test that tags handler can be imported"""
-        from tagmanager.app.tags.handler import handle_tags_command
+        from filetagger.app.tags.handler import handle_tags_command
         self.assertTrue(callable(handle_tags_command))
 
     def test_list_all_handler_exists(self):
         """Test that list_all handler can be imported"""
         try:
-            from tagmanager.app.list_all import handler
+            from filetagger.app.list_all import handler
             self.assertTrue(hasattr(handler, '__file__'))
         except ImportError:
             self.skipTest("list_all handler not implemented")
@@ -65,7 +65,7 @@ class TestHandlers(unittest.TestCase):
     def test_paths_handler_exists(self):
         """Test that paths handler can be imported"""
         try:
-            from tagmanager.app.paths import handler
+            from filetagger.app.paths import handler
             self.assertTrue(hasattr(handler, '__file__'))
         except ImportError:
             self.skipTest("paths handler not implemented")
@@ -73,7 +73,7 @@ class TestHandlers(unittest.TestCase):
     def test_storage_handler_exists(self):
         """Test that storage handler can be imported"""
         try:
-            from tagmanager.app.storage import handler
+            from filetagger.app.storage import handler
             self.assertTrue(hasattr(handler, '__file__'))
         except ImportError:
             self.skipTest("storage handler not implemented")

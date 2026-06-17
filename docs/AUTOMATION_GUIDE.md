@@ -1,4 +1,4 @@
-# 🤖 TagManager Automation Guide
+# 🤖 FileTagger Automation Guide
 
 Complete guide for automated version management, building, and publishing.
 
@@ -56,7 +56,7 @@ python bump_version.py patch --no-git
 **What it updates:**
 
 - `pyproject.toml` - Package version
-- `tagmanager/__init__.py` - Module version
+- `filetagger/__init__.py` - Module version
 - Creates git commit and tag (optional)
 
 ### 2. **Installation Script** (`install.sh` / `install.bat`)
@@ -189,7 +189,7 @@ python -m unittest tests.py -v
 ./release.sh minor
 
 # 4. Verify on PyPI
-pip install --upgrade tagmanager-cli
+pip install --upgrade filetagger-cli
 ```
 
 ### **Hotfix Release**
@@ -266,7 +266,7 @@ python bump_version.py patch --no-git
 
 ```bash
 # Use user installation
-pip install --user tagmanager-cli
+pip install --user filetagger-cli
 
 # Or use virtual environment
 python -m venv venv
@@ -291,7 +291,7 @@ venv\Scripts\activate     # Windows
 python bump_version.py --current
 
 # PyPI status
-pip show tagmanager-cli
+pip show filetagger-cli
 
 # Installation test
 tm --help
@@ -301,11 +301,11 @@ tm --help
 
 ```bash
 # Check PyPI page
-# https://pypi.org/project/tagmanager-cli/
+# https://pypi.org/project/filetagger-cli/
 
 # Test fresh installation
-pip uninstall tagmanager-cli -y
-pip install tagmanager-cli
+pip uninstall filetagger-cli -y
+pip install filetagger-cli
 tm --version
 ```
 
@@ -357,4 +357,4 @@ jobs:
 
 ---
 
-**🎯 Happy Automating!** These scripts make releasing TagManager updates as simple as running one command. No more manual version bumping, building, or publishing! 🚀
+**🎯 Happy Automating!** These scripts make releasing FileTagger updates as simple as running one command. No more manual version bumping, building, or publishing! 🚀

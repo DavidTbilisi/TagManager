@@ -1,4 +1,4 @@
-# TagManager v1.3.1
+# FileTagger v1.3.1
 
 ## What's New
 - Version 1.3.1 release
@@ -6,7 +6,7 @@
 
 ## Installation
 ```bash
-pip install tagmanager-cli
+pip install filetagger-cli
 ```
 
 ## Quick Start

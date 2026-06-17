@@ -2,7 +2,7 @@
 
 ## ✅ **Fixed Issues**
 
-The TagManager automation system has been updated to work perfectly on Windows! Here are the issues that were resolved:
+The FileTagger automation system has been updated to work perfectly on Windows! Here are the issues that were resolved:
 
 ### 🔧 **Unicode Encoding Issues**
 
@@ -86,14 +86,14 @@ All automation features now work perfectly on Windows:
 ### ✅ **Version Bumper** (`bump_version.py`)
 
 ```bash
-C:\TagManager> python bump_version.py --current
+C:\FileTagger> python bump_version.py --current
 [PACKAGE] Current version: 1.0.1
 
-C:\TagManager> python bump_version.py patch --no-git
+C:\FileTagger> python bump_version.py patch --no-git
 [RELEASE] Bumping version: 1.0.1 -> 1.0.2
 ==================================================
-[SUCCESS] Updated C:\TagManager\pyproject.toml
-[SUCCESS] Updated C:\TagManager\tagmanager\__init__.py
+[SUCCESS] Updated C:\FileTagger\pyproject.toml
+[SUCCESS] Updated C:\FileTagger\filetagger\__init__.py
 
 [SUCCESS] Successfully updated version to 1.0.2
 [FILES] Updated files: 2
@@ -104,8 +104,8 @@ C:\TagManager> python bump_version.py patch --no-git
 ### ✅ **Installation Script** (`install.bat`)
 
 ```batch
-C:\TagManager> install.bat --local
-🚀 TagManager Local Installation
+C:\FileTagger> install.bat --local
+🚀 FileTagger Local Installation
 ================================
 ⚙️ Installing build tools...
 ⚙️ Building package...
@@ -116,9 +116,9 @@ C:\TagManager> install.bat --local
 ### ✅ **Release Workflow** (`release.sh` via Git Bash)
 
 ```bash
-C:\TagManager> ./release.sh patch --local-only --dry-run
+C:\FileTagger> ./release.sh patch --local-only --dry-run
 ================================
-  TagManager Release Workflow
+  FileTagger Release Workflow
 ================================
 Release Plan:
   Bump Type: patch
@@ -231,7 +231,7 @@ If paths don't work correctly:
 # Use forward slashes or double backslashes
 python bump_version.py --current
 # or
-cd /c/path/to/TagManager  # in Git Bash
+cd /c/path/to/FileTagger  # in Git Bash
 ```
 
 ### **Permission Issues**
@@ -240,12 +240,12 @@ If you get permission errors:
 
 ```batch
 # Run as administrator or use user installation
-pip install --user tagmanager-cli
+pip install --user filetagger-cli
 ```
 
 ## ✨ **Success!**
 
-TagManager's automation system now provides:
+FileTagger's automation system now provides:
 
 - **100% Windows compatibility**
 - **Beautiful terminal output** (with or without emojis)

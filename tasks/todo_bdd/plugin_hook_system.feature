@@ -1,7 +1,7 @@
 Feature: Plugin or hook system for custom automation
   As a power user or developer
   I want to define custom scripts or hooks for auto-tagging, integration, or notifications
-  So that I can extend TagManager's automation to fit my workflow
+  So that I can extend FileTagger's automation to fit my workflow
 
   Scenario: Register a custom hook
     Given a user-defined script or plugin

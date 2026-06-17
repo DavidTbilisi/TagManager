@@ -62,7 +62,7 @@ cmd_release() {
     exit 1
   fi
 
-  local cmd=(gh release create "$tag" --title "TagManager $tag" --notes-file "$NOTES")
+  local cmd=(gh release create "$tag" --title "FileTagger $tag" --notes-file "$NOTES")
   if [[ ${#draft[@]} -gt 0 ]]; then
     cmd+=("${draft[@]}")
   fi

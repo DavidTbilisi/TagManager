@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive tests for tagmanager.app.remove.service
+Comprehensive tests for filetagger.app.remove.service
 Testing every function, edge case, and error condition
 """
 
@@ -25,8 +25,8 @@ class TestRemoveService(unittest.TestCase):
         self.test_dir = tempfile.mkdtemp()
         
         # Mock the helpers module
-        self.helpers_patcher = patch('tagmanager.app.remove.service.load_tags')
-        self.save_tags_patcher = patch('tagmanager.app.remove.service.save_tags')
+        self.helpers_patcher = patch('filetagger.app.remove.service.load_tags')
+        self.save_tags_patcher = patch('filetagger.app.remove.service.save_tags')
         
         self.mock_load_tags = self.helpers_patcher.start()
         self.mock_save_tags = self.save_tags_patcher.start()
@@ -39,7 +39,7 @@ class TestRemoveService(unittest.TestCase):
     
     def test_remove_path_existing_path(self):
         """Test removing an existing path from tags"""
-        from tagmanager.app.remove.service import remove_path
+        from filetagger.app.remove.service import remove_path
         
         # Mock existing tags with absolute paths (as remove_path uses os.path.abspath)
         test_path = os.path.abspath("/path/to/file.txt")
@@ -64,7 +64,7 @@ class TestRemoveService(unittest.TestCase):
     
     def test_remove_path_nonexistent_path(self):
         """Test removing a path that doesn't exist in tags"""
-        from tagmanager.app.remove.service import remove_path
+        from filetagger.app.remove.service import remove_path
         
         # Mock existing tags (without target path)
         other_path = "/path/to/other.txt"
@@ -83,7 +83,7 @@ class TestRemoveService(unittest.TestCase):
     
     def test_remove_path_empty_tags_database(self):
         """Test removing path from empty tags database"""
-        from tagmanager.app.remove.service import remove_path
+        from filetagger.app.remove.service import remove_path
         
         # Mock empty tags
         self.mock_load_tags.return_value = {}
@@ -97,7 +97,7 @@ class TestRemoveService(unittest.TestCase):
     
     def test_remove_path_relative_path(self):
         """Test removing relative path (should be converted to absolute)"""
-        from tagmanager.app.remove.service import remove_path
+        from filetagger.app.remove.service import remove_path
         
         # Create test file
         test_file = "test_file.txt"
@@ -124,7 +124,7 @@ class TestRemoveService(unittest.TestCase):
     
     def test_remove_path_special_characters(self):
         """Test removing path with special characters"""
-        from tagmanager.app.remove.service import remove_path
+        from filetagger.app.remove.service import remove_path
         
         # Path with special characters (use absolute paths)
         special_path_input = "/path/with spaces & symbols!@#/file.txt"
@@ -149,7 +149,7 @@ class TestRemoveService(unittest.TestCase):
     
     def test_remove_path_unicode_characters(self):
         """Test removing path with Unicode characters"""
-        from tagmanager.app.remove.service import remove_path
+        from filetagger.app.remove.service import remove_path
         
         # Path with Unicode characters (use absolute paths)
         unicode_path_input = "/路径/测试文件.txt"
@@ -172,19 +172,19 @@ class TestRemoveService(unittest.TestCase):
         self.assertNotIn(unicode_path, saved_data)
         self.assertIn(normal_path, saved_data)
     
-    @patch('tagmanager.app.remove.service.load_tags', side_effect=Exception("Load error"))
+    @patch('filetagger.app.remove.service.load_tags', side_effect=Exception("Load error"))
     def test_remove_path_load_exception(self, mock_load):
         """Test handling of exception in load_tags"""
-        from tagmanager.app.remove.service import remove_path
+        from filetagger.app.remove.service import remove_path
         
         # Execute - should raise exception
         with self.assertRaises(Exception):
             remove_path("/any/path.txt")
     
-    @patch('tagmanager.app.remove.service.save_tags', side_effect=Exception("Save error"))
+    @patch('filetagger.app.remove.service.save_tags', side_effect=Exception("Save error"))
     def test_remove_path_save_exception(self, mock_save):
         """Test handling of exception in save_tags"""
-        from tagmanager.app.remove.service import remove_path
+        from filetagger.app.remove.service import remove_path
         
         # Use absolute path that matches what remove_path will look for
         test_path = os.path.abspath("/path/file.txt")
@@ -199,7 +199,7 @@ class TestRemoveService(unittest.TestCase):
     
     def test_remove_invalid_paths_mixed_validity(self):
         """Test removing invalid paths while keeping valid ones"""
-        from tagmanager.app.remove.service import remove_invalid_paths
+        from filetagger.app.remove.service import remove_invalid_paths
         
         # Create some test files
         valid_file1 = os.path.join(self.test_dir, "valid1.txt")
@@ -237,7 +237,7 @@ class TestRemoveService(unittest.TestCase):
     
     def test_remove_invalid_paths_all_valid(self):
         """Test remove_invalid_paths when all paths are valid"""
-        from tagmanager.app.remove.service import remove_invalid_paths
+        from filetagger.app.remove.service import remove_invalid_paths
         
         # Create test files
         valid_file1 = os.path.join(self.test_dir, "valid1.txt")
@@ -263,7 +263,7 @@ class TestRemoveService(unittest.TestCase):
     
     def test_remove_invalid_paths_all_invalid(self):
         """Test remove_invalid_paths when all paths are invalid"""
-        from tagmanager.app.remove.service import remove_invalid_paths
+        from filetagger.app.remove.service import remove_invalid_paths
         
         # Mock tags with only invalid paths
         self.mock_load_tags.return_value = {
@@ -281,7 +281,7 @@ class TestRemoveService(unittest.TestCase):
     
     def test_remove_invalid_paths_empty_database(self):
         """Test remove_invalid_paths with empty tags database"""
-        from tagmanager.app.remove.service import remove_invalid_paths
+        from filetagger.app.remove.service import remove_invalid_paths
         
         # Mock empty tags
         self.mock_load_tags.return_value = {}
@@ -295,7 +295,7 @@ class TestRemoveService(unittest.TestCase):
     
     def test_remove_invalid_paths_symlinks(self):
         """Test remove_invalid_paths with symbolic links"""
-        from tagmanager.app.remove.service import remove_invalid_paths
+        from filetagger.app.remove.service import remove_invalid_paths
         
         # Create a real file and a symlink
         real_file = os.path.join(self.test_dir, "real_file.txt")
@@ -327,7 +327,7 @@ class TestRemoveService(unittest.TestCase):
     
     def test_remove_invalid_paths_broken_symlinks(self):
         """Test remove_invalid_paths with broken symbolic links"""
-        from tagmanager.app.remove.service import remove_invalid_paths
+        from filetagger.app.remove.service import remove_invalid_paths
         
         # Create a symlink to a non-existent file
         real_file = os.path.join(self.test_dir, "temp_file.txt")
@@ -360,7 +360,7 @@ class TestRemoveService(unittest.TestCase):
     @patch('os.path.exists', side_effect=OSError("Permission denied"))
     def test_remove_invalid_paths_permission_error(self, mock_exists):
         """Test remove_invalid_paths with permission errors"""
-        from tagmanager.app.remove.service import remove_invalid_paths
+        from filetagger.app.remove.service import remove_invalid_paths
         
         # Mock tags
         self.mock_load_tags.return_value = {
@@ -374,19 +374,19 @@ class TestRemoveService(unittest.TestCase):
         # Verify load was called
         self.mock_load_tags.assert_called_once()
     
-    @patch('tagmanager.app.remove.service.load_tags', side_effect=Exception("Load error"))
+    @patch('filetagger.app.remove.service.load_tags', side_effect=Exception("Load error"))
     def test_remove_invalid_paths_load_exception(self, mock_load):
         """Test handling of exception in load_tags for remove_invalid_paths"""
-        from tagmanager.app.remove.service import remove_invalid_paths
+        from filetagger.app.remove.service import remove_invalid_paths
         
         # Execute - should raise exception
         with self.assertRaises(Exception):
             remove_invalid_paths()
     
-    @patch('tagmanager.app.remove.service.save_tags', side_effect=Exception("Save error"))
+    @patch('filetagger.app.remove.service.save_tags', side_effect=Exception("Save error"))
     def test_remove_invalid_paths_save_exception(self, mock_save):
         """Test handling of exception in save_tags for remove_invalid_paths"""
-        from tagmanager.app.remove.service import remove_invalid_paths
+        from filetagger.app.remove.service import remove_invalid_paths
         
         self.mock_load_tags.return_value = {"/path/file.txt": ["tag"]}
         
@@ -396,7 +396,7 @@ class TestRemoveService(unittest.TestCase):
     
     def test_remove_invalid_paths_large_database(self):
         """Test remove_invalid_paths with large number of paths"""
-        from tagmanager.app.remove.service import remove_invalid_paths
+        from filetagger.app.remove.service import remove_invalid_paths
         
         # Create a few valid files
         valid_files = []
@@ -432,7 +432,7 @@ class TestRemoveService(unittest.TestCase):
     
     def test_remove_path_case_sensitivity(self):
         """Test that path removal is case-sensitive on case-sensitive filesystems"""
-        from tagmanager.app.remove.service import remove_path
+        from filetagger.app.remove.service import remove_path
         
         # Paths with different cases (use absolute paths)
         lower_path_input = "/path/to/file.txt"
@@ -462,8 +462,8 @@ class TestRemoveService(unittest.TestCase):
 
 class TestRemoveTagFromFile(unittest.TestCase):
     def setUp(self):
-        self.helpers_patcher = patch("tagmanager.app.remove.service.load_tags")
-        self.save_tags_patcher = patch("tagmanager.app.remove.service.save_tags")
+        self.helpers_patcher = patch("filetagger.app.remove.service.load_tags")
+        self.save_tags_patcher = patch("filetagger.app.remove.service.save_tags")
         self.mock_load_tags = self.helpers_patcher.start()
         self.mock_save_tags = self.save_tags_patcher.start()
 
@@ -472,7 +472,7 @@ class TestRemoveTagFromFile(unittest.TestCase):
         self.save_tags_patcher.stop()
 
     def test_remove_one_tag_success(self):
-        from tagmanager.app.remove.service import remove_tag_from_file
+        from filetagger.app.remove.service import remove_tag_from_file
 
         p = os.path.abspath("/x/a.txt")
         self.mock_load_tags.return_value = {p: ["a", "B", "c"]}
@@ -483,7 +483,7 @@ class TestRemoveTagFromFile(unittest.TestCase):
         self.assertEqual(saved[p], ["a", "c"])
 
     def test_remove_one_tag_not_present(self):
-        from tagmanager.app.remove.service import remove_tag_from_file
+        from filetagger.app.remove.service import remove_tag_from_file
 
         p = os.path.abspath("/x/a.txt")
         self.mock_load_tags.return_value = {p: ["a"]}
@@ -496,8 +496,8 @@ class TestRemoveAllTags(unittest.TestCase):
     """remove_all_tags idempotency (BDD: clear-all / already empty / unknown path)."""
 
     def setUp(self):
-        self.helpers_patcher = patch("tagmanager.app.remove.service.load_tags")
-        self.save_tags_patcher = patch("tagmanager.app.remove.service.save_tags")
+        self.helpers_patcher = patch("filetagger.app.remove.service.load_tags")
+        self.save_tags_patcher = patch("filetagger.app.remove.service.save_tags")
         self.mock_load_tags = self.helpers_patcher.start()
         self.mock_save_tags = self.save_tags_patcher.start()
 
@@ -506,7 +506,7 @@ class TestRemoveAllTags(unittest.TestCase):
         self.save_tags_patcher.stop()
 
     def test_remove_all_tags_clears_and_saves(self):
-        from tagmanager.app.remove.service import remove_all_tags
+        from filetagger.app.remove.service import remove_all_tags
 
         p = os.path.abspath("/x/a.txt")
         self.mock_load_tags.return_value = {p: ["a", "b"]}
@@ -517,7 +517,7 @@ class TestRemoveAllTags(unittest.TestCase):
         self.assertEqual(saved[p], [])
 
     def test_remove_all_tags_unknown_path_succeeds(self):
-        from tagmanager.app.remove.service import remove_all_tags
+        from filetagger.app.remove.service import remove_all_tags
 
         self.mock_load_tags.return_value = {}
         r = remove_all_tags("/nope/file.txt")
@@ -526,7 +526,7 @@ class TestRemoveAllTags(unittest.TestCase):
         self.mock_save_tags.assert_not_called()
 
     def test_remove_all_tags_already_empty_succeeds(self):
-        from tagmanager.app.remove.service import remove_all_tags
+        from filetagger.app.remove.service import remove_all_tags
 
         p = os.path.abspath("/x/empty.txt")
         self.mock_load_tags.return_value = {p: []}

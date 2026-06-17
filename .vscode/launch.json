@@ -2,10 +2,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "🏷️ TagManager CLI - Add Tags",
+            "name": "🏷️ FileTagger CLI - Add Tags",
             "type": "debugpy",
             "request": "launch",
-            "module": "tagmanager.cli",
+            "module": "filetagger.cli",
             "args": [
                 "add",
                 ".",
@@ -21,10 +21,10 @@
             }
         },
         {
-            "name": "🔍 TagManager CLI - Search Tags",
+            "name": "🔍 FileTagger CLI - Search Tags",
             "type": "debugpy",
             "request": "launch",
-            "module": "tagmanager.cli",
+            "module": "filetagger.cli",
             "args": [
                 "search",
                 "--tags",
@@ -38,10 +38,10 @@
             }
         },
         {
-            "name": "📋 TagManager CLI - List All Tags",
+            "name": "📋 FileTagger CLI - List All Tags",
             "type": "debugpy",
             "request": "launch",
-            "module": "tagmanager.cli",
+            "module": "filetagger.cli",
             "args": [
                 "tags",
                 "list"
@@ -54,10 +54,10 @@
             }
         },
         {
-            "name": "🗑️ TagManager CLI - Remove Tags",
+            "name": "🗑️ FileTagger CLI - Remove Tags",
             "type": "debugpy",
             "request": "launch",
-            "module": "tagmanager.cli",
+            "module": "filetagger.cli",
             "args": [
                 "remove",
                 "--path",
@@ -71,10 +71,10 @@
             }
         },
         {
-            "name": "📊 TagManager CLI - Statistics",
+            "name": "📊 FileTagger CLI - Statistics",
             "type": "debugpy",
             "request": "launch",
-            "module": "tagmanager.cli",
+            "module": "filetagger.cli",
             "args": [
                 "stats"
             ],
@@ -86,10 +86,10 @@
             }
         },
         {
-            "name": "⚡ TagManager CLI - Custom Command",
+            "name": "⚡ FileTagger CLI - Custom Command",
             "type": "debugpy",
             "request": "launch",
-            "module": "tagmanager.cli",
+            "module": "filetagger.cli",
             "args": [],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
@@ -121,7 +121,7 @@
             "request": "launch",
             "module": "pytest",
             "args": [
-                "--cov=tagmanager",
+                "--cov=filetagger",
                 "--cov-report=term-missing",
                 "-v"
             ],
@@ -148,7 +148,7 @@
             "name": "🔧 Debug Service Module",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/tagmanager/app/add/service.py",
+            "program": "${workspaceFolder}/filetagger/app/add/service.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "python": "${workspaceFolder}/venv/Scripts/python.exe",

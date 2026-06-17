@@ -1,0 +1,710 @@
+"""Shared handlers for the local web GUI (used by :mod:`filetagger.app.http_api`).
+
+Wraps service-layer functions in JSON-shaped responses, with a single safety
+gate (``FILETAGGER_GUI_ROOT``) that restricts path-touching operations to
+a subtree if the user opts in.
+"""
+
+from __future__ import annotations
+
+import os
+from typing import Any, Dict, List, Optional, Tuple
+
+from .add.service import add_tags
+from .helpers import load_tags, save_tags
+from .remove.service import remove_all_tags, remove_path as _remove_path
+
+
+def gui_allowed_root() -> Optional[str]:
+    """If ``FILETAGGER_GUI_ROOT`` is set, restrict GUI to paths under it."""
+    r = os.environ.get("FILETAGGER_GUI_ROOT", "").strip()
+    if not r:
+        return None
+    return os.path.normpath(os.path.abspath(r))
+
+
+def normalize_gui_path(path: str) -> str:
+    """Return an OS-native absolute path.
+
+    ``os.path.join(cwd, path)`` is intentional: it makes relative paths
+    resolve from the server's working directory while leaving absolute
+    paths unchanged (``os.path.join`` discards the first component when
+    the second is absolute on both Windows and POSIX).
+    """
+    return os.path.normpath(os.path.abspath(os.path.join(os.getcwd(), path.strip())))
+
+
+def _path_candidates(path: str) -> List[str]:
+    """Return a list of candidate path strings to try against the DB.
+
+    Preserves the *exact* raw string first so that paths stored with
+    non-native separators (e.g. forward-slash keys on Windows) still
+    match.  Subsequent candidates normalise separators and resolve
+    absolute paths to maximise coverage.  Deduplication keeps the list
+    short (≤5 items).
+    """
+    raw = path.strip()
+    candidates: List[str] = []
+    seen: set = set()
+
+    def _add(p: str) -> None:
+        if p not in seen:
+            seen.add(p)
+            candidates.append(p)
+
+    # 1. Exact raw string — handles paths stored verbatim (incl. Unix-style
+    #    keys like "/home/user/file" or "/test/file.py" in a Windows DB).
+    _add(raw)
+    # 2. Forward-slash variant.
+    _add(raw.replace("\\", "/"))
+    # 3. Backslash variant.
+    _add(raw.replace("/", "\\"))
+    # 4. OS-normalised (normpath converts separator but keeps relative).
+    _add(os.path.normpath(raw))
+    # 5. Fully resolved absolute path (cwd-relative for relative inputs).
+    _add(os.path.normpath(os.path.abspath(os.path.join(os.getcwd(), raw))))
+    return candidates
+
+
+def _resolve_db_path(path: str) -> Optional[str]:
+    """Return the first DB key that matches any candidate representation of *path*.
+
+    Returns ``None`` when no DB key matches any candidate.
+    """
+    db = load_tags()
+    for candidate in _path_candidates(path):
+        if candidate in db:
+            return candidate
+    return None
+
+
+def path_allowed(path_abs: str, allowed_root: Optional[str]) -> Tuple[bool, str]:
+    if not allowed_root:
+        return True, ""
+    root = os.path.normpath(os.path.abspath(allowed_root))
+    if path_abs == root or path_abs.startswith(root + os.sep):
+        return True, ""
+    return False, f"path outside allowed root ({root})"
+
+
+def get_path_tags(path: str) -> Dict[str, Any]:
+    allowed = gui_allowed_root()
+    # Try to find an exact DB match first (handles legacy relative or
+    # cross-platform paths stored without OS normalisation).
+    db_key = _resolve_db_path(path)
+    if db_key is not None:
+        ok, msg = path_allowed(db_key, allowed)
+        if not ok:
+            return {"ok": False, "error": msg, "path": db_key, "tags": []}
+        return {"ok": True, "path": db_key, "tags": list(load_tags().get(db_key, []))}
+    # Fall back to the OS-resolved path (the file may not be tagged yet).
+    abs_path = normalize_gui_path(path)
+    ok, msg = path_allowed(abs_path, allowed)
+    if not ok:
+        return {"ok": False, "error": msg, "path": abs_path, "tags": []}
+    return {"ok": True, "path": abs_path, "tags": []}
+
+
+def _compute_add_preview(
+    abs_path: str,
+    new_tags: List[str],
+    apply_aliases: bool,
+    auto_tag: bool,
+) -> Optional[Tuple[List[str], List[str]]]:
+    """Simulate add_tags() without writing. Returns (merged, before) or None.
+
+    Mirrors the side-effect-free part of :func:`add.service.add_tags` so the
+    preview page can render before/after chips.
+    """
+    flat = [t.strip() for t in (new_tags or []) if t and str(t).strip()]
+
+    # Extension-based auto-tag rules (same call order as add_tags()).
+    if auto_tag:
+        try:
+            from .autotag.service import suggest_tags_for_file
+            for t in suggest_tags_for_file(abs_path):
+                if t not in flat:
+                    flat.append(t)
+        except Exception:
+            pass
+
+    # Alias resolution.
+    if apply_aliases:
+        try:
+            from .alias.service import apply_aliases as _resolve
+            flat = _resolve(flat)
+        except Exception:
+            pass
+
+    if not flat:
+        return None
+
+    before = list(load_tags().get(abs_path, []) or [])
+    merged = list(before)
+    for t in flat:
+        if t not in merged:
+            merged.append(t)
+    return merged, before
+
+
+def post_add_tags(
+    path: str,
+    tags: List[str],
+    dry_run: bool = False,
+    no_auto: bool = False,
+    no_aliases: bool = False,
+    no_content: bool = False,  # accepted for HTML compatibility; not used
+) -> Dict[str, Any]:
+    """Add tags to a file (or preview the merge when ``dry_run`` is set)."""
+    del no_content  # current pipeline has no content-rule stage
+    allowed = gui_allowed_root()
+    abs_path = normalize_gui_path(path)
+    ok, msg = path_allowed(abs_path, allowed)
+    if not ok:
+        return {"ok": False, "error": msg}
+    if not os.path.isfile(abs_path):
+        return {"ok": False, "error": "not a file or does not exist"}
+
+    flat = [str(t).strip() for t in tags if str(t).strip()]
+
+    if dry_run:
+        comp = _compute_add_preview(
+            abs_path, flat,
+            apply_aliases=not no_aliases,
+            auto_tag=not no_auto,
+        )
+        if comp is None:
+            return {
+                "ok": False,
+                "error": "nothing to merge (no tags after auto-tag/alias rules)",
+            }
+        merged, before = comp
+        return {
+            "ok": True,
+            "dry_run": True,
+            "path": abs_path,
+            "tags_before": before,
+            "tags_after_preview": merged,
+            "tags": merged,
+        }
+
+    if not flat and no_auto:
+        return {"ok": False, "error": "no tags provided"}
+
+    success = add_tags(
+        abs_path,
+        flat or [""],
+        apply_aliases=not no_aliases,
+        auto_tag=not no_auto,
+    )
+    if not success:
+        return {"ok": False, "error": "add_tags failed (see server stderr or invalid input)"}
+    after = list(load_tags().get(abs_path, []))
+    return {"ok": True, "dry_run": False, "path": abs_path, "tags": after}
+
+
+def post_remove(
+    path: str,
+    mode: str,
+    tag: Optional[str] = None,
+    dry_run: bool = False,
+) -> Dict[str, Any]:
+    """Remove tags or paths.
+
+    ``mode``:
+      * ``path``       — drop the DB entry entirely
+      * ``clear_tags`` — empty the tag list, keep the entry
+      * ``one_tag``    — strip ``tag`` from the file's tag list
+    """
+    allowed = gui_allowed_root()
+    abs_path = normalize_gui_path(path)
+    ok, msg = path_allowed(abs_path, allowed)
+    if not ok:
+        return {"ok": False, "error": msg}
+
+    if mode == "path":
+        if dry_run:
+            return {"ok": True, "dry_run": True,
+                    "message": f"would remove path from DB: {abs_path}"}
+        # remove_path() in the current code prints + returns None; check the
+        # store before/after to give the GUI a real success/failure signal.
+        before = load_tags()
+        if abs_path not in before:
+            return {"ok": False, "error": "path not in tag database", "path": abs_path}
+        _remove_path(abs_path)
+        return {"ok": True, "message": f"removed {abs_path}", "path": abs_path}
+
+    if mode == "clear_tags":
+        if dry_run:
+            return {"ok": True, "dry_run": True,
+                    "message": f"would clear all tags on: {abs_path}"}
+        r = remove_all_tags(abs_path)
+        return {"ok": r.get("success", False),
+                "message": r.get("message", ""), "path": abs_path}
+
+    if mode == "one_tag":
+        if not tag or not str(tag).strip():
+            return {"ok": False, "error": "tag required for one_tag mode"}
+        if dry_run:
+            return {"ok": True, "dry_run": True,
+                    "message": f"would remove tag {tag!r} from {abs_path}"}
+        data = load_tags()
+        if abs_path not in data:
+            return {"ok": False, "error": "path not in tag database"}
+        before = list(data[abs_path])
+        target = str(tag).strip().lower()
+        new_tags = [t for t in before if t.lower() != target]
+        if len(new_tags) == len(before):
+            return {"ok": False, "error": "tag not present on file"}
+        data[abs_path] = new_tags
+        if not save_tags(data):
+            return {"ok": False, "error": "save failed"}
+        return {"ok": True, "path": abs_path, "tags": new_tags}
+
+    return {"ok": False, "error": f"unknown mode: {mode}"}
+
+
+# ---------------------------------------------------------------------------
+# Read-only inventory helpers — used by the GUI's archive / autocomplete / stats
+# ---------------------------------------------------------------------------
+
+
+def get_all_tags_with_counts() -> Dict[str, Any]:
+    """Return every distinct tag with its usage count."""
+    counts: Dict[str, int] = {}
+    try:
+        store = load_tags() or {}
+    except Exception:
+        store = {}
+    for tags in store.values():
+        if not isinstance(tags, list):
+            continue
+        for t in tags:
+            if isinstance(t, str) and t.strip():
+                counts[t] = counts.get(t, 0) + 1
+    items = [{"tag": t, "count": c}
+             for t, c in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0].lower()))]
+    return {
+        "ok": True,
+        "tags": items,
+        "unique": len(items),
+        "total_files": len(store),
+    }
+
+
+def get_stats() -> Dict[str, Any]:
+    """Wrap stats.service.get_overall_statistics into a {ok, …} envelope."""
+    try:
+        from .stats.service import get_overall_statistics
+        stats = get_overall_statistics() or {}
+        return {"ok": True, **stats}
+    except Exception as exc:
+        return {"ok": False, "error": f"stats unavailable: {exc}"}
+
+
+# ---------------------------------------------------------------------------
+# Aliases — read + add/delete
+# ---------------------------------------------------------------------------
+
+
+def get_aliases_handler() -> Dict[str, Any]:
+    try:
+        from .alias.service import get_aliases
+        return {"ok": True, "aliases": dict(get_aliases() or {})}
+    except Exception as exc:
+        return {"ok": False, "error": f"aliases unavailable: {exc}"}
+
+
+def set_alias_handler(alias: str, canonical: str) -> Dict[str, Any]:
+    alias = (alias or "").strip()
+    canonical = (canonical or "").strip()
+    if not alias or not canonical:
+        return {"ok": False, "error": "alias and canonical required"}
+    try:
+        from .alias.service import add_alias
+        if not add_alias(alias, canonical):
+            return {"ok": False, "error": "alias == canonical or invalid"}
+        return {"ok": True, "alias": alias.lower(), "canonical": canonical.lower()}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+def delete_alias_handler(alias: str) -> Dict[str, Any]:
+    alias = (alias or "").strip()
+    if not alias:
+        return {"ok": False, "error": "alias required"}
+    try:
+        from .alias.service import remove_alias
+        if not remove_alias(alias):
+            return {"ok": False, "error": "alias not found"}
+        return {"ok": True, "alias": alias.lower()}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+# ---------------------------------------------------------------------------
+# Presets — read + add/delete
+# ---------------------------------------------------------------------------
+
+
+def get_presets_handler() -> Dict[str, Any]:
+    try:
+        from .preset.service import get_presets
+        return {"ok": True, "presets": dict(get_presets() or {})}
+    except Exception as exc:
+        return {"ok": False, "error": f"presets unavailable: {exc}"}
+
+
+def set_preset_handler(name: str, tags: List[str]) -> Dict[str, Any]:
+    name = (name or "").strip()
+    clean = [str(t).strip() for t in (tags or []) if str(t).strip()]
+    if not name or not clean:
+        return {"ok": False, "error": "name and at least one tag required"}
+    try:
+        from .preset.service import save_preset
+        if not save_preset(name, clean):
+            return {"ok": False, "error": "save_preset rejected input"}
+        return {"ok": True, "name": name.lower(), "tags": clean}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+def delete_preset_handler(name: str) -> Dict[str, Any]:
+    name = (name or "").strip()
+    if not name:
+        return {"ok": False, "error": "name required"}
+    try:
+        from .preset.service import delete_preset
+        if not delete_preset(name):
+            return {"ok": False, "error": "preset not found"}
+        return {"ok": True, "name": name.lower()}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+# ---------------------------------------------------------------------------
+# Bulk — preview + apply (wraps bulk.service)
+# ---------------------------------------------------------------------------
+
+
+def _filter_to_allowed_root(paths: List[str]) -> List[str]:
+    """If FILETAGGER_GUI_ROOT is set, drop anything outside the allowed tree."""
+    root = gui_allowed_root()
+    if not root:
+        return list(paths)
+    return [
+        p for p in paths
+        if os.path.normpath(os.path.abspath(p)) == root
+        or os.path.normpath(os.path.abspath(p)).startswith(root + os.sep)
+    ]
+
+
+def bulk_preview_handler(pattern: str, tags: List[str], base_path: str = ".") -> Dict[str, Any]:
+    pattern = (pattern or "").strip() or "**/*"
+    clean = [str(t).strip() for t in (tags or []) if str(t).strip()]
+    if not clean:
+        return {"ok": False, "error": "at least one tag required"}
+    try:
+        from .bulk.service import find_files_by_pattern
+        files = find_files_by_pattern(pattern, (base_path or ".").strip() or ".")
+        files = _filter_to_allowed_root(files)
+        return {
+            "ok": True,
+            "dry_run": True,
+            "pattern": pattern,
+            "tags": clean,
+            "files": files,
+            "count": len(files),
+        }
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+# ---------------------------------------------------------------------------
+# Relocate a record (update its DB key without touching the file on disk)
+# ---------------------------------------------------------------------------
+
+
+def relocate_path_handler(old_path: str, new_path: str) -> Dict[str, Any]:
+    """Rename a tag-database key from *old_path* to *new_path*.
+
+    Does NOT move the actual file — only updates the stored key so that the
+    record (and all its subjects) follows the file to its new location.
+    Useful when a file has been moved outside of FileTagger's knowledge.
+
+    Resolves *old_path* via ``_resolve_db_path`` so that records stored with
+    non-native separators (e.g. Unix-style keys on Windows) are found
+    correctly.  *new_path* is resolved to a canonical absolute path.
+    """
+    old_path = str(old_path or "").strip()
+    new_path = str(new_path or "").strip()
+    if not old_path:
+        return {"ok": False, "error": "old_path required"}
+    if not new_path:
+        return {"ok": False, "error": "new_path required"}
+
+    db_key = _resolve_db_path(old_path)
+    if db_key is None:
+        return {"ok": False, "error": f"No record found for: {old_path}"}
+
+    new_abs = normalize_gui_path(new_path)
+    allowed = gui_allowed_root()
+    ok, msg = path_allowed(new_abs, allowed)
+    if not ok:
+        return {"ok": False, "error": msg}
+
+    tags = load_tags()
+    if new_abs in tags:
+        return {"ok": False, "error": f"A record already exists at the new path; withdraw it first."}
+    tags[new_abs] = tags.pop(db_key)
+    save_tags(tags)
+    return {
+        "ok": True,
+        "old": db_key,
+        "new": new_abs,
+        "message": f"Record relocated: {os.path.basename(db_key)} → {new_abs}",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Open file / containing folder via the OS shell
+# ---------------------------------------------------------------------------
+
+
+def open_path_handler(path: str, mode: str = "file") -> Dict[str, Any]:
+    """Launch a file in its default app, or open its containing folder.
+
+    Honours ``FILETAGGER_GUI_ROOT`` when set — paths outside the allowed
+    subtree are refused.  ``mode`` is ``file`` (default) or ``folder``.
+    On Windows the folder mode uses ``explorer /select,<path>`` so the
+    record is highlighted inside its folder.
+    """
+    import subprocess
+    import sys
+
+    if not path or not str(path).strip():
+        return {"ok": False, "error": "path required"}
+
+    raw = str(path).strip()
+    abs_path = normalize_gui_path(raw)
+    allowed = gui_allowed_root()
+
+    # If the primary resolved path doesn't exist on disk, try the raw key and
+    # common fallback locations (e.g. relative paths stored without a cwd prefix).
+    if not os.path.exists(abs_path):
+        fallbacks: List[str] = [raw]
+        # Relative path → try home directory as base.
+        if not os.path.isabs(raw):
+            fallbacks.append(os.path.join(os.path.expanduser("~"), raw))
+        # Slash-swap variant (for paths stored with the opposite separator style).
+        alt = raw.replace("\\", "/") if "\\" in raw else raw.replace("/", "\\")
+        if alt != raw:
+            fallbacks.append(os.path.normpath(alt))
+        for candidate in fallbacks:
+            if os.path.exists(candidate):
+                abs_path = os.path.normpath(candidate)
+                break
+
+    ok, msg = path_allowed(abs_path, allowed)
+    if not ok:
+        return {"ok": False, "error": msg, "path": abs_path}
+
+    if not os.path.exists(abs_path):
+        return {"ok": False, "error": "not found", "path": abs_path}
+
+    mode = (mode or "file").strip().lower()
+    if mode not in ("file", "folder"):
+        return {"ok": False, "error": f"unknown mode: {mode}"}
+
+    try:
+        if sys.platform.startswith("win"):
+            if mode == "folder":
+                # /select highlights the file inside its parent folder.
+                subprocess.Popen(["explorer", f"/select,{abs_path}"])
+            else:
+                # os.startfile is the right call for default-app launch on Win.
+                os.startfile(abs_path)  # noqa: S606 (intentional)
+        elif sys.platform == "darwin":
+            if mode == "folder":
+                subprocess.Popen(["open", "-R", abs_path])
+            else:
+                subprocess.Popen(["open", abs_path])
+        else:
+            target = os.path.dirname(abs_path) if mode == "folder" else abs_path
+            subprocess.Popen(["xdg-open", target])
+    except Exception as exc:
+        return {"ok": False, "error": f"launch failed: {exc}", "path": abs_path}
+
+    return {
+        "ok": True,
+        "mode": mode,
+        "path": abs_path,
+        "message": f"opened {'folder of' if mode == 'folder' else ''} {abs_path}".strip(),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Per-tag statistics (drives the GUI's tag-detail drawer)
+# ---------------------------------------------------------------------------
+
+
+def get_tag_stats_handler(tag: str) -> Dict[str, Any]:
+    """Return rich stats for a single tag — files, co-occurrences, file types."""
+    tag = (tag or "").strip()
+    if not tag:
+        return {"ok": False, "error": "tag required"}
+    try:
+        from .stats.service import get_tag_statistics
+        info = get_tag_statistics(tag) or {}
+        return {"ok": True, **info}
+    except Exception as exc:
+        return {"ok": False, "error": f"tag stats unavailable: {exc}"}
+
+
+# ---------------------------------------------------------------------------
+# Filter dashboards — wrap filter.service functions in {ok: …} envelopes
+# ---------------------------------------------------------------------------
+
+
+def filter_duplicates_handler() -> Dict[str, Any]:
+    try:
+        from .filter.service import find_duplicate_tags
+        res = find_duplicate_tags() or {}
+        # Tuple keys (sorted tag tuples) won't survive JSON — convert to lists.
+        dupes = res.get("duplicates", {}) or {}
+        out_groups = [
+            {"tags": list(sig), "files": list(files)}
+            for sig, files in dupes.items()
+        ]
+        return {
+            "ok": True,
+            "groups": out_groups,
+            "group_count": res.get("duplicate_groups", len(out_groups)),
+            "file_count": res.get("duplicate_files_count", sum(len(g["files"]) for g in out_groups)),
+            "total_files": res.get("total_files", 0),
+            "message": res.get("message", ""),
+        }
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+def filter_orphans_handler() -> Dict[str, Any]:
+    try:
+        from .filter.service import find_orphaned_files
+        res = find_orphaned_files() or {}
+        return {
+            "ok": True,
+            "orphans": list(res.get("orphans", []) or []),
+            "count": res.get("orphan_count", 0),
+            "total_files": res.get("total_files", 0),
+            "message": res.get("message", ""),
+        }
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+def filter_clusters_handler(min_size: int = 2) -> Dict[str, Any]:
+    try:
+        from .filter.service import find_tag_clusters
+        try:
+            min_size = max(2, int(min_size))
+        except Exception:
+            min_size = 2
+        res = find_tag_clusters(min_cluster_size=min_size) or {}
+        # Shape into a JSON-friendly list of {tag, file_count, percentage, files}.
+        clusters = res.get("clusters", {}) or {}
+        out = [
+            {
+                "tag": tag,
+                "file_count": info.get("file_count", 0),
+                "percentage": round(info.get("percentage", 0), 2),
+                "files": list(info.get("files", []) or []),
+            }
+            for tag, info in clusters.items()
+        ]
+        return {
+            "ok": True,
+            "clusters": out,
+            "count": len(out),
+            "min_size": min_size,
+            "total_files": res.get("total_files", 0),
+        }
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+def filter_isolated_handler(max_shared: int = 1) -> Dict[str, Any]:
+    try:
+        from .filter.service import find_isolated_files
+        try:
+            max_shared = max(0, int(max_shared))
+        except Exception:
+            max_shared = 1
+        res = find_isolated_files(max_shared_tags=max_shared) or {}
+        return {
+            "ok": True,
+            "isolated": list(res.get("isolated_files", []) or []),
+            "count": len(res.get("isolated_files", []) or []),
+            "max_shared": max_shared,
+            "total_files": res.get("total_files", 0),
+        }
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+# ---------------------------------------------------------------------------
+# Clean — remove tag entries for files that no longer exist on disk
+# ---------------------------------------------------------------------------
+
+
+def clean_handler(dry_run: bool = True) -> Dict[str, Any]:
+    """Wrap move.service.clean_missing in a JSON-shaped response."""
+    try:
+        from .move.service import clean_missing
+        res = clean_missing(dry_run=bool(dry_run)) or {}
+        return {
+            "ok": bool(res.get("success", False)),
+            "dry_run": bool(res.get("dry_run", dry_run)),
+            "missing": list(res.get("missing", []) or []),
+            "count": int(res.get("count", 0)),
+            "message": res.get("message", ""),
+        }
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+def bulk_apply_handler(pattern: str, tags: List[str], base_path: str = ".") -> Dict[str, Any]:
+    pattern = (pattern or "").strip() or "**/*"
+    clean = [str(t).strip() for t in (tags or []) if str(t).strip()]
+    if not clean:
+        return {"ok": False, "error": "at least one tag required"}
+    root = gui_allowed_root()
+    try:
+        from .bulk.service import find_files_by_pattern, bulk_add_tags
+        # When a root restriction is in effect, run the find first, filter, then
+        # call bulk_add_tags per-file via add_tags to keep the same alias/auto-tag
+        # logic and avoid touching files outside the allowed tree.
+        if root:
+            files = _filter_to_allowed_root(
+                find_files_by_pattern(pattern, (base_path or ".").strip() or ".")
+            )
+            if not files:
+                return {
+                    "ok": False, "error": "no files matched within allowed root",
+                    "pattern": pattern, "files": [], "count": 0,
+                }
+            modified = 0
+            for f in files:
+                if add_tags(f, list(clean), apply_aliases=True, auto_tag=True):
+                    modified += 1
+            return {
+                "ok": True, "pattern": pattern, "tags": clean,
+                "files_processed": modified, "files_found": files,
+                "message": f"Added tags {clean} to {modified} file(s).",
+            }
+        result = bulk_add_tags(pattern, clean,
+                               (base_path or ".").strip() or ".", dry_run=False)
+        result["ok"] = bool(result.get("success", False))
+        return result
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}

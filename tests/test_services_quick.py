@@ -35,7 +35,7 @@ class TestServicesQuick(unittest.TestCase):
     def test_add_service_basic(self):
         """Test that add service can be imported and has expected functions"""
         try:
-            from tagmanager.app.add.service import add_tags
+            from filetagger.app.add.service import add_tags
             self.assertTrue(callable(add_tags))
             print("✅ Add service: add_tags function found")
         except ImportError as e:
@@ -44,7 +44,7 @@ class TestServicesQuick(unittest.TestCase):
     def test_remove_service_basic(self):
         """Test that remove service can be imported and has expected functions"""
         try:
-            from tagmanager.app.remove.service import remove_path, remove_invalid_paths
+            from filetagger.app.remove.service import remove_path, remove_invalid_paths
             self.assertTrue(callable(remove_path))
             self.assertTrue(callable(remove_invalid_paths))
             print("✅ Remove service: functions found")
@@ -54,7 +54,7 @@ class TestServicesQuick(unittest.TestCase):
     def test_search_service_basic(self):
         """Test that search service can be imported and has expected functions"""
         try:
-            from tagmanager.app.search.service import search_files_by_tags, search_files_by_path
+            from filetagger.app.search.service import search_files_by_tags, search_files_by_path
             self.assertTrue(callable(search_files_by_tags))
             self.assertTrue(callable(search_files_by_path))
             print("✅ Search service: functions found")
@@ -64,7 +64,7 @@ class TestServicesQuick(unittest.TestCase):
     def test_tags_service_basic(self):
         """Test that tags service can be imported and has expected functions"""
         try:
-            from tagmanager.app.tags.service import list_all_tags, search_files_by_tag
+            from filetagger.app.tags.service import list_all_tags, search_files_by_tag
             self.assertTrue(callable(list_all_tags))
             self.assertTrue(callable(search_files_by_tag))
             print("✅ Tags service: functions found")
@@ -74,18 +74,18 @@ class TestServicesQuick(unittest.TestCase):
     def test_helpers_basic(self):
         """Test that helpers can be imported and has expected functions"""
         try:
-            from tagmanager.app.helpers import load_tags, save_tags
+            from filetagger.app.helpers import load_tags, save_tags
             self.assertTrue(callable(load_tags))
             self.assertTrue(callable(save_tags))
             print("✅ Helpers: functions found")
         except ImportError as e:
             self.fail(f"❌ Helpers import failed: {e}")
     
-    @patch('tagmanager.app.add.service.load_tags')
-    @patch('tagmanager.app.add.service.save_tags')
+    @patch('filetagger.app.add.service.load_tags')
+    @patch('filetagger.app.add.service.save_tags')
     def test_add_service_functionality(self, mock_save, mock_load):
         """Test basic add functionality"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         # Mock empty tags and successful save
         mock_load.return_value = {}
@@ -100,10 +100,10 @@ class TestServicesQuick(unittest.TestCase):
         self.assertTrue(result)
         print("✅ Add service: basic functionality works")
     
-    @patch('tagmanager.app.search.service.load_tags')
+    @patch('filetagger.app.search.service.load_tags')
     def test_search_service_functionality(self, mock_load):
         """Test basic search functionality"""
-        from tagmanager.app.search.service import search_files_by_tags
+        from filetagger.app.search.service import search_files_by_tags
         
         # Mock tags database
         mock_load.return_value = {
@@ -119,10 +119,10 @@ class TestServicesQuick(unittest.TestCase):
         self.assertIsInstance(results, list)
         print("✅ Search service: basic functionality works")
     
-    @patch('tagmanager.app.tags.service.load_tags')
+    @patch('filetagger.app.tags.service.load_tags')
     def test_tags_service_functionality(self, mock_load):
         """Test basic tags functionality"""
-        from tagmanager.app.tags.service import list_all_tags, search_files_by_tag
+        from filetagger.app.tags.service import list_all_tags, search_files_by_tag
         
         # Mock tags database
         mock_load.return_value = {
@@ -143,7 +143,7 @@ class TestServicesQuick(unittest.TestCase):
     
     def test_helpers_functionality(self):
         """Test basic helpers functionality"""
-        from tagmanager.app.helpers import load_tags, save_tags
+        from filetagger.app.helpers import load_tags, save_tags
         
         # Test with empty file (should return empty dict)
         empty_result = load_tags()
@@ -160,7 +160,7 @@ class TestServicesQuick(unittest.TestCase):
     def test_config_service_basic(self):
         """Test that config service can be imported"""
         try:
-            from tagmanager.app.config.service import get_config_value, set_config_value
+            from filetagger.app.config.service import get_config_value, set_config_value
             self.assertTrue(callable(get_config_value))
             self.assertTrue(callable(set_config_value))
             print("✅ Config service: functions found")

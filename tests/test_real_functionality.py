@@ -29,11 +29,11 @@ class TestRealFunctionality(unittest.TestCase):
         
         # Patch the TAG_FILE to use our test file
         from unittest.mock import patch
-        self.tag_file_patcher = patch('tagmanager.app.helpers.get_tag_file_path', return_value=self.test_tag_file)
+        self.tag_file_patcher = patch('filetagger.app.helpers.get_tag_file_path', return_value=self.test_tag_file)
         self.tag_file_patcher.start()
         
         # Clear any existing tag data before each test
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.helpers import save_tags
         save_tags({})  # Start with clean tag data
         
         # Create test files
@@ -53,7 +53,7 @@ class TestRealFunctionality(unittest.TestCase):
     
     def test_helpers_load_save_cycle(self):
         """Test that helpers can save and load data"""
-        from tagmanager.app.helpers import load_tags, save_tags
+        from filetagger.app.helpers import load_tags, save_tags
         
         # Use real test file paths instead of hardcoded ones
         test_data = {
@@ -73,14 +73,14 @@ class TestRealFunctionality(unittest.TestCase):
     
     def test_add_service_existing_file(self):
         """Test adding tags to existing file"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         # Add tags to existing file
         result = add_tags(self.test_file1, ["python", "test"])
         self.assertTrue(result, "add_tags should return True for existing file")
         
         # Verify tags were saved
-        from tagmanager.app.helpers import load_tags
+        from filetagger.app.helpers import load_tags
         saved_tags = load_tags()
         
         expected_path = os.path.abspath(self.test_file1)
@@ -91,8 +91,8 @@ class TestRealFunctionality(unittest.TestCase):
     
     def test_search_service_basic(self):
         """Test basic search functionality"""
-        from tagmanager.app.add.service import add_tags
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.add.service import add_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Add tags to files
         add_tags(self.test_file1, ["python", "backend"])
@@ -109,8 +109,8 @@ class TestRealFunctionality(unittest.TestCase):
     
     def test_tags_service_list_all(self):
         """Test listing all tags"""
-        from tagmanager.app.add.service import add_tags
-        from tagmanager.app.tags.service import list_all_tags
+        from filetagger.app.add.service import add_tags
+        from filetagger.app.tags.service import list_all_tags
         
         # Add tags to files
         add_tags(self.test_file1, ["python", "backend", "api"])
@@ -126,8 +126,8 @@ class TestRealFunctionality(unittest.TestCase):
     
     def test_tags_service_search_by_tag(self):
         """Test searching files by specific tag"""
-        from tagmanager.app.add.service import add_tags
-        from tagmanager.app.tags.service import search_files_by_tag
+        from filetagger.app.add.service import add_tags
+        from filetagger.app.tags.service import search_files_by_tag
         
         # Add tags to files
         add_tags(self.test_file1, ["python", "backend"])
@@ -146,9 +146,9 @@ class TestRealFunctionality(unittest.TestCase):
     
     def test_remove_service_basic(self):
         """Test removing a file path"""
-        from tagmanager.app.add.service import add_tags
-        from tagmanager.app.remove.service import remove_path
-        from tagmanager.app.helpers import load_tags
+        from filetagger.app.add.service import add_tags
+        from filetagger.app.remove.service import remove_path
+        from filetagger.app.helpers import load_tags
         
         # Add tags first
         add_tags(self.test_file1, ["python", "test"])
@@ -170,10 +170,10 @@ class TestRealFunctionality(unittest.TestCase):
     
     def test_integration_workflow(self):
         """Test complete workflow: add, search, list, remove"""
-        from tagmanager.app.add.service import add_tags
-        from tagmanager.app.search.service import search_by_tags
-        from tagmanager.app.tags.service import list_all_tags, search_files_by_tag
-        from tagmanager.app.remove.service import remove_path
+        from filetagger.app.add.service import add_tags
+        from filetagger.app.search.service import search_by_tags
+        from filetagger.app.tags.service import list_all_tags, search_files_by_tag
+        from filetagger.app.remove.service import remove_path
         
         # Step 1: Add tags to files
         add_tags(self.test_file1, ["python", "backend", "api"])

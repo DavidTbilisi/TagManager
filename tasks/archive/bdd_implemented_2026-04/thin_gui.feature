@@ -1,10 +1,10 @@
-Feature: Thin optional GUI for TagManager
+Feature: Thin optional GUI for FileTagger
   As a user who prefers a small visual surface over the terminal
   I want an optional lightweight GUI for everyday tagging and search
   So that I can discover and edit tags without memorizing CLI flags, while power users keep the CLI as the source of truth
 
   Background:
-    Given TagManager is installed with the same tag database the CLI uses
+    Given FileTagger is installed with the same tag database the CLI uses
     And the thin GUI is an optional component (not required for core workflows)
 
   Scenario: Launch the thin GUI locally
@@ -46,7 +46,7 @@ Feature: Thin optional GUI for TagManager
   Scenario: GUI does not fork tag logic
     Given the thin GUI is implemented
     When any mutating or read-heavy operation runs
-    Then it delegates to existing TagManager services or invokes `tm` / documented APIs
+    Then it delegates to existing FileTagger services or invokes `tm` / documented APIs
     And tag merge rules, journal, and config paths stay consistent with the CLI
 
   Scenario: Coexistence with automation

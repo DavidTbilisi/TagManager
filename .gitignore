@@ -3,5 +3,6 @@ _trial_temp/
 .idea/
 app/__pycache__/
 dist/*
-tagmanager_cli.egg-info/*
+filetagger_cli.egg-info/*
+worker/node_modules/
 

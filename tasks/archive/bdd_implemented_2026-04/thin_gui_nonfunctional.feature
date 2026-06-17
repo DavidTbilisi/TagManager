@@ -9,7 +9,7 @@ Feature: Thin GUI — non-functional requirements
     And documentation warns against exposing it on untrusted networks without authentication
 
   Scenario: Optional dependency boundary
-    Given a minimal TagManager install
+    Given a minimal FileTagger install
     When I run only CLI commands
     Then no extra Python packages are required for `tm` core commands
     And the thin GUI uses the same stdlib HTTP stack as `tm serve` (no separate GUI wheel)

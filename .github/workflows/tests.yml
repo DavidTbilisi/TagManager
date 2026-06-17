@@ -24,7 +24,7 @@ jobs:
       - name: Run tests with coverage gate
         run: >
           pytest
-          --cov=tagmanager
+          --cov=filetagger
           --cov-report=term:skip-covered
           --cov-fail-under=57
           -q
@@ -48,7 +48,7 @@ jobs:
       - name: Run tests (includes HKCU shell E2E on Windows)
         run: >
           pytest
-          --cov=tagmanager
+          --cov=filetagger
           --cov-report=term:skip-covered
           --cov-fail-under=57
           -q

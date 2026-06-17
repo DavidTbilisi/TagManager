@@ -15,7 +15,7 @@ sys.path.insert(0, project_root)
 
 class TestCliExportJson(unittest.TestCase):
     def test_export_json_stdout(self):
-        from tagmanager.cli import app
+        from filetagger.cli import app
 
         fake = {
             "success": True,
@@ -23,7 +23,7 @@ class TestCliExportJson(unittest.TestCase):
             "file_count": 3,
             "message": "Exported 3 file(s) to /tmp/out.json",
         }
-        with patch("tagmanager.cli.export_tags_json", return_value=fake):
+        with patch("filetagger.cli.export_tags_json", return_value=fake):
             r = CliRunner().invoke(
                 app, ["--json", "export", "-o", "out.json", "-f", "json"]
             )
@@ -33,10 +33,10 @@ class TestCliExportJson(unittest.TestCase):
         self.assertEqual(data["file_count"], 3)
 
     def test_export_csv_json_failure(self):
-        from tagmanager.cli import app
+        from filetagger.cli import app
 
         fake = {"success": False, "path": "/bad/out.csv", "message": "permission denied"}
-        with patch("tagmanager.cli.export_tags_csv", return_value=fake):
+        with patch("filetagger.cli.export_tags_csv", return_value=fake):
             r = CliRunner().invoke(
                 app, ["--json", "export", "-o", "out.csv", "-f", "csv"]
             )

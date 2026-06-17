@@ -1,6 +1,6 @@
 # Archived BDD specs (implemented in product)
 
-These `.feature` files described behaviour that now exists in **tagmanager-cli**. They are kept here so `tasks/todo_bdd/` only lists **remaining** work.
+These `.feature` files described behaviour that now exists in **filetagger-cli**. They are kept here so `tasks/todo_bdd/` only lists **remaining** work.
 
 | Feature | Implementation notes |
 |---------|----------------------|

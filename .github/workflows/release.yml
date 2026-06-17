@@ -4,7 +4,7 @@
 #
 # 1) Trusted publishing (no secrets): PyPI → your project → Publishing →
 #    "Add a pending publisher" → GitHub → Owner `DavidTbilisi` → Repository
-#    `TagManager` → Workflow `release.yml` → Environment name **leave blank**
+#    `FileTagger` → Workflow `release.yml` → Environment name **leave blank**
 #    unless you also create a GitHub Environment with the same name on both sides.
 #    This workflow does **not** set `jobs.publish.environment`, so OIDC sends
 #    `environment: MISSING` — PyPI must match that (blank environment field).

@@ -10,9 +10,9 @@ Work through in order unless dependencies say otherwise. Check off when done.
 
 ## Reliability and trust
 
-- [x] **Atomic tag DB writes** — `save_tags` already writes to `*.tmp` then `os.replace` (`tagmanager/app/helpers.py`). Revisit only if we learn of edge cases (e.g. network FS).
-- [x] **`tm doctor`** — `tm doctor` / `tm doctor --json` / `--max-paths N`. See `tagmanager/app/doctor/service.py`.
-- [x] **CI coverage gate** — GitHub Actions `.github/workflows/tests.yml` runs `pytest --cov=tagmanager --cov-fail-under=57` on push/PR to `master`/`main`. Raise threshold slowly as coverage improves.
+- [x] **Atomic tag DB writes** — `save_tags` already writes to `*.tmp` then `os.replace` (`filetagger/app/helpers.py`). Revisit only if we learn of edge cases (e.g. network FS).
+- [x] **`tm doctor`** — `tm doctor` / `tm doctor --json` / `--max-paths N`. See `filetagger/app/doctor/service.py`.
+- [x] **CI coverage gate** — GitHub Actions `.github/workflows/tests.yml` runs `pytest --cov=filetagger --cov-fail-under=57` on push/PR to `master`/`main`. Raise threshold slowly as coverage improves.
 
 ## Composability and automation
 
@@ -20,8 +20,8 @@ Work through in order unless dependencies say otherwise. Check off when done.
 - [x] **`--json` on `tm export`** — Emits full result dict (`success`, `path`, `file_count`, `message`).
 - [x] **`--json` on `tm bulk`** — `bulk add` / `bulk remove` / `bulk retag` emit structured JSON when `tm --json bulk …` (or `TM_JSON=1`).
 - [x] **`--json` on `tm remove`** — `remove_path` / `remove_invalid_paths` return dicts; `tm --json remove …` emits JSON; exit code 1 when remove-by-path fails.
-- [x] **`--json` on `tm config`** — `tagmanager/app/config/handler.py` + `tests/test_cli_config_json.py`.
-- [x] **`--json` on `tm watch`** — `tagmanager/app/watch/handler.py` + `tests/test_cli_watch_json.py`.
+- [x] **`--json` on `tm config`** — `filetagger/app/config/handler.py` + `tests/test_cli_config_json.py`.
+- [x] **`--json` on `tm watch`** — `filetagger/app/watch/handler.py` + `tests/test_cli_watch_json.py`.
 - [x] **Automation recipes** — `tasks/recipes/` (pre-commit sample, GitHub Actions example, `uvx`); linked from README.
 
 ## Windows shell

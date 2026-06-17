@@ -21,7 +21,7 @@ class TestWinContextMenu(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def _patch_launcher(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
         def _ld():
             return Path(self.tmp)
@@ -30,7 +30,7 @@ class TestWinContextMenu(unittest.TestCase):
 
     @unittest.skipIf(sys.platform == "win32", "install path only validated off Windows")
     def test_install_requires_windows(self):
-        from tagmanager import win_context_menu as wcm
+        from filetagger import win_context_menu as wcm
 
         code, msg = wcm.install_context_menu()
         self.assertEqual(code, 1)
@@ -41,7 +41,7 @@ class TestWinContextMenu(unittest.TestCase):
         """Exercise ``cascade_parent_registry_state_for_tests`` without HKCU writes."""
         import winreg
 
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
         fake_ctx = MagicMock()
         fake_ctx.__enter__.return_value = object()
@@ -51,18 +51,18 @@ class TestWinContextMenu(unittest.TestCase):
             "QueryValueEx",
             side_effect=[
                 ("", winreg.REG_SZ),
-                ("TagManager", winreg.REG_SZ),
+                ("FileTagger", winreg.REG_SZ),
             ],
         ):
-            d, m = wcm.cascade_parent_registry_state_for_tests(0, r"Software\TagManager\MockProbe")
+            d, m = wcm.cascade_parent_registry_state_for_tests(0, r"Software\FileTagger\MockProbe")
         self.assertEqual(d, "")
-        self.assertEqual(m, "TagManager")
+        self.assertEqual(m, "FileTagger")
 
     @unittest.skipUnless(sys.platform == "win32", "winreg only available on Windows")
     def test_cascade_parent_registry_state_oserror_returns_none(self):
         import winreg
 
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
         fake_ctx = MagicMock()
         fake_ctx.__enter__.return_value = object()
@@ -78,7 +78,7 @@ class TestWinContextMenu(unittest.TestCase):
     def test_cascade_parent_registry_state_non_string_types_ignored(self):
         import winreg
 
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
         fake_ctx = MagicMock()
         fake_ctx.__enter__.return_value = object()
@@ -96,25 +96,25 @@ class TestWinContextMenu(unittest.TestCase):
         self.assertIsNone(m)
 
     def test_install_dry_run_returns_plan_on_any_os(self):
-        from tagmanager import win_context_menu as wcm
+        from filetagger import win_context_menu as wcm
 
         code, msg = wcm.install_context_menu(dry_run=True)
         self.assertEqual(code, 0, msg)
         self.assertIn("Launcher directory:", msg)
         self.assertIn("HKEY_CURRENT_USER", msg)
-        self.assertIn("TagManager", msg)
-        self.assertIn("shell\\TagManager\\ExtendedSubCommandsKey\\Shell\\", msg.replace("/", "\\"))
+        self.assertIn("FileTagger", msg)
+        self.assertIn("shell\\FileTagger\\ExtendedSubCommandsKey\\Shell\\", msg.replace("/", "\\"))
         self.assertIn("MUIVerb", msg)
         self.assertIn("(Default)=empty", msg)
 
     def test_shell_root_invalid(self):
-        from tagmanager.win_context_menu import shell_root_for_tests
+        from filetagger.win_context_menu import shell_root_for_tests
 
         with self.assertRaises(ValueError):
             shell_root_for_tests("invalid")
 
     def test_menu_leaves_cover_file_and_dir(self):
-        from tagmanager.win_context_menu import menu_leaves_for_tests
+        from filetagger.win_context_menu import menu_leaves_for_tests
 
         leaves = menu_leaves_for_tests()
         ids = {x.id for x in leaves}
@@ -124,21 +124,21 @@ class TestWinContextMenu(unittest.TestCase):
         self.assertTrue(any("dir" in x.scopes for x in leaves))
 
     def test_leaf_shell_paths(self):
-        from tagmanager.win_context_menu import leaf_shell_path_for_tests
+        from filetagger.win_context_menu import leaf_shell_path_for_tests
 
         p = leaf_shell_path_for_tests("file", "AddTags")
         self.assertIn(
-            r"Classes\*\shell\TagManager\ExtendedSubCommandsKey\Shell\AddTags",
+            r"Classes\*\shell\FileTagger\ExtendedSubCommandsKey\Shell\AddTags",
             p.replace("/", "\\"),
         )
         p2 = leaf_shell_path_for_tests("dir", "OpenTerminalHere")
         self.assertIn(
-            r"Classes\Directory\shell\TagManager\ExtendedSubCommandsKey\Shell\OpenTerminalHere",
+            r"Classes\Directory\shell\FileTagger\ExtendedSubCommandsKey\Shell\OpenTerminalHere",
             p2.replace("/", "\\"),
         )
 
     def test_command_line_uses_percent_star_except_storage(self):
-        from tagmanager.win_context_menu import command_line_for_leaf_for_tests, menu_leaves_for_tests
+        from filetagger.win_context_menu import command_line_for_leaf_for_tests, menu_leaves_for_tests
 
         bat = Path(r"C:\x\y.cmd")
         for leaf in menu_leaves_for_tests():
@@ -149,7 +149,7 @@ class TestWinContextMenu(unittest.TestCase):
                 self.assertIn("%*", cmd)
 
     def test_write_batch_uses_tilde1(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
         with self._patch_launcher():
             p = wcm._write_batch("test_stem", 'path "{path}"')
@@ -159,7 +159,7 @@ class TestWinContextMenu(unittest.TestCase):
             self.assertTrue(text.upper().startswith("@ECHO OFF"))
 
     def test_write_add_tags_interactive_contains_loop_and_choice(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
         with self._patch_launcher():
             p = wcm._write_add_tags_interactive("stem_add")
@@ -170,7 +170,7 @@ class TestWinContextMenu(unittest.TestCase):
             self.assertIn("choice", t.lower())
 
     def test_write_remove_multi_accepts_star(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
         with self._patch_launcher():
             p = wcm._write_remove_multi("stem_rm")
@@ -179,7 +179,7 @@ class TestWinContextMenu(unittest.TestCase):
             self.assertIn("--tag", t)
 
     def test_write_add_dir_fixed_loops_shift(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
         with self._patch_launcher():
             p = wcm._write_add_dir_fixed("stem_d1", "onelevel")
@@ -189,7 +189,7 @@ class TestWinContextMenu(unittest.TestCase):
             self.assertIn("shift", t)
 
     def test_write_add_dir_fixed_full_and_dry(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
         with self._patch_launcher():
             p_full = wcm._write_add_dir_fixed("stem_full", "full")
@@ -199,7 +199,7 @@ class TestWinContextMenu(unittest.TestCase):
             self.assertIn("--dry-run", p_dry.read_text(encoding="utf-8"))
 
     def test_write_add_dir_fixed_invalid_mode(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
         with self._patch_launcher():
             with self.assertRaises(ValueError):
@@ -207,28 +207,28 @@ class TestWinContextMenu(unittest.TestCase):
 
     @unittest.skipUnless(sys.platform == "win32", "winreg only available on Windows")
     def test_reg_delete_subtree_missing_opens_key_gracefully(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
         with patch("winreg.OpenKey", side_effect=OSError()):
-            wcm._reg_delete_subtree(0, r"Software\Missing\TagManager")
+            wcm._reg_delete_subtree(0, r"Software\Missing\FileTagger")
 
     def test_tm_cli_prefix_uses_tm_when_on_path(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
         with patch.object(wcm.shutil, "which", return_value=r"C:\bin\tm.exe"):
             self.assertEqual(wcm._tm_cli_prefix(), r'"C:\bin\tm.exe"')
 
     def test_tm_cli_prefix_falls_back_to_python_module(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
         with patch.object(wcm.shutil, "which", return_value=None):
             p = wcm._tm_cli_prefix()
-            self.assertIn("-m tagmanager.cli", p)
+            self.assertIn("-m filetagger.cli", p)
             self.assertIn(wcm.sys.executable.replace("\\", "/"), p.replace("\\", "/"))
 
     @unittest.skipUnless(sys.platform == "win32", "winreg only available on Windows")
     def test_reg_set_named_and_default_value(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
         import winreg
 
         mock_key = MagicMock()
@@ -243,7 +243,7 @@ class TestWinContextMenu(unittest.TestCase):
 
     @unittest.skipUnless(sys.platform == "win32", "winreg only available on Windows")
     def test_reg_delete_subtree_deletes_children_then_parent(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
         import winreg
 
         key_handles = {}
@@ -285,7 +285,7 @@ class TestWinContextMenu(unittest.TestCase):
 
     @unittest.skipUnless(sys.platform == "win32", "winreg only available on Windows")
     def test_reg_delete_subtree_delete_key_failure_swallowed(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
         import winreg
 
         k = MagicMock()
@@ -299,15 +299,15 @@ class TestWinContextMenu(unittest.TestCase):
             wcm._reg_delete_subtree(0, r"K\leaf")
 
     def test_write_leaf_launcher_unknown_add_multi_leaf(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
         bad = wcm._Leaf("UnknownAdd", "x", "add_multi", ("dir",))
         with self.assertRaises(ValueError):
             wcm._write_leaf_launcher(bad)
 
     def test_launcher_dir_for_docs_and_leaf_to_stem(self):
-        import tagmanager.win_context_menu as wcm
-        from tagmanager.win_context_menu import leaf_to_stem_for_tests, menu_leaves_for_tests
+        import filetagger.win_context_menu as wcm
+        from filetagger.win_context_menu import leaf_to_stem_for_tests, menu_leaves_for_tests
 
         self.assertEqual(wcm.launcher_dir_for_docs(), str(wcm._launcher_dir()))
         leaf = menu_leaves_for_tests()[0]
@@ -315,16 +315,16 @@ class TestWinContextMenu(unittest.TestCase):
 
     @unittest.skipUnless(sys.platform == "win32", "HKCU install")
     def test_install_calls_reg_set(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
-        with self._patch_launcher(), patch("tagmanager.win_context_menu._reg_set") as m:
+        with self._patch_launcher(), patch("filetagger.win_context_menu._reg_set") as m:
             code, msg = wcm.install_context_menu(dry_run=False)
         self.assertEqual(code, 0)
         self.assertGreaterEqual(m.call_count, 8, msg)
 
     @unittest.skipUnless(sys.platform == "win32", "HKCU install")
     def test_install_parent_uses_empty_default_and_muiverb(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
         calls = []
 
@@ -334,28 +334,28 @@ class TestWinContextMenu(unittest.TestCase):
         with self._patch_launcher(), patch.object(wcm, "_reg_set", side_effect=capture):
             code, msg = wcm.install_context_menu(dry_run=False)
         self.assertEqual(code, 0)
-        parent_file = r"Software\Classes\*\shell\TagManager"
-        parent_dir = r"Software\Classes\Directory\shell\TagManager"
+        parent_file = r"Software\Classes\*\shell\FileTagger"
+        parent_dir = r"Software\Classes\Directory\shell\FileTagger"
         self.assertIn((parent_file, None, ""), calls)
-        self.assertIn((parent_file, "MUIVerb", "TagManager"), calls)
+        self.assertIn((parent_file, "MUIVerb", "FileTagger"), calls)
         self.assertIn((parent_dir, None, ""), calls)
-        self.assertIn((parent_dir, "MUIVerb", "TagManager"), calls)
+        self.assertIn((parent_dir, "MUIVerb", "FileTagger"), calls)
         idx_empty_file = calls.index((parent_file, None, ""))
-        idx_mui_file = calls.index((parent_file, "MUIVerb", "TagManager"))
+        idx_mui_file = calls.index((parent_file, "MUIVerb", "FileTagger"))
         self.assertLess(idx_empty_file, idx_mui_file)
 
     @unittest.skipUnless(sys.platform == "win32", "HKCU uninstall")
     def test_uninstall_calls_delete_subtree_twice(self):
-        import tagmanager.win_context_menu as wcm
+        import filetagger.win_context_menu as wcm
 
-        with patch("tagmanager.win_context_menu._reg_delete_subtree") as m:
+        with patch("filetagger.win_context_menu._reg_delete_subtree") as m:
             code, msg = wcm.uninstall_context_menu()
         self.assertEqual(code, 0)
         self.assertEqual(m.call_count, 2)
 
     @unittest.skipIf(sys.platform == "win32", "non-Windows branch")
     def test_uninstall_non_windows(self):
-        from tagmanager import win_context_menu as wcm
+        from filetagger import win_context_menu as wcm
 
         code, msg = wcm.uninstall_context_menu()
         self.assertEqual(code, 1)
@@ -363,7 +363,7 @@ class TestWinContextMenu(unittest.TestCase):
 
     @unittest.skipUnless(sys.platform == "win32", "patch platform to exercise non-win install branches")
     def test_install_non_windows_message_when_platform_patched(self):
-        from tagmanager import win_context_menu as wcm
+        from filetagger import win_context_menu as wcm
 
         with patch.object(wcm.sys, "platform", "linux"):
             code, msg = wcm.install_context_menu(dry_run=False)
@@ -372,7 +372,7 @@ class TestWinContextMenu(unittest.TestCase):
 
     @unittest.skipUnless(sys.platform == "win32", "patch platform for dry-run note")
     def test_install_dry_run_non_windows_note_when_platform_patched(self):
-        from tagmanager import win_context_menu as wcm
+        from filetagger import win_context_menu as wcm
 
         with patch.object(wcm.sys, "platform", "linux"):
             code, msg = wcm.install_context_menu(dry_run=True)
@@ -381,7 +381,7 @@ class TestWinContextMenu(unittest.TestCase):
 
     @unittest.skipUnless(sys.platform == "win32", "patch platform for uninstall guard")
     def test_uninstall_non_windows_when_platform_patched(self):
-        from tagmanager import win_context_menu as wcm
+        from filetagger import win_context_menu as wcm
 
         with patch.object(wcm.sys, "platform", "linux"):
             code, msg = wcm.uninstall_context_menu()

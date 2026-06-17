@@ -33,9 +33,9 @@ class TestThinGuiHttp(unittest.TestCase):
             self.thread.join(timeout=3.0)
 
     def _start(self):
-        from tagmanager.app.http_api import _TagManagerHandler
+        from filetagger.app.http_api import _FileTaggerHandler
 
-        self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), _TagManagerHandler)
+        self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), _FileTaggerHandler)
         self.port = self.httpd.server_address[1]
         self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
         self.thread.start()
@@ -75,7 +75,7 @@ class TestThinGuiHttp(unittest.TestCase):
 
         from unittest.mock import patch
 
-        with patch("tagmanager.app.helpers.get_tag_file_path", return_value=tag_file):
+        with patch("filetagger.app.helpers.get_tag_file_path", return_value=tag_file):
             status, raw = self._get(
                 "/api/v1/gui/path-tags?path=" + urllib.parse.quote(tf, safe="")
             )
@@ -98,7 +98,7 @@ class TestThinGuiHttp(unittest.TestCase):
 
         from unittest.mock import patch
 
-        with patch("tagmanager.app.helpers.get_tag_file_path", return_value=tag_file):
+        with patch("filetagger.app.helpers.get_tag_file_path", return_value=tag_file):
             status, raw = self._get(
                 "/api/v1/files/tags?path=" + urllib.parse.quote(tf, safe="")
             )
@@ -117,10 +117,10 @@ class TestThinGuiHttp(unittest.TestCase):
 
         from unittest.mock import patch
 
-        with patch.dict(os.environ, {"TAGMANAGER_GUI_ROOT": inner}):
-            from tagmanager.app.http_api import _TagManagerHandler
+        with patch.dict(os.environ, {"FILETAGGER_GUI_ROOT": inner}):
+            from filetagger.app.http_api import _FileTaggerHandler
 
-            self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), _TagManagerHandler)
+            self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), _FileTaggerHandler)
             self.port = self.httpd.server_address[1]
             self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
             self.thread.start()

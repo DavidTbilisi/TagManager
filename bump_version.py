@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-TagManager Version Bumper
+FileTagger Version Bumper
 
 Automatically increments version numbers across all project files.
 Supports semantic versioning (major.minor.patch).
@@ -43,7 +43,7 @@ class VersionBumper:
         self.project_root = Path(__file__).parent
         self.version_files = [
             "pyproject.toml",
-            "tagmanager/__init__.py",
+            "filetagger/__init__.py",
         ]
         
     def get_current_version(self) -> str:
@@ -159,7 +159,7 @@ class VersionBumper:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Bump TagManager version",
+        description="Bump FileTagger version",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

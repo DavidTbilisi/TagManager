@@ -27,9 +27,9 @@ class _DeadObserver:
 
 class TestCliWatchJson(unittest.TestCase):
     def test_watch_json_no_watchdog(self):
-        from tagmanager.cli import app
+        from filetagger.cli import app
 
-        with patch("tagmanager.app.watch.handler.WATCHDOG_AVAILABLE", False):
+        with patch("filetagger.app.watch.handler.WATCHDOG_AVAILABLE", False):
             r = CliRunner().invoke(app, ["--json", "watch", "."])
         self.assertEqual(r.exit_code, 1, r.stdout)
         data = json.loads(r.stdout)
@@ -37,9 +37,9 @@ class TestCliWatchJson(unittest.TestCase):
         self.assertEqual(data.get("error"), "watchdog_not_installed")
 
     def test_watch_json_not_a_directory(self):
-        from tagmanager.cli import app
+        from filetagger.cli import app
 
-        with patch("tagmanager.app.watch.handler.WATCHDOG_AVAILABLE", True):
+        with patch("filetagger.app.watch.handler.WATCHDOG_AVAILABLE", True):
             r = CliRunner().invoke(app, ["--json", "watch", "___not_a_real_dir_tm_test___"])
         self.assertEqual(r.exit_code, 1)
         data = json.loads(r.stdout)
@@ -47,12 +47,12 @@ class TestCliWatchJson(unittest.TestCase):
         self.assertEqual(data.get("error"), "not_a_directory")
 
     def test_watch_json_starts_and_stops_ndjson(self):
-        from tagmanager.cli import app
+        from filetagger.cli import app
 
         with tempfile.TemporaryDirectory() as tmp:
-            with patch("tagmanager.app.watch.handler.WATCHDOG_AVAILABLE", True):
+            with patch("filetagger.app.watch.handler.WATCHDOG_AVAILABLE", True):
                 with patch(
-                    "tagmanager.app.watch.handler.start_watching",
+                    "filetagger.app.watch.handler.start_watching",
                     return_value=_DeadObserver(),
                 ):
                     r = CliRunner().invoke(app, ["--json", "watch", tmp])

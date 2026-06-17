@@ -18,14 +18,14 @@ class TestMoveService(unittest.TestCase):
         shutil.rmtree(self.test_dir, ignore_errors=True)
 
     def _patch(self, tags_data, save_return=True):
-        load = patch("tagmanager.app.move.service.load_tags", return_value=dict(tags_data))
-        save = patch("tagmanager.app.move.service.save_tags", return_value=save_return)
+        load = patch("filetagger.app.move.service.load_tags", return_value=dict(tags_data))
+        save = patch("filetagger.app.move.service.save_tags", return_value=save_return)
         return load, save
 
     # --- move_path ---
 
     def test_move_path_success(self):
-        from tagmanager.app.move.service import move_path
+        from filetagger.app.move.service import move_path
         data = {self.old_abs: ["python", "backend"]}
         load_p, save_p = self._patch(data)
         with load_p, save_p as mock_save:
@@ -37,7 +37,7 @@ class TestMoveService(unittest.TestCase):
         self.assertEqual(saved[self.new_abs], ["python", "backend"])
 
     def test_move_path_not_tracked(self):
-        from tagmanager.app.move.service import move_path
+        from filetagger.app.move.service import move_path
         load_p, save_p = self._patch({})
         with load_p, save_p:
             success, msg = move_path(self.old_file, self.new_file)
@@ -45,7 +45,7 @@ class TestMoveService(unittest.TestCase):
         self.assertIn("not tracked", msg)
 
     def test_move_path_same_path(self):
-        from tagmanager.app.move.service import move_path
+        from filetagger.app.move.service import move_path
         data = {self.old_abs: ["python"]}
         load_p, save_p = self._patch(data)
         with load_p, save_p:
@@ -54,7 +54,7 @@ class TestMoveService(unittest.TestCase):
         self.assertIn("same", msg)
 
     def test_move_path_destination_already_tracked(self):
-        from tagmanager.app.move.service import move_path
+        from filetagger.app.move.service import move_path
         data = {
             self.old_abs: ["python"],
             self.new_abs: ["existing"],
@@ -66,7 +66,7 @@ class TestMoveService(unittest.TestCase):
         self.assertIn("already tracked", msg)
 
     def test_move_path_save_failure(self):
-        from tagmanager.app.move.service import move_path
+        from filetagger.app.move.service import move_path
         data = {self.old_abs: ["python"]}
         load_p, save_p = self._patch(data, save_return=False)
         with load_p, save_p:
@@ -75,7 +75,7 @@ class TestMoveService(unittest.TestCase):
         self.assertIn("Failed", msg)
 
     def test_move_path_normalizes_paths(self):
-        from tagmanager.app.move.service import move_path
+        from filetagger.app.move.service import move_path
         data = {self.old_abs: ["docs"]}
         load_p, save_p = self._patch(data)
         with load_p, save_p as mock_save:
@@ -86,7 +86,7 @@ class TestMoveService(unittest.TestCase):
             self.assertEqual(key, os.path.normpath(key))
 
     def test_move_path_success_message(self):
-        from tagmanager.app.move.service import move_path
+        from filetagger.app.move.service import move_path
         data = {self.old_abs: ["python"]}
         load_p, save_p = self._patch(data)
         with load_p, save_p:
@@ -97,23 +97,23 @@ class TestMoveService(unittest.TestCase):
     # --- clean_missing ---
 
     def test_clean_missing_no_missing(self):
-        from tagmanager.app.move.service import clean_missing
+        from filetagger.app.move.service import clean_missing
         existing = os.path.join(self.test_dir, "exists.py")
         with open(existing, "w") as f:
             f.write("")
         data = {os.path.normpath(os.path.abspath(existing)): ["python"]}
-        with patch("tagmanager.app.move.service.load_tags", return_value=data), \
-             patch("tagmanager.app.move.service.save_tags") as mock_save:
+        with patch("filetagger.app.move.service.load_tags", return_value=data), \
+             patch("filetagger.app.move.service.save_tags") as mock_save:
             result = clean_missing()
         self.assertEqual(result["count"], 0)
         mock_save.assert_not_called()
 
     def test_clean_missing_removes_ghost_paths(self):
-        from tagmanager.app.move.service import clean_missing
+        from filetagger.app.move.service import clean_missing
         ghost = os.path.join(self.test_dir, "gone.py")
         data = {os.path.normpath(os.path.abspath(ghost)): ["python"]}
-        with patch("tagmanager.app.move.service.load_tags", return_value=data), \
-             patch("tagmanager.app.move.service.save_tags") as mock_save:
+        with patch("filetagger.app.move.service.load_tags", return_value=data), \
+             patch("filetagger.app.move.service.save_tags") as mock_save:
             result = clean_missing()
         self.assertEqual(result["count"], 1)
         mock_save.assert_called_once()
@@ -121,18 +121,18 @@ class TestMoveService(unittest.TestCase):
         self.assertEqual(saved, {})
 
     def test_clean_missing_dry_run_does_not_save(self):
-        from tagmanager.app.move.service import clean_missing
+        from filetagger.app.move.service import clean_missing
         ghost = os.path.join(self.test_dir, "gone.py")
         data = {os.path.normpath(os.path.abspath(ghost)): ["python"]}
-        with patch("tagmanager.app.move.service.load_tags", return_value=data), \
-             patch("tagmanager.app.move.service.save_tags") as mock_save:
+        with patch("filetagger.app.move.service.load_tags", return_value=data), \
+             patch("filetagger.app.move.service.save_tags") as mock_save:
             result = clean_missing(dry_run=True)
         self.assertTrue(result["dry_run"])
         self.assertEqual(result["count"], 1)
         mock_save.assert_not_called()
 
     def test_clean_missing_mixed(self):
-        from tagmanager.app.move.service import clean_missing
+        from filetagger.app.move.service import clean_missing
         existing = os.path.join(self.test_dir, "exists.py")
         with open(existing, "w") as f:
             f.write("")
@@ -141,35 +141,35 @@ class TestMoveService(unittest.TestCase):
             os.path.normpath(os.path.abspath(existing)): ["python"],
             os.path.normpath(os.path.abspath(ghost)): ["docs"],
         }
-        with patch("tagmanager.app.move.service.load_tags", return_value=data), \
-             patch("tagmanager.app.move.service.save_tags") as mock_save:
+        with patch("filetagger.app.move.service.load_tags", return_value=data), \
+             patch("filetagger.app.move.service.save_tags") as mock_save:
             result = clean_missing()
         self.assertEqual(result["count"], 1)
         saved = mock_save.call_args[0][0]
         self.assertEqual(len(saved), 1)
 
     def test_clean_missing_dry_run_message(self):
-        from tagmanager.app.move.service import clean_missing
+        from filetagger.app.move.service import clean_missing
         ghost = os.path.join(self.test_dir, "gone.py")
         data = {os.path.normpath(os.path.abspath(ghost)): ["python"]}
-        with patch("tagmanager.app.move.service.load_tags", return_value=data), \
-             patch("tagmanager.app.move.service.save_tags"):
+        with patch("filetagger.app.move.service.load_tags", return_value=data), \
+             patch("filetagger.app.move.service.save_tags"):
             result = clean_missing(dry_run=True)
         self.assertIn("Would", result["message"])
 
     def test_clean_missing_success_message(self):
-        from tagmanager.app.move.service import clean_missing
+        from filetagger.app.move.service import clean_missing
         ghost = os.path.join(self.test_dir, "gone.py")
         data = {os.path.normpath(os.path.abspath(ghost)): ["python"]}
-        with patch("tagmanager.app.move.service.load_tags", return_value=data), \
-             patch("tagmanager.app.move.service.save_tags"):
+        with patch("filetagger.app.move.service.load_tags", return_value=data), \
+             patch("filetagger.app.move.service.save_tags"):
             result = clean_missing()
         self.assertIn("Removed", result["message"])
 
     def test_clean_empty_database(self):
-        from tagmanager.app.move.service import clean_missing
-        with patch("tagmanager.app.move.service.load_tags", return_value={}), \
-             patch("tagmanager.app.move.service.save_tags") as mock_save:
+        from filetagger.app.move.service import clean_missing
+        with patch("filetagger.app.move.service.load_tags", return_value={}), \
+             patch("filetagger.app.move.service.save_tags") as mock_save:
             result = clean_missing()
         self.assertEqual(result["count"], 0)
         mock_save.assert_not_called()

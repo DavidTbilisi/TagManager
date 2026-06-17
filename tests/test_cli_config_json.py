@@ -14,7 +14,7 @@ sys.path.insert(0, project_root)
 
 class TestCliConfigJson(unittest.TestCase):
     def test_config_categories_json(self):
-        from tagmanager.cli import app
+        from filetagger.cli import app
 
         r = CliRunner().invoke(app, ["--json", "config", "categories"])
         self.assertEqual(r.exit_code, 0, r.stdout)
@@ -23,17 +23,17 @@ class TestCliConfigJson(unittest.TestCase):
         self.assertIsInstance(data.get("categories"), list)
 
     def test_config_get_unknown_key_exit_1(self):
-        from tagmanager.cli import app
+        from filetagger.cli import app
 
         r = CliRunner().invoke(
-            app, ["--json", "config", "get", "not.a.valid.key.tagmanager.test"]
+            app, ["--json", "config", "get", "not.a.valid.key.filetagger.test"]
         )
         self.assertEqual(r.exit_code, 1)
         data = json.loads(r.stdout)
         self.assertFalse(data.get("ok"))
 
     def test_config_reset_requires_yes(self):
-        from tagmanager.cli import app
+        from filetagger.cli import app
 
         r = CliRunner().invoke(
             app, ["--json", "config", "reset", "display.emojis"]

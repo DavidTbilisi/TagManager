@@ -1,12 +1,12 @@
-# 📚 TagManager Documentation
+# 📚 FileTagger Documentation
 
-This folder contains all the detailed documentation and guides for TagManager.
+This folder contains all the detailed documentation and guides for FileTagger.
 
 ## 📖 **User Documentation**
 
 ### **Getting Started**
 
-- 📋 [Installation Guide](INSTALLATION.md) - How to install TagManager locally or from PyPI
+- 📋 [Installation Guide](INSTALLATION.md) - How to install FileTagger locally or from PyPI
 - 🎯 [Configuration Guide](CONFIGURATION_GUIDE.md) - Complete configuration management system
 
 ### **Automation & Development**
@@ -46,7 +46,7 @@ This folder contains all the detailed documentation and guides for TagManager.
 
 ## 🚀 **For Developers**
 
-If you're contributing to TagManager or want to understand the internals:
+If you're contributing to FileTagger or want to understand the internals:
 
 1. **Start with**: [COMPREHENSIVE_TESTS_SUMMARY.md](COMPREHENSIVE_TESTS_SUMMARY.md) - Understand the test coverage
 2. **Configuration**: [CONFIG_SYSTEM_SUMMARY.md](CONFIG_SYSTEM_SUMMARY.md) - How the config system works
@@ -55,7 +55,7 @@ If you're contributing to TagManager or want to understand the internals:
 
 ## 📋 **For Users**
 
-If you just want to use TagManager:
+If you just want to use FileTagger:
 
 1. **Install**: Follow [INSTALLATION.md](INSTALLATION.md)
 2. **Configure**: Check [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md)

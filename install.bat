@@ -1,11 +1,11 @@
 @echo off
-REM TagManager Installation Script for Windows
+REM FileTagger Installation Script for Windows
 REM Supports local and remote (PyPI) installation with automatic upgrades
 
 setlocal enabledelayedexpansion
 
 REM Configuration
-set PACKAGE_NAME=tagmanager-cli
+set PACKAGE_NAME=filetagger-cli
 set PROJECT_DIR=%~dp0
 set DIST_DIR=%PROJECT_DIR%dist
 set PYPROJECT_FILE=%PROJECT_DIR%pyproject.toml
@@ -30,7 +30,7 @@ echo.
 goto show_help
 
 :local_install
-echo 🚀 TagManager Local Installation
+echo 🚀 FileTagger Local Installation
 echo ================================
 echo.
 echo ⚙️ Installing build tools...
@@ -60,7 +60,7 @@ echo ❌ No wheel file found
 exit /b 1
 
 :remote_install
-echo 🚀 TagManager Remote Installation (PyPI)
+echo 🚀 FileTagger Remote Installation (PyPI)
 echo ========================================
 echo.
 echo ⚙️ Installing build tools...
@@ -105,7 +105,7 @@ for %%f in ("%DIST_DIR%\*.whl") do (
 )
 
 :build_only
-echo 🚀 TagManager Build Only
+echo 🚀 FileTagger Build Only
 echo =======================
 echo.
 echo ⚙️ Installing build tools...
@@ -137,18 +137,18 @@ if %errorlevel% equ 0 (
     exit /b 1
 )
 
-tagmanager --help >nul 2>&1
+filetagger --help >nul 2>&1
 if %errorlevel% equ 0 (
-    echo ✅ Command 'tagmanager' is available
+    echo ✅ Command 'filetagger' is available
 ) else (
-    echo ⚠️ Command 'tagmanager' not found (but tm works)
+    echo ⚠️ Command 'filetagger' not found (but tm works)
 )
 
 echo.
 echo ✨ Installation Complete! ✨
 echo ================================
 echo Package: %PACKAGE_NAME%
-echo Commands: tm, tagmanager
+echo Commands: tm, filetagger
 echo.
 echo Quick Start:
 echo   tm --help                    # Show all commands

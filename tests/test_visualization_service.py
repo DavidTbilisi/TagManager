@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive tests for tagmanager.app.visualization.service
+Comprehensive tests for filetagger.app.visualization.service
 Testing every function, edge case, and error condition
 """
 
@@ -30,11 +30,11 @@ class TestVisualizationService(unittest.TestCase):
         self.test_tag_file = os.path.join(self.test_dir, "test_tags.json")
         
         # Patch the TAG_FILE to use our test file
-        self.tag_file_patcher = patch('tagmanager.app.helpers.get_tag_file_path', return_value=self.test_tag_file)
+        self.tag_file_patcher = patch('filetagger.app.helpers.get_tag_file_path', return_value=self.test_tag_file)
         self.tag_file_patcher.start()
         
         # Clear any existing tag data before each test
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.helpers import save_tags
         save_tags({})  # Start with clean tag data
 
     def tearDown(self):
@@ -45,7 +45,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def _setup_test_data(self):
         """Setup comprehensive test data for visualization"""
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.helpers import save_tags
         
         test_data = {
             "/project/src/main.py": ["python", "backend", "api"],
@@ -66,7 +66,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_tree_structure_basic(self):
         """Test basic tree structure creation"""
-        from tagmanager.app.visualization.service import create_tree_structure
+        from filetagger.app.visualization.service import create_tree_structure
         
         files_data = {
             "/project/main.py": ["python", "main"],
@@ -98,14 +98,14 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_tree_structure_empty_input(self):
         """Test tree structure with empty input"""
-        from tagmanager.app.visualization.service import create_tree_structure
+        from filetagger.app.visualization.service import create_tree_structure
         
         tree = create_tree_structure({})
         self.assertEqual(tree, {})
 
     def test_create_tree_structure_single_file(self):
         """Test tree structure with single file"""
-        from tagmanager.app.visualization.service import create_tree_structure
+        from filetagger.app.visualization.service import create_tree_structure
         
         files_data = {"/single.py": ["python"]}
         tree = create_tree_structure(files_data)
@@ -122,7 +122,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_tree_structure_nested_paths(self):
         """Test tree structure with deeply nested paths"""
-        from tagmanager.app.visualization.service import create_tree_structure
+        from filetagger.app.visualization.service import create_tree_structure
         
         files_data = {
             "/a/b/c/d/file.py": ["deep", "nested"],
@@ -157,7 +157,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_render_tree_basic(self):
         """Test basic tree rendering"""
-        from tagmanager.app.visualization.service import create_tree_structure, render_tree
+        from filetagger.app.visualization.service import create_tree_structure, render_tree
         
         files_data = {
             "/project/main.py": ["python"],
@@ -180,7 +180,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_render_tree_with_tags(self):
         """Test tree rendering with tags shown"""
-        from tagmanager.app.visualization.service import create_tree_structure, render_tree
+        from filetagger.app.visualization.service import create_tree_structure, render_tree
         
         files_data = {"/test.py": ["python", "test"]}
         tree = create_tree_structure(files_data)
@@ -193,7 +193,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_render_tree_without_tags(self):
         """Test tree rendering with tags hidden"""
-        from tagmanager.app.visualization.service import create_tree_structure, render_tree
+        from filetagger.app.visualization.service import create_tree_structure, render_tree
         
         files_data = {"/test.py": ["python", "test"]}
         tree = create_tree_structure(files_data)
@@ -205,14 +205,14 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_render_tree_empty(self):
         """Test rendering empty tree"""
-        from tagmanager.app.visualization.service import render_tree
+        from filetagger.app.visualization.service import render_tree
         
         lines = render_tree({})
         self.assertEqual(lines, [])
 
     def test_render_tree_ascii_characters(self):
         """Test that tree uses correct ASCII box drawing characters"""
-        from tagmanager.app.visualization.service import create_tree_structure, render_tree
+        from filetagger.app.visualization.service import create_tree_structure, render_tree
         
         files_data = {
             "/dir/file1.py": ["python"],
@@ -232,7 +232,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_tag_cloud_data_basic(self):
         """Test basic tag cloud data creation"""
-        from tagmanager.app.visualization.service import create_tag_cloud_data
+        from filetagger.app.visualization.service import create_tag_cloud_data
         
         files_data = {
             "/file1.py": ["python", "backend"],
@@ -257,7 +257,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_tag_cloud_data_frequency_order(self):
         """Test that tag cloud data is ordered by frequency"""
-        from tagmanager.app.visualization.service import create_tag_cloud_data
+        from filetagger.app.visualization.service import create_tag_cloud_data
         
         files_data = {
             "/file1.py": ["common", "rare"],
@@ -278,7 +278,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_tag_cloud_data_size_scaling(self):
         """Test that relative sizes are calculated correctly"""
-        from tagmanager.app.visualization.service import create_tag_cloud_data
+        from filetagger.app.visualization.service import create_tag_cloud_data
         
         files_data = {
             "/file1.py": ["frequent", "frequent", "frequent"],  # Will count as 1 per file
@@ -303,14 +303,14 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_tag_cloud_data_empty_input(self):
         """Test tag cloud with empty input"""
-        from tagmanager.app.visualization.service import create_tag_cloud_data
+        from filetagger.app.visualization.service import create_tag_cloud_data
         
         tag_data = create_tag_cloud_data({})
         self.assertEqual(tag_data, [])
 
     def test_create_tag_cloud_data_same_frequency(self):
         """Test tag cloud when all tags have same frequency"""
-        from tagmanager.app.visualization.service import create_tag_cloud_data
+        from filetagger.app.visualization.service import create_tag_cloud_data
         
         files_data = {
             "/file1.py": ["tag1"],
@@ -331,7 +331,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_render_tag_cloud_basic(self):
         """Test basic tag cloud rendering"""
-        from tagmanager.app.visualization.service import render_tag_cloud
+        from filetagger.app.visualization.service import render_tag_cloud
         
         tag_data = [
             ("python", 5, 5.0),
@@ -356,7 +356,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_render_tag_cloud_size_indicators(self):
         """Test that different size indicators are used"""
-        from tagmanager.app.visualization.service import render_tag_cloud
+        from filetagger.app.visualization.service import render_tag_cloud
         
         tag_data = [
             ("huge", 10, 5.0),    # Should get ★
@@ -378,7 +378,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_render_tag_cloud_width_wrapping(self):
         """Test that tag cloud wraps at specified width"""
-        from tagmanager.app.visualization.service import render_tag_cloud
+        from filetagger.app.visualization.service import render_tag_cloud
         
         tag_data = [("verylongtagname", 1, 3.0) for _ in range(10)]
         
@@ -389,7 +389,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_render_tag_cloud_empty_input(self):
         """Test rendering empty tag cloud"""
-        from tagmanager.app.visualization.service import render_tag_cloud
+        from filetagger.app.visualization.service import render_tag_cloud
         
         lines = render_tag_cloud([])
         self.assertEqual(lines, ["No tags found."])
@@ -400,7 +400,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_ascii_bar_chart_basic(self):
         """Test basic ASCII bar chart creation"""
-        from tagmanager.app.visualization.service import create_ascii_bar_chart
+        from filetagger.app.visualization.service import create_ascii_bar_chart
         
         data = {"Python": 10, "JavaScript": 7, "CSS": 3}
         lines = create_ascii_bar_chart(data, "Languages")
@@ -424,7 +424,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_ascii_bar_chart_ordering(self):
         """Test that bars are ordered by value (descending)"""
-        from tagmanager.app.visualization.service import create_ascii_bar_chart
+        from filetagger.app.visualization.service import create_ascii_bar_chart
         
         data = {"Low": 1, "High": 10, "Medium": 5}
         lines = create_ascii_bar_chart(data)
@@ -441,7 +441,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_ascii_bar_chart_empty_data(self):
         """Test bar chart with empty data"""
-        from tagmanager.app.visualization.service import create_ascii_bar_chart
+        from filetagger.app.visualization.service import create_ascii_bar_chart
         
         lines = create_ascii_bar_chart({}, "Empty Chart")
         
@@ -451,7 +451,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_ascii_bar_chart_zero_values(self):
         """Test bar chart with all zero values"""
-        from tagmanager.app.visualization.service import create_ascii_bar_chart
+        from filetagger.app.visualization.service import create_ascii_bar_chart
         
         data = {"A": 0, "B": 0, "C": 0}
         lines = create_ascii_bar_chart(data)
@@ -461,7 +461,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_ascii_bar_chart_scaling(self):
         """Test that bars scale properly"""
-        from tagmanager.app.visualization.service import create_ascii_bar_chart
+        from filetagger.app.visualization.service import create_ascii_bar_chart
         
         data = {"Max": 100, "Half": 50, "Quarter": 25}
         lines = create_ascii_bar_chart(data, max_width=40)
@@ -484,7 +484,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_ascii_histogram_basic(self):
         """Test basic ASCII histogram creation"""
-        from tagmanager.app.visualization.service import create_ascii_histogram
+        from filetagger.app.visualization.service import create_ascii_histogram
         
         data = [1, 2, 2, 3, 3, 3, 4, 4, 5]
         lines = create_ascii_histogram(data, "Test Histogram")
@@ -503,7 +503,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_ascii_histogram_empty_data(self):
         """Test histogram with empty data"""
-        from tagmanager.app.visualization.service import create_ascii_histogram
+        from filetagger.app.visualization.service import create_ascii_histogram
         
         lines = create_ascii_histogram([], "Empty Histogram")
         
@@ -513,7 +513,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_ascii_histogram_single_value(self):
         """Test histogram with all same values"""
-        from tagmanager.app.visualization.service import create_ascii_histogram
+        from filetagger.app.visualization.service import create_ascii_histogram
         
         data = [5, 5, 5, 5, 5]
         lines = create_ascii_histogram(data)
@@ -523,7 +523,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_create_ascii_histogram_custom_bins(self):
         """Test histogram with custom number of bins"""
-        from tagmanager.app.visualization.service import create_ascii_histogram
+        from filetagger.app.visualization.service import create_ascii_histogram
         
         data = list(range(100))  # 0 to 99
         lines = create_ascii_histogram(data, bins=5)
@@ -540,7 +540,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_generate_tree_view_success(self):
         """Test successful tree view generation"""
-        from tagmanager.app.visualization.service import generate_tree_view
+        from filetagger.app.visualization.service import generate_tree_view
         
         self._setup_test_data()
         
@@ -554,7 +554,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_generate_tree_view_empty_data(self):
         """Test tree view with no data"""
-        from tagmanager.app.visualization.service import generate_tree_view
+        from filetagger.app.visualization.service import generate_tree_view
         
         result = generate_tree_view()
         
@@ -566,7 +566,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_generate_tag_cloud_success(self):
         """Test successful tag cloud generation"""
-        from tagmanager.app.visualization.service import generate_tag_cloud
+        from filetagger.app.visualization.service import generate_tag_cloud
         
         self._setup_test_data()
         
@@ -583,7 +583,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_generate_tag_cloud_empty_data(self):
         """Test tag cloud with no data"""
-        from tagmanager.app.visualization.service import generate_tag_cloud
+        from filetagger.app.visualization.service import generate_tag_cloud
         
         result = generate_tag_cloud()
         
@@ -595,14 +595,14 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_generate_stats_charts_success(self):
         """Test successful stats charts generation"""
-        from tagmanager.app.visualization.service import generate_stats_charts
+        from filetagger.app.visualization.service import generate_stats_charts
         
         self._setup_test_data()
         
         result = generate_stats_charts()
         
         self.assertIsInstance(result, str)
-        self.assertIn("TagManager Statistics Charts", result)
+        self.assertIn("FileTagger Statistics Charts", result)
         self.assertIn("Files by Tag Count", result)
         self.assertIn("Top 10 Most Used Tags", result)
         self.assertIn("Summary Statistics", result)
@@ -611,7 +611,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_generate_stats_charts_empty_data(self):
         """Test stats charts with no data"""
-        from tagmanager.app.visualization.service import generate_stats_charts
+        from filetagger.app.visualization.service import generate_stats_charts
         
         result = generate_stats_charts()
         
@@ -619,7 +619,7 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_generate_stats_charts_histogram_generation(self):
         """Test that histogram is included when there's enough data"""
-        from tagmanager.app.visualization.service import generate_stats_charts
+        from filetagger.app.visualization.service import generate_stats_charts
         
         self._setup_test_data()
         
@@ -630,15 +630,15 @@ class TestVisualizationService(unittest.TestCase):
 
     def test_generate_stats_charts_single_file(self):
         """Test stats charts with only one file (no histogram)"""
-        from tagmanager.app.visualization.service import generate_stats_charts
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.visualization.service import generate_stats_charts
+        from filetagger.app.helpers import save_tags
         
         # Setup single file
         save_tags({"/single.py": ["python", "test"]})
         
         result = generate_stats_charts()
         
-        self.assertIn("TagManager Statistics Charts", result)
+        self.assertIn("FileTagger Statistics Charts", result)
         # Should not include histogram with only one data point
         self.assertNotIn("Tag Count Distribution Histogram", result)
 

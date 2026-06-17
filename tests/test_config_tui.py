@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 import typer
 
-from tagmanager.app.config.service import validate_configuration_key
-from tagmanager.app.config.tui import (
+from filetagger.app.config.service import validate_configuration_key
+from filetagger.app.config.tui import (
     allowed_values_hint,
     run_config_tui,
     tui_entry_keys,
@@ -30,7 +30,7 @@ class TestConfigTui(unittest.TestCase):
             self.assertTrue(validate_configuration_key(key), msg=key)
 
     def test_allowed_values_hint_lists_enums_and_ranges(self):
-        from tagmanager.app.config import tui as tui_mod
+        from filetagger.app.config import tui as tui_mod
 
         for entry in tui_mod.TUI_ENTRIES:
             hint = allowed_values_hint(entry)
@@ -57,9 +57,9 @@ class TestConfigTui(unittest.TestCase):
         self.assertIn("tm config set", text)
 
     def test_handle_config_tui_json_mode_exits(self):
-        from tagmanager.app.config.handler import handle_config_tui
+        from filetagger.app.config.handler import handle_config_tui
 
-        with patch("tagmanager.app.config.handler.runtime.json_mode", return_value=True):
+        with patch("filetagger.app.config.handler.runtime.json_mode", return_value=True):
             with self.assertRaises(typer.Exit) as ctx:
                 handle_config_tui()
         self.assertEqual(ctx.exception.exit_code, 1)

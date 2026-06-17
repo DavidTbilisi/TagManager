@@ -34,7 +34,7 @@ class TestMcpTagsForPath(unittest.TestCase):
     def test_tags_for_path_no_print(self):
         from unittest.mock import patch
 
-        from tagmanager.mcp_stdio import _tags_for_path
+        from filetagger.mcp_stdio import _tags_for_path
 
         inner = os.path.join(self.test_dir, "inner", "foo.txt")
         os.makedirs(os.path.dirname(inner), exist_ok=True)
@@ -45,7 +45,7 @@ class TestMcpTagsForPath(unittest.TestCase):
             json.dump({key: ["a", "b"]}, f)
 
         with patch(
-            "tagmanager.app.helpers.get_tag_file_path", return_value=self.test_tags_file
+            "filetagger.app.helpers.get_tag_file_path", return_value=self.test_tags_file
         ):
             with patch("os.getcwd", return_value=os.path.dirname(inner)):
                 out = _tags_for_path("foo.txt")
@@ -55,7 +55,7 @@ class TestMcpTagsForPath(unittest.TestCase):
 @unittest.skipUnless(_has_mcp(), "mcp package not installed")
 class TestMcpServerBuild(unittest.TestCase):
     def test_list_tools(self):
-        from tagmanager.mcp_stdio import _build_mcp
+        from filetagger.mcp_stdio import _build_mcp
 
         async def _run():
             m = _build_mcp()

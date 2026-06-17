@@ -1,9 +1,9 @@
 {
   "mcpServers": {
-    "tagmanager": {
+    "filetagger": {
       "type": "stdio",
       "command": "python",
-      "args": ["-m", "tagmanager.mcp_stdio"],
+      "args": ["-m", "filetagger.mcp_stdio"],
       "env": {
         "PYTHONPATH": "${workspaceFolder}"
       }

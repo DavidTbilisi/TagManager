@@ -1,8 +1,8 @@
 @echo off
-REM TagManager Project Cleanup Script (Windows)
+REM FileTagger Project Cleanup Script (Windows)
 REM Removes unused files and folders to keep the project clean
 
-echo 🧹 TagManager Project Cleanup
+echo 🧹 FileTagger Project Cleanup
 echo =============================
 
 echo.
@@ -94,15 +94,15 @@ if exist "__pycache__" (
     echo ℹ️  Not found: __pycache__/
 )
 
-if exist "tagmanager\app\__pycache__" (
-    echo 🗑️  Removing: tagmanager\app\__pycache__/
-    rmdir /s /q "tagmanager\app\__pycache__"
+if exist "filetagger\app\__pycache__" (
+    echo 🗑️  Removing: filetagger\app\__pycache__/
+    rmdir /s /q "filetagger\app\__pycache__"
 ) else (
-    echo ℹ️  Not found: tagmanager\app\__pycache__/
+    echo ℹ️  Not found: filetagger\app\__pycache__/
 )
 
-REM Remove all __pycache__ directories in tagmanager/app subdirectories
-for /d /r "tagmanager\app" %%d in (__pycache__) do (
+REM Remove all __pycache__ directories in filetagger/app subdirectories
+for /d /r "filetagger\app" %%d in (__pycache__) do (
     if exist "%%d" (
         echo 🗑️  Removing: %%d
         rmdir /s /q "%%d"
@@ -110,11 +110,11 @@ for /d /r "tagmanager\app" %%d in (__pycache__) do (
 )
 
 REM Build artifacts
-if exist "tagmanager_cli.egg-info" (
-    echo 🗑️  Removing: tagmanager_cli.egg-info/
-    rmdir /s /q "tagmanager_cli.egg-info"
+if exist "filetagger_cli.egg-info" (
+    echo 🗑️  Removing: filetagger_cli.egg-info/
+    rmdir /s /q "filetagger_cli.egg-info"
 ) else (
-    echo ℹ️  Not found: tagmanager_cli.egg-info/
+    echo ℹ️  Not found: filetagger_cli.egg-info/
 )
 
 if exist "dist" (
@@ -140,7 +140,7 @@ echo.
 echo ✅ Cleanup complete!
 echo.
 echo 📋 Remaining important files:
-echo    • tagmanager\ - Main package directory
+echo    • filetagger\ - Main package directory
 echo    • pyproject.toml - Package configuration
 echo    • requirements.txt - Dependencies
 echo    • README.md - Documentation

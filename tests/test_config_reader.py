@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for tagmanager.configReader (test_config.ini branch via reload)."""
+"""Tests for filetagger.configReader (test_config.ini branch via reload)."""
 
 import importlib
 import os
@@ -13,7 +13,7 @@ sys.path.insert(0, project_root)
 
 class TestConfigReader(unittest.TestCase):
     def test_prefers_test_config_ini_when_marked_present(self):
-        import tagmanager.configReader as cr
+        import filetagger.configReader as cr
 
         orig_exists = cr.os.path.exists
         test_ini = os.path.normpath(os.path.join(cr.root_dir, "test_config.ini"))

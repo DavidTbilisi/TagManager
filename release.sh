@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TagManager Release Workflow
+# FileTagger Release Workflow
 # Complete automation for version bumping, building, and publishing
 
 set -e
@@ -26,7 +26,7 @@ TAG="🏷️"
 
 print_header() {
     echo -e "${BLUE}================================${NC}"
-    echo -e "${BLUE}  TagManager Release Workflow${NC}"
+    echo -e "${BLUE}  FileTagger Release Workflow${NC}"
     echo -e "${BLUE}================================${NC}"
     echo
 }
@@ -165,7 +165,7 @@ create_github_release() {
     if command -v gh &> /dev/null; then
         # Create release notes
         cat > release_notes.md << EOF
-# TagManager v$version
+# FileTagger v$version
 
 ## What's New
 - Version $version release
@@ -173,7 +173,7 @@ create_github_release() {
 
 ## Installation
 \`\`\`bash
-pip install tagmanager-cli
+pip install filetagger-cli
 \`\`\`
 
 ## Quick Start
@@ -185,7 +185,7 @@ tm ls --tree
 EOF
         
         gh release create "v$version" \
-            --title "TagManager v$version" \
+            --title "FileTagger v$version" \
             --notes-file release_notes.md \
             dist/*
         
@@ -193,7 +193,7 @@ EOF
         print_success "GitHub release created"
     else
         print_info "GitHub CLI not found, skipping GitHub release"
-        print_info "You can create a release manually at: https://github.com/davidtbilisi/TagManager/releases"
+        print_info "You can create a release manually at: https://github.com/davidtbilisi/FileTagger/releases"
     fi
 }
 
@@ -307,8 +307,8 @@ main() {
         echo
         echo -e "${CYAN}Next Steps:${NC}"
         if [[ "$LOCAL_ONLY" = false ]]; then
-            echo "  • Check PyPI: https://pypi.org/project/tagmanager-cli/"
-            echo "  • Verify installation: pip install --upgrade tagmanager-cli"
+            echo "  • Check PyPI: https://pypi.org/project/filetagger-cli/"
+            echo "  • Verify installation: pip install --upgrade filetagger-cli"
         fi
         echo "  • Test the release: tm --help"
         echo "  • Update documentation if needed"

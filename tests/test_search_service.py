@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive tests for tagmanager.app.search.service
+Comprehensive tests for filetagger.app.search.service
 Testing every function, edge case, and error condition
 """
 
@@ -25,7 +25,7 @@ class TestSearchService(unittest.TestCase):
         self.test_dir = tempfile.mkdtemp()
         
         # Mock the helpers module
-        self.helpers_patcher = patch('tagmanager.app.search.service.load_tags')
+        self.helpers_patcher = patch('filetagger.app.search.service.load_tags')
         self.mock_load_tags = self.helpers_patcher.start()
         
     def tearDown(self):
@@ -35,7 +35,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_single_tag_match(self):
         """Test searching by single tag with matches"""
-        from tagmanager.app.search.service import search_files_by_tags
+        from filetagger.app.search.service import search_files_by_tags
         
         # Mock tags database
         self.mock_load_tags.return_value = {
@@ -55,7 +55,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_multiple_tags_and_logic(self):
         """Test searching by multiple tags (AND logic)"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Mock tags database
         self.mock_load_tags.return_value = {
@@ -74,7 +74,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_no_matches(self):
         """Test searching with no matching results"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Mock tags database
         self.mock_load_tags.return_value = {
@@ -90,7 +90,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_empty_search_tags(self):
         """Test searching with empty tag list"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Mock tags database
         self.mock_load_tags.return_value = {
@@ -106,7 +106,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_empty_database(self):
         """Test searching in empty tags database"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Mock empty database
         self.mock_load_tags.return_value = {}
@@ -119,7 +119,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_case_sensitivity(self):
         """Test that tag search is case-sensitive"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Mock tags database with different cases
         self.mock_load_tags.return_value = {
@@ -140,7 +140,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_unicode_tags(self):
         """Test searching with Unicode tags"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Mock tags database with Unicode
         self.mock_load_tags.return_value = {
@@ -161,7 +161,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_special_characters(self):
         """Test searching with special characters in tags"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Mock tags database with special characters
         self.mock_load_tags.return_value = {
@@ -182,7 +182,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_whitespace_tags(self):
         """Test searching with whitespace in tags"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Mock tags database with whitespace
         self.mock_load_tags.return_value = {
@@ -203,7 +203,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_empty_string_tag(self):
         """Test searching for empty string tag"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Mock tags database with empty string tag
         self.mock_load_tags.return_value = {
@@ -221,7 +221,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_duplicate_search_tags(self):
         """Test searching with duplicate tags in search list"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Mock tags database
         self.mock_load_tags.return_value = {
@@ -238,7 +238,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_large_database(self):
         """Test searching in large tags database"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Create large database
         large_db = {}
@@ -263,7 +263,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_complex_and_logic(self):
         """Test complex AND logic with multiple tags"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Mock complex tags database
         self.mock_load_tags.return_value = {
@@ -283,7 +283,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_all_files_match(self):
         """Test when all files match the search criteria"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Mock database where all files have common tag
         self.mock_load_tags.return_value = {
@@ -303,7 +303,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_single_file_multiple_matches(self):
         """Test when single file matches multiple different search criteria"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Mock database
         self.mock_load_tags.return_value = {
@@ -323,10 +323,10 @@ class TestSearchService(unittest.TestCase):
         self.assertEqual(results_api, ["/path/file1.py"])
         self.assertEqual(results_multi, ["/path/file1.py"])
     
-    @patch('tagmanager.app.search.service.load_tags', side_effect=Exception("Load error"))
+    @patch('filetagger.app.search.service.load_tags', side_effect=Exception("Load error"))
     def test_search_by_tags_load_exception(self, mock_load):
         """Test handling of exception in load_tags"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Execute - should raise exception
         with self.assertRaises(Exception):
@@ -334,7 +334,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_none_input(self):
         """Test searching with None as input"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         self.mock_load_tags.return_value = {
             "/path/file1.py": ["python", "backend"]
@@ -348,7 +348,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_non_list_input(self):
         """Test searching with non-list input"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         self.mock_load_tags.return_value = {
             "/path/file1.py": ["python", "backend"]
@@ -362,7 +362,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_mixed_types_in_list(self):
         """Test searching with mixed types in tag list"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         self.mock_load_tags.return_value = {
             "/path/file1.py": ["python", "123", "True"],
@@ -378,7 +378,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_very_long_tag_names(self):
         """Test searching with very long tag names"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Create very long tag names
         long_tag = "a" * 1000
@@ -397,7 +397,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_performance_large_tag_lists(self):
         """Test performance with files having large numbers of tags"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Create file with many tags
         many_tags = [f"tag_{i}" for i in range(1000)]
@@ -416,7 +416,7 @@ class TestSearchService(unittest.TestCase):
     
     def test_search_by_tags_order_preservation(self):
         """Test that search results maintain consistent order"""
-        from tagmanager.app.search.service import search_by_tags
+        from filetagger.app.search.service import search_by_tags
         
         # Mock database with multiple matches
         self.mock_load_tags.return_value = {
@@ -436,7 +436,7 @@ class TestSearchService(unittest.TestCase):
         self.assertEqual(len(results1), 3)
 
     def test_filter_paths_by_exclude_tags(self):
-        from tagmanager.app.search.service import filter_paths_by_exclude_tags
+        from filetagger.app.search.service import filter_paths_by_exclude_tags
 
         self.mock_load_tags.return_value = {
             "/a.py": ["work"],
@@ -447,7 +447,7 @@ class TestSearchService(unittest.TestCase):
         self.assertEqual(set(out), {"/a.py", "/c.py"})
 
     def test_combined_search_path_only_with_exclude(self):
-        from tagmanager.app.search.service import combined_search
+        from filetagger.app.search.service import combined_search
 
         self.mock_load_tags.return_value = {
             "/proj/a.py": ["work"],

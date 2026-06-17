@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for tagmanager.app.watch.service"""
+"""Tests for filetagger.app.watch.service"""
 
 import json
 import os
@@ -21,7 +21,7 @@ class TestTagFileSilently(unittest.TestCase):
         with open(self.test_tag_file, "w") as f:
             json.dump({}, f)
         self.patcher = patch(
-            "tagmanager.app.helpers.get_tag_file_path",
+            "filetagger.app.helpers.get_tag_file_path",
             return_value=self.test_tag_file,
         )
         self.patcher.start()
@@ -37,14 +37,14 @@ class TestTagFileSilently(unittest.TestCase):
         return path
 
     def test_tags_file_with_auto_tag(self):
-        from tagmanager.app.watch.service import tag_file_silently
+        from filetagger.app.watch.service import tag_file_silently
         path = self._make_file("script.py")
         result = tag_file_silently(path, [], None, auto_tag=True)
         self.assertTrue(result["success"])
         self.assertIn("python", result["tags"])
 
     def test_tags_file_with_extra_tags(self):
-        from tagmanager.app.watch.service import tag_file_silently
+        from filetagger.app.watch.service import tag_file_silently
         path = self._make_file("notes.txt")
         result = tag_file_silently(path, ["important", "work"], None, auto_tag=False)
         self.assertTrue(result["success"])
@@ -52,22 +52,22 @@ class TestTagFileSilently(unittest.TestCase):
         self.assertIn("work", result["tags"])
 
     def test_no_tags_no_auto_returns_failure(self):
-        from tagmanager.app.watch.service import tag_file_silently
+        from filetagger.app.watch.service import tag_file_silently
         path = self._make_file("unknown.xyz")
-        with patch("tagmanager.app.watch.service.suggest_tags_for_file", return_value=[]):
+        with patch("filetagger.app.watch.service.suggest_tags_for_file", return_value=[]):
             result = tag_file_silently(path, [], None, auto_tag=True)
         self.assertFalse(result["success"])
         self.assertEqual(result["reason"], "no tags to apply")
 
     def test_nonexistent_file_returns_failure(self):
-        from tagmanager.app.watch.service import tag_file_silently
+        from filetagger.app.watch.service import tag_file_silently
         result = tag_file_silently("/nonexistent/path/file.txt", ["tag"], None, auto_tag=False)
         self.assertFalse(result["success"])
         self.assertEqual(result["reason"], "file not found")
 
     def test_tags_are_persisted(self):
-        from tagmanager.app.watch.service import tag_file_silently
-        from tagmanager.app.helpers import load_tags
+        from filetagger.app.watch.service import tag_file_silently
+        from filetagger.app.helpers import load_tags
         path = self._make_file("doc.md")
         tag_file_silently(path, ["docs", "project"], None, auto_tag=False)
         saved = load_tags()
@@ -76,15 +76,15 @@ class TestTagFileSilently(unittest.TestCase):
         self.assertIn("docs", saved[abs_path])
 
     def test_preset_tags_applied(self):
-        from tagmanager.app.watch.service import tag_file_silently
+        from filetagger.app.watch.service import tag_file_silently
         path = self._make_file("app.js")
-        with patch("tagmanager.app.watch.service._get_preset_safe", return_value=["webproject", "frontend"]):
+        with patch("filetagger.app.watch.service._get_preset_safe", return_value=["webproject", "frontend"]):
             result = tag_file_silently(path, [], "webproject", auto_tag=False)
         self.assertTrue(result["success"])
         self.assertIn("webproject", result["tags"])
 
     def test_duplicate_tags_deduplicated(self):
-        from tagmanager.app.watch.service import tag_file_silently
+        from filetagger.app.watch.service import tag_file_silently
         path = self._make_file("run.py")
         # python will be added by auto-tag AND manually
         result = tag_file_silently(path, ["python", "backend"], None, auto_tag=True)
@@ -92,11 +92,11 @@ class TestTagFileSilently(unittest.TestCase):
         self.assertEqual(result["tags"].count("python"), 1)
 
     def test_incremental_tag_accumulation(self):
-        from tagmanager.app.watch.service import tag_file_silently
+        from filetagger.app.watch.service import tag_file_silently
         path = self._make_file("file.txt")
         tag_file_silently(path, ["first"], None, auto_tag=False)
         tag_file_silently(path, ["second"], None, auto_tag=False)
-        from tagmanager.app.helpers import load_tags
+        from filetagger.app.helpers import load_tags
         saved = load_tags()
         tags = saved[os.path.abspath(path)]
         self.assertIn("first", tags)
@@ -105,7 +105,7 @@ class TestTagFileSilently(unittest.TestCase):
 
 class TestWatchEvent(unittest.TestCase):
     def test_event_fields(self):
-        from tagmanager.app.watch.service import WatchEvent
+        from filetagger.app.watch.service import WatchEvent
         ev = WatchEvent("created", "/some/file.py", True, ["python"], reason="")
         self.assertEqual(ev.kind, "created")
         self.assertEqual(ev.path, "/some/file.py")
@@ -114,7 +114,7 @@ class TestWatchEvent(unittest.TestCase):
         self.assertIsNotNone(ev.timestamp)
 
     def test_moved_event_has_dest(self):
-        from tagmanager.app.watch.service import WatchEvent
+        from filetagger.app.watch.service import WatchEvent
         ev = WatchEvent("moved", "/old.py", True, dest="/new.py")
         self.assertEqual(ev.dest, "/new.py")
 
@@ -126,7 +126,7 @@ class TestIgnorePattern(unittest.TestCase):
         with open(self.test_tag_file, "w") as f:
             json.dump({}, f)
         self.patcher = patch(
-            "tagmanager.app.helpers.get_tag_file_path",
+            "filetagger.app.helpers.get_tag_file_path",
             return_value=self.test_tag_file,
         )
         self.patcher.start()
@@ -137,13 +137,13 @@ class TestIgnorePattern(unittest.TestCase):
 
     def test_handler_ignores_pyc(self):
         """Files matching ignore patterns must not be tagged."""
-        from tagmanager.app.watch.service import _TagManagerHandler, WATCHDOG_AVAILABLE
+        from filetagger.app.watch.service import _FileTaggerHandler, WATCHDOG_AVAILABLE
         if not WATCHDOG_AVAILABLE:
             self.skipTest("watchdog not installed")
 
         events_received = []
 
-        handler = _TagManagerHandler(
+        handler = _FileTaggerHandler(
             extra_tags=["test"],
             preset_name=None,
             auto_tag=False,
@@ -162,7 +162,7 @@ class TestIgnorePattern(unittest.TestCase):
 
     def test_handler_does_not_ignore_normal_file(self):
         """Files not matching ignore patterns should fire an event."""
-        from tagmanager.app.watch.service import _TagManagerHandler, WATCHDOG_AVAILABLE
+        from filetagger.app.watch.service import _FileTaggerHandler, WATCHDOG_AVAILABLE
         if not WATCHDOG_AVAILABLE:
             self.skipTest("watchdog not installed")
 
@@ -172,7 +172,7 @@ class TestIgnorePattern(unittest.TestCase):
 
         events_received = []
 
-        handler = _TagManagerHandler(
+        handler = _FileTaggerHandler(
             extra_tags=["test"],
             preset_name=None,
             auto_tag=False,
@@ -193,7 +193,7 @@ class TestIgnorePattern(unittest.TestCase):
 
 class TestStartWatchingNoWatchdog(unittest.TestCase):
     def test_raises_import_error_when_no_watchdog(self):
-        from tagmanager.app.watch import service as svc
+        from filetagger.app.watch import service as svc
         original = svc.WATCHDOG_AVAILABLE
         try:
             svc.WATCHDOG_AVAILABLE = False
@@ -226,7 +226,7 @@ class TestIntegrationWithWatchdog(unittest.TestCase):
         with open(self.test_tag_file, "w") as f:
             json.dump({}, f)
         self.patcher = patch(
-            "tagmanager.app.helpers.get_tag_file_path",
+            "filetagger.app.helpers.get_tag_file_path",
             return_value=self.test_tag_file,
         )
         self.patcher.start()
@@ -236,8 +236,8 @@ class TestIntegrationWithWatchdog(unittest.TestCase):
         shutil.rmtree(self.test_dir, ignore_errors=True)
 
     def test_file_creation_triggers_tagging(self):
-        from tagmanager.app.watch.service import start_watching, WatchEvent
-        from tagmanager.app.helpers import load_tags
+        from filetagger.app.watch.service import start_watching, WatchEvent
+        from filetagger.app.helpers import load_tags
 
         received: list = []
 

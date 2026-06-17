@@ -20,7 +20,7 @@ class TestPathFilters(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_include_basename_glob(self):
-        from tagmanager.app.autotag.path_filters import filter_walk_files
+        from filetagger.app.autotag.path_filters import filter_walk_files
 
         root = self.tmp
         a = os.path.join(root, "a.py")
@@ -32,7 +32,7 @@ class TestPathFilters(unittest.TestCase):
         self.assertEqual(sorted(out), sorted([os.path.abspath(a)]))
 
     def test_exclude_wins(self):
-        from tagmanager.app.autotag.path_filters import filter_walk_files
+        from filetagger.app.autotag.path_filters import filter_walk_files
 
         root = self.tmp
         a = os.path.join(root, "a.py")
@@ -42,7 +42,7 @@ class TestPathFilters(unittest.TestCase):
         self.assertEqual(out, [])
 
     def test_auto_exclude_skips_autotag(self):
-        from tagmanager.app.autotag.path_filters import should_apply_autotag_for_path
+        from filetagger.app.autotag.path_filters import should_apply_autotag_for_path
 
         root = self.tmp
         p = os.path.join(root, "x.log")
@@ -58,7 +58,7 @@ class TestPathFilters(unittest.TestCase):
         )
 
     def test_auto_include_restricts(self):
-        from tagmanager.app.autotag.path_filters import should_apply_autotag_for_path
+        from filetagger.app.autotag.path_filters import should_apply_autotag_for_path
 
         root = self.tmp
         py = os.path.join(root, "m.py")

@@ -1,7 +1,7 @@
 # Optional: merge into .github/workflows/your-workflow.yml
 # Lists paths tagged with both "ci" and "python" (OR semantics: use --match-all for AND).
 
-name: TagManager example
+name: FileTagger example
 
 on:
   workflow_dispatch:
@@ -17,8 +17,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install TagManager
-        run: pip install "tagmanager-cli"
+      - name: Install FileTagger
+        run: pip install "filetagger-cli"
 
       - name: Search by tags (machine-readable)
         run: tm --json search --tags ci python || true

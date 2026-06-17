@@ -17,7 +17,7 @@ I've created **exhaustive test suites** for every service module, testing each f
 ### **2. Existing Tests**
 
 - ✅ `test_basic.py` - Basic functionality tests (no dependencies)
-- ✅ `test_tagmanager.py` - Integration tests (requires full setup)
+- ✅ `test_filetagger.py` - Integration tests (requires full setup)
 
 ## 🔬 **Testing Methodology: "Hard as Possible"**
 
@@ -219,7 +219,7 @@ python3 tests/test_helpers.py
 python3 run_tests.py
 
 # Expected output:
-🧪 TagManager Comprehensive Test Suite
+🧪 FileTagger Comprehensive Test Suite
 ==================================================
 📋 Running 110+ tests across all service modules...
 
@@ -238,7 +238,7 @@ python3 run_tests.py
 
 ```bash
 pip install pytest pytest-cov
-pytest tests/ -v --cov=tagmanager
+pytest tests/ -v --cov=filetagger
 ```
 
 ## 🛡️ **Test Coverage Areas**

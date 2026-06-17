@@ -1,12 +1,12 @@
 Feature: Plugin system for CLI extensibility
   As a developer or user
   I want to install, manage, and use plugins with the CLI
-  So that the community can extend TagManager without waiting for core changes
+  So that the community can extend FileTagger without waiting for core changes
 
   Scenario: Install a plugin
     Given a plugin package is available
     When I run 'tm plugin install <plugin>'
-    Then the plugin is downloaded and registered with TagManager
+    Then the plugin is downloaded and registered with FileTagger
     And it is available for use in commands
 
   Scenario: Use a plugin command

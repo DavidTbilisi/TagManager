@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 class TestSavedSearchService(unittest.TestCase):
     def test_save_list_run_delete(self):
-        from tagmanager.app.saved_search import service as svc
+        from filetagger.app.saved_search import service as svc
 
         stored = {}
         mgr = MagicMock()
@@ -22,7 +22,7 @@ class TestSavedSearchService(unittest.TestCase):
 
         mgr.set_raw.side_effect = lambda k, v: set_raw(k, v)
 
-        with patch("tagmanager.app.saved_search.service.get_config_manager", return_value=mgr):
+        with patch("filetagger.app.saved_search.service.get_config_manager", return_value=mgr):
             ok, err = svc.save_saved_search(
                 "q1",
                 tags=["work", "q1"],
@@ -42,7 +42,7 @@ class TestSavedSearchService(unittest.TestCase):
 
             self.assertIn("q1", svc.list_saved_search_names())
 
-            with patch("tagmanager.app.saved_search.service.search_files_by_tags", return_value=["/a.py"]):
+            with patch("filetagger.app.saved_search.service.search_files_by_tags", return_value=["/a.py"]):
                 paths, err2 = svc.run_saved_search("q1")
             self.assertEqual(err2, "")
             self.assertEqual(paths, ["/a.py"])

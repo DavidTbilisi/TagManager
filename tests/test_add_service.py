@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive tests for tagmanager.app.add.service
+Comprehensive tests for filetagger.app.add.service
 Testing every function, edge case, and error condition
 """
 
@@ -31,10 +31,10 @@ class TestAddService(unittest.TestCase):
             f.write("Test content")
         
         # Mock the helpers module
-        self.helpers_patcher = patch('tagmanager.app.add.service.load_tags')
-        self.save_tags_patcher = patch('tagmanager.app.add.service.save_tags')
+        self.helpers_patcher = patch('filetagger.app.add.service.load_tags')
+        self.save_tags_patcher = patch('filetagger.app.add.service.save_tags')
         self.autotag_patcher = patch(
-            'tagmanager.app.autotag.service.suggest_tags_for_file',
+            'filetagger.app.autotag.service.suggest_tags_for_file',
             return_value=[]
         )
 
@@ -55,7 +55,7 @@ class TestAddService(unittest.TestCase):
     
     def test_add_tags_existing_file_new_tags(self):
         """Test adding tags to existing file with no previous tags"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         # Mock existing tags (empty)
         self.mock_load_tags.return_value = {}
@@ -79,7 +79,7 @@ class TestAddService(unittest.TestCase):
     
     def test_add_tags_existing_file_existing_tags(self):
         """Test adding tags to file that already has tags"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         # Mock existing tags
         existing_path = os.path.abspath(self.test_file)
@@ -103,7 +103,7 @@ class TestAddService(unittest.TestCase):
     
     def test_add_tags_duplicate_tags(self):
         """Test adding duplicate tags (should not create duplicates)"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         # Mock existing tags
         existing_path = os.path.abspath(self.test_file)
@@ -127,7 +127,7 @@ class TestAddService(unittest.TestCase):
     
     def test_add_tags_empty_tags_list(self):
         """Test that an empty tags list returns False without saving"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
 
         self.mock_load_tags.return_value = {}
 
@@ -136,9 +136,9 @@ class TestAddService(unittest.TestCase):
         self.assertFalse(result)
         self.mock_save_tags.assert_not_called()
 
-    @patch("tagmanager.app.autotag.service.suggest_tags_for_file", return_value=[])
+    @patch("filetagger.app.autotag.service.suggest_tags_for_file", return_value=[])
     def test_compute_single_file_add_merge_unions(self, _sug):
-        from tagmanager.app.add.service import compute_single_file_add_merge
+        from filetagger.app.add.service import compute_single_file_add_merge
 
         p = os.path.abspath(self.test_file)
         self.mock_load_tags.return_value = {p: ["alpha"]}
@@ -156,7 +156,7 @@ class TestAddService(unittest.TestCase):
     
     def test_add_tags_nonexistent_file_creates_file(self):
         """Test adding tags to non-existent file returns False (conservative behavior)"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         # Non-existent file path
         nonexistent_file = os.path.join(self.test_dir, "new_file.txt")
@@ -178,7 +178,7 @@ class TestAddService(unittest.TestCase):
     @patch('builtins.print')
     def test_add_tags_file_creation_success_message(self, mock_print):
         """Test that error message is printed when file doesn't exist"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         nonexistent_file = os.path.join(self.test_dir, "new_file.txt")
         self.mock_load_tags.return_value = {}
@@ -194,7 +194,7 @@ class TestAddService(unittest.TestCase):
     @patch('builtins.print')
     def test_add_tags_success_message(self, mock_print):
         """Test that success message is printed after adding tags"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         self.mock_load_tags.return_value = {}
         
@@ -214,7 +214,7 @@ class TestAddService(unittest.TestCase):
     @patch('builtins.print')
     def test_add_tags_file_creation_permission_error(self, mock_print, mock_open):
         """Test handling of permission error when creating file"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         nonexistent_file = "/root/restricted/file.txt"
         self.mock_load_tags.return_value = {}
@@ -231,11 +231,11 @@ class TestAddService(unittest.TestCase):
         error_messages = [msg for msg in print_calls if "does not exist" in msg]
         self.assertTrue(len(error_messages) > 0)
     
-    @patch('tagmanager.app.add.service.save_tags', return_value=False)
+    @patch('filetagger.app.add.service.save_tags', return_value=False)
     @patch('builtins.print')
     def test_add_tags_file_creation_os_error(self, mock_print, mock_save):
         """Test handling of save failure"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
 
         result = add_tags(self.test_file, ["tag"])
 
@@ -248,7 +248,7 @@ class TestAddService(unittest.TestCase):
     @patch('builtins.print', side_effect=UnicodeEncodeError('utf-8', '', 0, 1, 'test'))
     def test_add_tags_unicode_encode_error(self, mock_print):
         """Test handling of Unicode encoding error in print statement"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         self.mock_load_tags.return_value = {}
         self.mock_save_tags.return_value = True  # Ensure save succeeds
@@ -264,7 +264,7 @@ class TestAddService(unittest.TestCase):
     
     def test_add_tags_relative_path_conversion(self):
         """Test that relative paths are converted to absolute paths"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         # Create file in current directory
         current_dir_file = "relative_test.txt"
@@ -293,7 +293,7 @@ class TestAddService(unittest.TestCase):
     
     def test_add_tags_special_characters_in_path(self):
         """Test handling of special characters in file paths"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         # Create file with special characters
         special_file = os.path.join(self.test_dir, "file with spaces & symbols!@#.txt")
@@ -313,7 +313,7 @@ class TestAddService(unittest.TestCase):
     
     def test_add_tags_unicode_characters_in_tags(self):
         """Test handling of Unicode characters in tags"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         self.mock_load_tags.return_value = {}
         
@@ -331,7 +331,7 @@ class TestAddService(unittest.TestCase):
     
     def test_add_tags_very_long_tag_list(self):
         """Test handling of very long tag lists"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         self.mock_load_tags.return_value = {}
         
@@ -349,7 +349,7 @@ class TestAddService(unittest.TestCase):
     
     def test_add_tags_empty_string_tags(self):
         """Test that empty string tags are filtered out before saving"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
 
         self.mock_load_tags.return_value = {}
 
@@ -366,7 +366,7 @@ class TestAddService(unittest.TestCase):
 
     def test_add_tags_whitespace_only_tags(self):
         """Test that whitespace-only tags are filtered out before saving"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
 
         self.mock_load_tags.return_value = {}
 
@@ -383,7 +383,7 @@ class TestAddService(unittest.TestCase):
 
     def test_add_tags_all_empty_returns_false(self):
         """Test that providing only empty/whitespace tags returns False"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
 
         self.mock_load_tags.return_value = {}
 
@@ -392,19 +392,19 @@ class TestAddService(unittest.TestCase):
         self.assertFalse(result)
         self.mock_save_tags.assert_not_called()
     
-    @patch('tagmanager.app.add.service.load_tags', side_effect=Exception("Load error"))
+    @patch('filetagger.app.add.service.load_tags', side_effect=Exception("Load error"))
     def test_add_tags_load_tags_exception(self, mock_load):
         """Test handling of exception in load_tags"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         # Execute - should raise exception
         with self.assertRaises(Exception):
             add_tags(self.test_file, ["tag"])
     
-    @patch('tagmanager.app.add.service.save_tags', side_effect=Exception("Save error"))
+    @patch('filetagger.app.add.service.save_tags', side_effect=Exception("Save error"))
     def test_add_tags_save_tags_exception(self, mock_save):
         """Test handling of exception in save_tags"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         self.mock_load_tags.return_value = {}
         
@@ -414,7 +414,7 @@ class TestAddService(unittest.TestCase):
     
     def test_add_tags_case_sensitivity(self):
         """Test that tags are case-sensitive"""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
         
         self.mock_load_tags.return_value = {}
         
@@ -431,10 +431,10 @@ class TestAddService(unittest.TestCase):
         self.assertEqual(set(saved_data[expected_path]), set(case_tags))
         self.assertEqual(len(saved_data[expected_path]), 4)  # All different
 
-    @patch("tagmanager.app.autotag.service.suggest_tags_for_file", return_value=["autox"])
+    @patch("filetagger.app.autotag.service.suggest_tags_for_file", return_value=["autox"])
     def test_add_tags_autotag_when_no_explicit_tags(self, _mock_suggest):
         """Extension-only tagging is allowed when auto_tag is enabled."""
-        from tagmanager.app.add.service import add_tags
+        from filetagger.app.add.service import add_tags
 
         self.mock_load_tags.return_value = {}
         result = add_tags(self.test_file, [])
@@ -443,10 +443,10 @@ class TestAddService(unittest.TestCase):
         expected_path = os.path.abspath(self.test_file)
         self.assertIn("autox", saved[expected_path])
 
-    @patch("tagmanager.app.autotag.service.iter_files_recursive")
-    @patch("tagmanager.app.autotag.service.suggest_tags_for_file", return_value=["python"])
+    @patch("filetagger.app.autotag.service.iter_files_recursive")
+    @patch("filetagger.app.autotag.service.suggest_tags_for_file", return_value=["python"])
     def test_add_tags_recursive_merges_per_file(self, mock_suggest, mock_iter):
-        from tagmanager.app.add.service import add_tags_recursive
+        from filetagger.app.add.service import add_tags_recursive
 
         sub = os.path.join(self.test_dir, "sub")
         os.makedirs(sub, exist_ok=True)
@@ -469,13 +469,13 @@ class TestAddService(unittest.TestCase):
         self.assertIn("proj", saved[p])
         self.assertIn("python", saved[p])
 
-    @patch("tagmanager.app.autotag.service.iter_files_recursive")
+    @patch("filetagger.app.autotag.service.iter_files_recursive")
     @patch(
-        "tagmanager.app.autotag.service.suggest_tags_for_file",
+        "filetagger.app.autotag.service.suggest_tags_for_file",
         return_value=["from_auto"],
     )
     def test_add_tags_recursive_auto_exclude_glob(self, mock_suggest, mock_iter):
-        from tagmanager.app.add.service import add_tags_recursive
+        from filetagger.app.add.service import add_tags_recursive
 
         f_py = os.path.join(self.test_dir, "a.py")
         f_log = os.path.join(self.test_dir, "b.log")
@@ -500,13 +500,13 @@ class TestAddService(unittest.TestCase):
         self.assertIn("manual", saved[alog])
         self.assertNotIn("from_auto", saved[alog])
 
-    @patch("tagmanager.app.autotag.service.iter_files_recursive")
+    @patch("filetagger.app.autotag.service.iter_files_recursive")
     @patch(
-        "tagmanager.app.autotag.service.suggest_tags_for_file",
+        "filetagger.app.autotag.service.suggest_tags_for_file",
         return_value=["auto"],
     )
     def test_add_tags_recursive_include_glob(self, mock_suggest, mock_iter):
-        from tagmanager.app.add.service import add_tags_recursive
+        from filetagger.app.add.service import add_tags_recursive
 
         f_py = os.path.join(self.test_dir, "a.py")
         f_js = os.path.join(self.test_dir, "b.js")

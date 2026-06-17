@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive tests for tagmanager.app.filter.service
+Comprehensive tests for filetagger.app.filter.service
 Testing every function, edge case, and error condition
 """
 
@@ -30,11 +30,11 @@ class TestFilterService(unittest.TestCase):
         self.test_tag_file = os.path.join(self.test_dir, "test_tags.json")
         
         # Patch the TAG_FILE to use our test file
-        self.tag_file_patcher = patch('tagmanager.app.helpers.get_tag_file_path', return_value=self.test_tag_file)
+        self.tag_file_patcher = patch('filetagger.app.helpers.get_tag_file_path', return_value=self.test_tag_file)
         self.tag_file_patcher.start()
         
         # Clear any existing tag data before each test
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.helpers import save_tags
         save_tags({})  # Start with clean tag data
 
     def tearDown(self):
@@ -45,7 +45,7 @@ class TestFilterService(unittest.TestCase):
 
     def _setup_test_data(self):
         """Setup common test data"""
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.helpers import save_tags
         
         test_data = {
             "/path/to/file1.py": ["python", "backend", "api"],
@@ -66,7 +66,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_duplicate_tags_success(self):
         """Test finding duplicate tag sets"""
-        from tagmanager.app.filter.service import find_duplicate_tags
+        from filetagger.app.filter.service import find_duplicate_tags
         
         self._setup_test_data()
         
@@ -86,7 +86,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_duplicate_tags_empty_database(self):
         """Test duplicate finding with empty database"""
-        from tagmanager.app.filter.service import find_duplicate_tags
+        from filetagger.app.filter.service import find_duplicate_tags
         
         result = find_duplicate_tags()
         
@@ -96,8 +96,8 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_duplicate_tags_no_duplicates(self):
         """Test when no duplicates exist"""
-        from tagmanager.app.filter.service import find_duplicate_tags
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.filter.service import find_duplicate_tags
+        from filetagger.app.helpers import save_tags
         
         # Setup data with all unique tag sets
         test_data = {
@@ -115,8 +115,8 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_duplicate_tags_empty_tag_sets(self):
         """Test finding duplicates including empty tag sets"""
-        from tagmanager.app.filter.service import find_duplicate_tags
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.filter.service import find_duplicate_tags
+        from filetagger.app.helpers import save_tags
         
         test_data = {
             "/file1.txt": [],
@@ -142,7 +142,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_orphaned_files_success(self):
         """Test finding orphaned files"""
-        from tagmanager.app.filter.service import find_orphaned_files
+        from filetagger.app.filter.service import find_orphaned_files
         
         self._setup_test_data()
         
@@ -155,7 +155,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_orphaned_files_empty_database(self):
         """Test orphan finding with empty database"""
-        from tagmanager.app.filter.service import find_orphaned_files
+        from filetagger.app.filter.service import find_orphaned_files
         
         result = find_orphaned_files()
         
@@ -165,8 +165,8 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_orphaned_files_no_orphans(self):
         """Test when no orphaned files exist"""
-        from tagmanager.app.filter.service import find_orphaned_files
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.filter.service import find_orphaned_files
+        from filetagger.app.helpers import save_tags
         
         test_data = {
             "/file1.py": ["python"],
@@ -182,8 +182,8 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_orphaned_files_all_orphans(self):
         """Test when all files are orphans"""
-        from tagmanager.app.filter.service import find_orphaned_files
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.filter.service import find_orphaned_files
+        from filetagger.app.helpers import save_tags
         
         test_data = {
             "/file1.txt": [],
@@ -203,7 +203,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_calculate_tag_similarity_identical(self):
         """Test similarity calculation for identical tag sets"""
-        from tagmanager.app.filter.service import calculate_tag_similarity
+        from filetagger.app.filter.service import calculate_tag_similarity
         
         tags1 = ["python", "backend", "api"]
         tags2 = ["python", "backend", "api"]
@@ -213,7 +213,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_calculate_tag_similarity_no_overlap(self):
         """Test similarity calculation for completely different tag sets"""
-        from tagmanager.app.filter.service import calculate_tag_similarity
+        from filetagger.app.filter.service import calculate_tag_similarity
         
         tags1 = ["python", "backend"]
         tags2 = ["javascript", "frontend"]
@@ -223,7 +223,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_calculate_tag_similarity_partial_overlap(self):
         """Test similarity calculation for partial overlap"""
-        from tagmanager.app.filter.service import calculate_tag_similarity
+        from filetagger.app.filter.service import calculate_tag_similarity
         
         tags1 = ["python", "backend", "api"]      # 3 tags
         tags2 = ["python", "frontend", "web"]     # 3 tags, 1 common = 1/5 = 0.2
@@ -233,7 +233,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_calculate_tag_similarity_empty_tags(self):
         """Test similarity calculation with empty tag sets"""
-        from tagmanager.app.filter.service import calculate_tag_similarity
+        from filetagger.app.filter.service import calculate_tag_similarity
         
         # Both empty
         self.assertEqual(calculate_tag_similarity([], []), 1.0)
@@ -244,7 +244,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_calculate_tag_similarity_case_insensitive(self):
         """Test that similarity calculation is case-insensitive"""
-        from tagmanager.app.filter.service import calculate_tag_similarity
+        from filetagger.app.filter.service import calculate_tag_similarity
         
         tags1 = ["Python", "Backend"]
         tags2 = ["python", "backend", "api"]
@@ -259,7 +259,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_similar_files_success(self):
         """Test finding similar files"""
-        from tagmanager.app.filter.service import find_similar_files
+        from filetagger.app.filter.service import find_similar_files
         
         self._setup_test_data()
         
@@ -276,7 +276,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_similar_files_target_not_found(self):
         """Test similar files when target file not found"""
-        from tagmanager.app.filter.service import find_similar_files
+        from filetagger.app.filter.service import find_similar_files
         
         self._setup_test_data()
         
@@ -288,7 +288,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_similar_files_target_no_tags(self):
         """Test similar files when target file has no tags"""
-        from tagmanager.app.filter.service import find_similar_files
+        from filetagger.app.filter.service import find_similar_files
         
         self._setup_test_data()
         
@@ -299,7 +299,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_similar_files_empty_database(self):
         """Test similar files with empty database"""
-        from tagmanager.app.filter.service import find_similar_files
+        from filetagger.app.filter.service import find_similar_files
         
         result = find_similar_files("/any/file.py")
         
@@ -308,7 +308,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_similar_files_high_threshold(self):
         """Test similar files with high threshold (no matches)"""
-        from tagmanager.app.filter.service import find_similar_files
+        from filetagger.app.filter.service import find_similar_files
         
         self._setup_test_data()
         
@@ -320,7 +320,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_similar_files_case_insensitive_path(self):
         """Test that file path matching is case-insensitive"""
-        from tagmanager.app.filter.service import find_similar_files
+        from filetagger.app.filter.service import find_similar_files
         
         self._setup_test_data()
         
@@ -336,7 +336,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_tag_clusters_success(self):
         """Test finding tag clusters"""
-        from tagmanager.app.filter.service import find_tag_clusters
+        from filetagger.app.filter.service import find_tag_clusters
         
         self._setup_test_data()
         
@@ -353,7 +353,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_tag_clusters_empty_database(self):
         """Test cluster finding with empty database"""
-        from tagmanager.app.filter.service import find_tag_clusters
+        from filetagger.app.filter.service import find_tag_clusters
         
         result = find_tag_clusters()
         
@@ -362,7 +362,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_tag_clusters_high_min_size(self):
         """Test cluster finding with high minimum cluster size"""
-        from tagmanager.app.filter.service import find_tag_clusters
+        from filetagger.app.filter.service import find_tag_clusters
         
         self._setup_test_data()
         
@@ -373,7 +373,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_tag_clusters_sorted_by_size(self):
         """Test that clusters are sorted by file count"""
-        from tagmanager.app.filter.service import find_tag_clusters
+        from filetagger.app.filter.service import find_tag_clusters
         
         self._setup_test_data()
         
@@ -385,7 +385,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_tag_clusters_percentage_calculation(self):
         """Test that cluster percentages are calculated correctly"""
-        from tagmanager.app.filter.service import find_tag_clusters
+        from filetagger.app.filter.service import find_tag_clusters
         
         self._setup_test_data()
         
@@ -402,8 +402,8 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_isolated_files_success(self):
         """Test finding isolated files"""
-        from tagmanager.app.filter.service import find_isolated_files
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.filter.service import find_isolated_files
+        from filetagger.app.helpers import save_tags
         
         # Setup data with some isolated files
         test_data = {
@@ -425,7 +425,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_isolated_files_empty_database(self):
         """Test isolated files finding with empty database"""
-        from tagmanager.app.filter.service import find_isolated_files
+        from filetagger.app.filter.service import find_isolated_files
         
         result = find_isolated_files()
         
@@ -434,8 +434,8 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_isolated_files_no_isolated(self):
         """Test when no files are isolated"""
-        from tagmanager.app.filter.service import find_isolated_files
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.filter.service import find_isolated_files
+        from filetagger.app.helpers import save_tags
         
         # All files share multiple tags
         test_data = {
@@ -452,8 +452,8 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_isolated_files_case_insensitive(self):
         """Test that isolation check is case-insensitive"""
-        from tagmanager.app.filter.service import find_isolated_files
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.filter.service import find_isolated_files
+        from filetagger.app.helpers import save_tags
         
         test_data = {
             "/file1.py": ["Python", "Backend"],
@@ -469,8 +469,8 @@ class TestFilterService(unittest.TestCase):
 
     def test_find_isolated_files_skip_empty_tags(self):
         """Test that files with empty tags are skipped"""
-        from tagmanager.app.filter.service import find_isolated_files
-        from tagmanager.app.helpers import save_tags
+        from filetagger.app.filter.service import find_isolated_files
+        from filetagger.app.helpers import save_tags
         
         test_data = {
             "/file1.py": [],                    # Empty tags - should be skipped
@@ -492,7 +492,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_format_duplicates_result_success(self):
         """Test formatting duplicate results"""
-        from tagmanager.app.filter.service import format_duplicates_result
+        from filetagger.app.filter.service import format_duplicates_result
         
         result = {
             "success": True,
@@ -513,7 +513,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_format_duplicates_result_no_duplicates(self):
         """Test formatting when no duplicates found"""
-        from tagmanager.app.filter.service import format_duplicates_result
+        from filetagger.app.filter.service import format_duplicates_result
         
         result = {
             "success": True,
@@ -530,7 +530,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_format_orphans_result_success(self):
         """Test formatting orphaned files results"""
-        from tagmanager.app.filter.service import format_orphans_result
+        from filetagger.app.filter.service import format_orphans_result
         
         result = {
             "success": True,
@@ -548,7 +548,7 @@ class TestFilterService(unittest.TestCase):
 
     def test_format_similar_result_success(self):
         """Test formatting similar files results"""
-        from tagmanager.app.filter.service import format_similar_result
+        from filetagger.app.filter.service import format_similar_result
         
         result = {
             "success": True,

@@ -1,4 +1,4 @@
-# TagManager v1.7.0
+# FileTagger v1.7.0
 
 Release date: 2026-04-24
 
@@ -18,7 +18,7 @@ Release date: 2026-04-24
 ## Install
 
 ```bash
-pip install tagmanager-cli==1.7.0
+pip install filetagger-cli==1.7.0
 ```
 
 Optional extras unchanged: `[watch]`, `[mcp]`, `[test]`, `[dev]`.
@@ -26,4 +26,4 @@ Optional extras unchanged: `[watch]`, `[mcp]`, `[test]`, `[dev]`.
 ## Upgrade notes
 
 - The thin GUI binds to **loopback by default**. Do not expose on `0.0.0.0` without authentication on untrusted networks.
-- PyPI package data uses quoted TOML keys for `tagmanager.app` static assets (`thin_gui.html`).
+- PyPI package data uses quoted TOML keys for `filetagger.app` static assets (`thin_gui.html`).

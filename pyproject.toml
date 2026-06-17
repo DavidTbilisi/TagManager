@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tagmanager-cli"
+name = "filetagger-cli"
 version = "1.9.4"
 description = "The Ultimate Command-Line File Tagging System - Transform chaos into order with intelligent file organization"
 readme = "README.md"
@@ -72,31 +72,31 @@ dev = [
 
 
 [project.urls]
-Homepage = "https://github.com/davidtbilisi/TagManager"
-Documentation = "https://github.com/davidtbilisi/TagManager#readme"
-Repository = "https://github.com/davidtbilisi/TagManager.git"
-"Bug Tracker" = "https://github.com/davidtbilisi/TagManager/issues"
-Changelog = "https://github.com/davidtbilisi/TagManager/releases"
+Homepage = "https://github.com/davidtbilisi/FileTagger"
+Documentation = "https://github.com/davidtbilisi/FileTagger#readme"
+Repository = "https://github.com/davidtbilisi/FileTagger.git"
+"Bug Tracker" = "https://github.com/davidtbilisi/FileTagger/issues"
+Changelog = "https://github.com/davidtbilisi/FileTagger/releases"
 
 [project.scripts]
-tm = "tagmanager.cli:main"
-tagmanager = "tagmanager.cli:main"
-tm-mcp = "tagmanager.mcp_server.server:main"
+ftag = "filetagger.cli:main"
+filetagger = "filetagger.cli:main"
+ftag-mcp = "filetagger.mcp_server.server:main"
 
 [tool.setuptools]
-packages = ["tagmanager", "tagmanager.app", "tagmanager.app.add", "tagmanager.app.alias",
-           "tagmanager.app.autotag", "tagmanager.app.bulk",
-           "tagmanager.app.config", "tagmanager.app.filter", "tagmanager.app.list_all",
-           "tagmanager.app.move", "tagmanager.app.paths", "tagmanager.app.preset",
-           "tagmanager.app.remove", "tagmanager.app.saved_search", "tagmanager.app.search",
-           "tagmanager.app.stats", "tagmanager.app.storage", "tagmanager.app.tags",
-           "tagmanager.app.visualization", "tagmanager.app.graph", "tagmanager.app.watch",
-           "tagmanager.app.exportdata", "tagmanager.app.journal", "tagmanager.app.doctor",
-           "tagmanager.mcp_server"]
+packages = ["filetagger", "filetagger.app", "filetagger.app.add", "filetagger.app.alias",
+           "filetagger.app.autotag", "filetagger.app.bulk",
+           "filetagger.app.config", "filetagger.app.filter", "filetagger.app.list_all",
+           "filetagger.app.move", "filetagger.app.paths", "filetagger.app.preset",
+           "filetagger.app.remove", "filetagger.app.saved_search", "filetagger.app.search",
+           "filetagger.app.stats", "filetagger.app.storage", "filetagger.app.tags",
+           "filetagger.app.visualization", "filetagger.app.graph", "filetagger.app.watch",
+           "filetagger.app.exportdata", "filetagger.app.journal", "filetagger.app.doctor",
+           "filetagger.mcp_server"]
 
 [tool.setuptools.package-data]
-"tagmanager" = ["*.ini", "*.json"]
-"tagmanager.app" = ["thin_gui.html", "preview_page.html"]
+"filetagger" = ["*.ini", "*.json"]
+"filetagger.app" = ["thin_gui.html", "preview_page.html"]
 
 [tool.black]
 line-length = 88

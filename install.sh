@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TagManager Installation Script
+# FileTagger Installation Script
 # Supports local and remote (PyPI) installation with automatic upgrades
 
 set -e  # Exit on any error
@@ -25,7 +25,7 @@ SPARKLES="✨"
 GEAR="⚙️"
 
 # Configuration
-PACKAGE_NAME="tagmanager-cli"
+PACKAGE_NAME="filetagger-cli"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DIST_DIR="$PROJECT_DIR/dist"
 PYPROJECT_FILE="$PROJECT_DIR/pyproject.toml"
@@ -33,7 +33,7 @@ PYPROJECT_FILE="$PROJECT_DIR/pyproject.toml"
 # Functions
 print_header() {
     echo -e "${BLUE}================================${NC}"
-    echo -e "${BLUE}  TagManager Installation Script${NC}"
+    echo -e "${BLUE}  FileTagger Installation Script${NC}"
     echo -e "${BLUE}================================${NC}"
     echo
 }
@@ -221,11 +221,11 @@ test_installation() {
         return 1
     fi
     
-    if command -v tagmanager &> /dev/null; then
-        print_success "Command 'tagmanager' is available"
-        print_info "tagmanager --help works"
+    if command -v filetagger &> /dev/null; then
+        print_success "Command 'filetagger' is available"
+        print_info "filetagger --help works"
     else
-        print_warning "Command 'tagmanager' not found (but tm works)"
+        print_warning "Command 'filetagger' not found (but tm works)"
     fi
     
     # Test basic functionality
@@ -261,7 +261,7 @@ show_post_install_info() {
     echo -e "${GREEN}${SPARKLES} Installation Complete! ${SPARKLES}${NC}"
     echo -e "${BLUE}================================${NC}"
     echo -e "${CYAN}Package:${NC} $PACKAGE_NAME v$version"
-    echo -e "${CYAN}Commands:${NC} tm, tagmanager"
+    echo -e "${CYAN}Commands:${NC} tm, filetagger"
     echo
     echo -e "${CYAN}Quick Start:${NC}"
     echo "  tm --help                    # Show all commands"

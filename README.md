@@ -1,4 +1,4 @@
-# 🏷️ TagManager
+# 🏷️ FileTagger
 
 <div align="center">
 
@@ -6,7 +6,7 @@
 
 _Transform chaos into order with intelligent file organization_
 
-[![PyPI](https://img.shields.io/pypi/v/tagmanager-cli.svg)](https://pypi.org/project/tagmanager-cli/)
+[![PyPI](https://img.shields.io/pypi/v/filetagger-cli.svg)](https://pypi.org/project/filetagger-cli/)
 [![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](README.md)
@@ -18,7 +18,7 @@ _Transform chaos into order with intelligent file organization_
 
 ---
 
-## 🌟 Why TagManager?
+## 🌟 Why FileTagger?
 
 Folder hierarchies force you to put a file in one place. Tags let a file belong to everything it actually is.
 
@@ -28,7 +28,7 @@ tm add report.pdf --tags work client-a q1 2024 final
 tm search --tags work q1        # instantly surface it
 ```
 
-TagManager stores tags in a lightweight JSON sidecar (`~/file_tags.json`) — no database, no daemon required — and ships a full command set for search, bulk operations, smart filtering, an interactive network graph, and a file-system watcher that tags new files automatically.
+FileTagger stores tags in a lightweight JSON sidecar (`~/file_tags.json`) — no database, no daemon required — and ships a full command set for search, bulk operations, smart filtering, an interactive network graph, and a file-system watcher that tags new files automatically.
 
 ---
 
@@ -55,17 +55,17 @@ TagManager stores tags in a lightweight JSON sidecar (`~/file_tags.json`) — no
 ## 🚀 Installation
 
 ```bash
-pip install tagmanager-cli
+pip install filetagger-cli
 ```
 
-Commands are available as both `tm` (short) and `tagmanager` (long form).
+Commands are available as both `tm` (short) and `filetagger` (long form).
 
 ### Optional: Watch mode
 
 Watch mode requires [watchdog](https://pypi.org/project/watchdog/):
 
 ```bash
-pip install tagmanager-cli[watch]
+pip install filetagger-cli[watch]
 # or separately
 pip install watchdog
 ```
@@ -73,17 +73,17 @@ pip install watchdog
 ### Install from source
 
 ```bash
-git clone https://github.com/davidtbilisi/TagManager.git
-cd TagManager
+git clone https://github.com/davidtbilisi/FileTagger.git
+cd FileTagger
 pip install -e .
 ```
 
 ### Optional: MCP (AI assistants)
 
-To expose TagManager to **Cursor**, **Claude Desktop**, **ChatGPT** (where local stdio is supported), **OpenAI Codex**, or any MCP client over stdio, install the optional SDK:
+To expose FileTagger to **Cursor**, **Claude Desktop**, **ChatGPT** (where local stdio is supported), **OpenAI Codex**, or any MCP client over stdio, install the optional SDK:
 
 ```bash
-pip install "tagmanager-cli[mcp]"
+pip install "filetagger-cli[mcp]"
 # or, from a clone:
 pip install -e ".[mcp]"
 ```
@@ -100,7 +100,7 @@ CI and hook examples (GitHub Actions, `uvx`, sample pre-commit): [tasks/recipes/
 
 ## MCP: Cursor, Claude, ChatGPT, and Codex
 
-TagManager ships a **Model Context Protocol** server (`tagmanager/mcp_stdio.py`) that exposes tools such as listing tags, searching files by tag, reading tags for a path, and adding tags (default **dry run**). You can run it manually as:
+FileTagger ships a **Model Context Protocol** server (`filetagger/mcp_stdio.py`) that exposes tools such as listing tags, searching files by tag, reading tags for a path, and adding tags (default **dry run**). You can run it manually as:
 
 ```bash
 tm-mcp          # console script, if installed
@@ -111,12 +111,12 @@ tm mcp          # same server via the main CLI
 ### Cursor
 
 1. Install the MCP extra (see [Optional: MCP](#optional-mcp-ai-assistants)).
-2. Open the **TagManager repository folder** as your workspace in Cursor (the config below relies on `${workspaceFolder}`).
-3. This repo includes **`.cursor/mcp.json`**, which registers a server named **`tagmanager`** using:
-   - `python -m tagmanager.mcp_stdio`
+2. Open the **FileTagger repository folder** as your workspace in Cursor (the config below relies on `${workspaceFolder}`).
+3. This repo includes **`.cursor/mcp.json`**, which registers a server named **`filetagger`** using:
+   - `python -m filetagger.mcp_stdio`
    - `PYTHONPATH=${workspaceFolder}` so a local clone works without a separate `pip install` of the package into that interpreter.
 4. In Cursor, open **Settings → MCP** (or the MCP panel), then **refresh** or restart Cursor so the project server is loaded.
-5. If the server fails to start, point **`command`** in `.cursor/mcp.json` at the same Python executable you used for `pip install` (on Windows you can use `py` with `args` like `["-3", "-m", "tagmanager.mcp_stdio"]`).
+5. If the server fails to start, point **`command`** in `.cursor/mcp.json` at the same Python executable you used for `pip install` (on Windows you can use `py` with `args` like `["-3", "-m", "filetagger.mcp_stdio"]`).
 
 ### Claude Desktop
 
@@ -135,23 +135,23 @@ Claude Desktop reads **its own** MCP config file (not `.cursor/mcp.json`). In th
 ```json
 {
   "mcpServers": {
-    "tagmanager": {
+    "filetagger": {
       "command": "python",
-      "args": ["-m", "tagmanager.mcp_stdio"],
+      "args": ["-m", "filetagger.mcp_stdio"],
       "env": {
-        "PYTHONPATH": "/absolute/path/to/TagManager"
+        "PYTHONPATH": "/absolute/path/to/FileTagger"
       }
     }
   }
 }
 ```
 
-If `tagmanager-cli[mcp]` is installed in that Python environment and imports resolve globally, you can omit `env` and use only `"command": "python"` and `"args": ["-m", "tagmanager.mcp_stdio"]`. Alternatively, if the `tm-mcp` script is on `PATH` for the same environment:
+If `filetagger-cli[mcp]` is installed in that Python environment and imports resolve globally, you can omit `env` and use only `"command": "python"` and `"args": ["-m", "filetagger.mcp_stdio"]`. Alternatively, if the `tm-mcp` script is on `PATH` for the same environment:
 
 ```json
 {
   "mcpServers": {
-    "tagmanager": {
+    "filetagger": {
       "command": "tm-mcp",
       "args": []
     }
@@ -159,17 +159,17 @@ If `tagmanager-cli[mcp]` is installed in that Python environment and imports res
 }
 ```
 
-4. Save the file and start Claude Desktop again; enable the **tagmanager** MCP server in the app if prompted. Use the developer **logs** or the tools / hammer control in the chat UI to confirm the server loaded.
+4. Save the file and start Claude Desktop again; enable the **filetagger** MCP server in the app if prompted. Use the developer **logs** or the tools / hammer control in the chat UI to confirm the server loaded.
 
 ### ChatGPT and OpenAI
 
-TagManager’s MCP server speaks **stdio** (a local subprocess). How that maps to ChatGPT depends on which product you use.
+FileTagger’s MCP server speaks **stdio** (a local subprocess). How that maps to ChatGPT depends on which product you use.
 
 #### ChatGPT in the browser (Developer mode / custom apps)
 
-ChatGPT **custom apps** (developer mode) connect to an MCP server over a **remote URL** (for example **SSE** or **streamable HTTP**), not by spawning your local `python -m tagmanager.mcp_stdio` directly. This repository does not ship an HTTP MCP bridge.
+ChatGPT **custom apps** (developer mode) connect to an MCP server over a **remote URL** (for example **SSE** or **streamable HTTP**), not by spawning your local `python -m filetagger.mcp_stdio` directly. This repository does not ship an HTTP MCP bridge.
 
-To use TagManager from **web** ChatGPT you would need a **trusted** network path from OpenAI’s infrastructure to your tools (for example a small **stdio → HTTP** gateway you control, or a hosted deployment), then register that URL under **Settings → Apps** per your workspace rules. Plan and admin requirements change over time; start from OpenAI’s docs: [Developer mode and MCP apps](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt-beta), [ChatGPT developer mode](https://developers.openai.com/api/docs/guides/developer-mode).
+To use FileTagger from **web** ChatGPT you would need a **trusted** network path from OpenAI’s infrastructure to your tools (for example a small **stdio → HTTP** gateway you control, or a hosted deployment), then register that URL under **Settings → Apps** per your workspace rules. Plan and admin requirements change over time; start from OpenAI’s docs: [Developer mode and MCP apps](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt-beta), [ChatGPT developer mode](https://developers.openai.com/api/docs/guides/developer-mode).
 
 #### ChatGPT Desktop (local JSON, when available)
 
@@ -187,15 +187,15 @@ If that file exists and expects the same `mcpServers` shape as Claude, reuse the
 [OpenAI Codex](https://developers.openai.com/codex/mcp) documents **stdio** MCP servers in `~/.codex/config.toml` (or a trusted project’s `.codex/config.toml`). Example for a local clone:
 
 ```toml
-[mcp_servers.tagmanager]
+[mcp_servers.filetagger]
 command = "python"
-args = ["-m", "tagmanager.mcp_stdio"]
+args = ["-m", "filetagger.mcp_stdio"]
 
-[mcp_servers.tagmanager.env]
-PYTHONPATH = "/absolute/path/to/TagManager"
+[mcp_servers.filetagger.env]
+PYTHONPATH = "/absolute/path/to/FileTagger"
 ```
 
-Use the same Python you used for `pip install "tagmanager-cli[mcp]"`. Then use Codex’s MCP UI or `codex mcp` to verify the server starts.
+Use the same Python you used for `pip install "filetagger-cli[mcp]"`. Then use Codex’s MCP UI or `codex mcp` to verify the server starts.
 
 Further reading: [Cursor MCP](https://cursor.com/docs/mcp), [Connecting local MCP servers (Claude Desktop)](https://modelcontextprotocol.io/docs/develop/connect-local-servers), [OpenAI Codex MCP](https://developers.openai.com/codex/mcp).
 
@@ -289,7 +289,7 @@ Status text (green/red) under the form shows the last result or error. If **`TAG
 
 #### Implementation note
 
-Mutations go through **`tagmanager/app/gui_handlers.py`** (same **`load_tags` / `save_tags`** stack as the CLI). HTML assets: **`tagmanager/app/thin_gui.html`**, **`tagmanager/app/preview_page.html`**. REST-style discovery: open **`http://127.0.0.1:8844/`** or **`…/api`** while the server is running for a short JSON list of routes (includes **`GET /preview`**, **`GET /api/v1/files/tags?path=`** for scripts).
+Mutations go through **`filetagger/app/gui_handlers.py`** (same **`load_tags` / `save_tags`** stack as the CLI). HTML assets: **`filetagger/app/thin_gui.html`**, **`filetagger/app/preview_page.html`**. REST-style discovery: open **`http://127.0.0.1:8844/`** or **`…/api`** while the server is running for a short JSON list of routes (includes **`GET /preview`**, **`GET /api/v1/files/tags?path=`** for scripts).
 
 ---
 
@@ -476,7 +476,7 @@ Press Ctrl+C to stop.
 ## 🏗️ Architecture
 
 ```
-tagmanager/
+filetagger/
 ├── cli.py                  # Typer CLI — all commands registered here
 └── app/
     ├── add/                # tm add
@@ -503,7 +503,7 @@ Storage: `~/file_tags.json` (path configurable). Plain JSON — easy to inspect,
 
 ```bash
 pytest tests/ -v                           # full suite (406 tests)
-pytest tests/ --cov=tagmanager             # with coverage
+pytest tests/ --cov=filetagger             # with coverage
 pytest tests/test_graph_service.py -v      # graph module only
 pytest tests/test_watch_service.py -v      # watch module only
 ```
@@ -519,7 +519,7 @@ pytest tests/test_watch_service.py -v      # watch module only
 3. Add tests
 4. Open a PR
 
-Bug reports and feature requests: [GitHub Issues](https://github.com/davidtbilisi/TagManager/issues)
+Bug reports and feature requests: [GitHub Issues](https://github.com/davidtbilisi/FileTagger/issues)
 
 ---
 
@@ -531,7 +531,7 @@ MIT — see [LICENSE](LICENSE).
 
 <div align="center">
 
-**⭐ Star this repo if TagManager helps you stay organized!**
+**⭐ Star this repo if FileTagger helps you stay organized!**
 
 Made by [David Chincharashvili](https://github.com/DavidTbilisi) • Built with [Typer](https://typer.tiangolo.com/) and [Rich](https://github.com/Textualize/rich)
 

@@ -22,37 +22,37 @@ class TestDoctorService(unittest.TestCase):
         shutil.rmtree(self.test_dir, ignore_errors=True)
 
     def test_doctor_ok_empty_tag_file(self):
-        from tagmanager.app.doctor.service import run_doctor
+        from filetagger.app.doctor.service import run_doctor
 
         with open(self.tag_file, "w", encoding="utf-8") as f:
             f.write("{}")
-        with patch("tagmanager.app.helpers.get_tag_file_path", return_value=self.tag_file):
-            with patch("tagmanager.app.doctor.service._config_check", return_value={"ok": True}):
+        with patch("filetagger.app.helpers.get_tag_file_path", return_value=self.tag_file):
+            with patch("filetagger.app.doctor.service._config_check", return_value={"ok": True}):
                 r = run_doctor(max_path_checks=10)
         self.assertTrue(r["ok"])
         self.assertEqual(r["checks"]["tag_file"]["path_count"], 0)
 
     def test_doctor_invalid_json(self):
-        from tagmanager.app.doctor.service import run_doctor
+        from filetagger.app.doctor.service import run_doctor
 
         with open(self.tag_file, "w", encoding="utf-8") as f:
             f.write("{not json")
-        with patch("tagmanager.app.helpers.get_tag_file_path", return_value=self.tag_file):
-            with patch("tagmanager.app.doctor.service._config_check", return_value={"ok": True}):
+        with patch("filetagger.app.helpers.get_tag_file_path", return_value=self.tag_file):
+            with patch("filetagger.app.doctor.service._config_check", return_value={"ok": True}):
                 r = run_doctor(max_path_checks=10)
         self.assertFalse(r["ok"])
         self.assertTrue(r["checks"]["tag_file"]["invalid_json"])
 
     def test_doctor_counts_missing_sample(self):
-        from tagmanager.app.doctor.service import run_doctor
+        from filetagger.app.doctor.service import run_doctor
 
         existing = os.path.join(self.test_dir, "exists.txt")
         open(existing, "w").close()
         data = {existing: ["a"], "/nope/does-not-exist-xyz-123": ["b"]}
         with open(self.tag_file, "w", encoding="utf-8") as f:
             json.dump(data, f)
-        with patch("tagmanager.app.helpers.get_tag_file_path", return_value=self.tag_file):
-            with patch("tagmanager.app.doctor.service._config_check", return_value={"ok": True}):
+        with patch("filetagger.app.helpers.get_tag_file_path", return_value=self.tag_file):
+            with patch("filetagger.app.doctor.service._config_check", return_value={"ok": True}):
                 r = run_doctor(max_path_checks=10)
         self.assertTrue(r["ok"])
         sp = r["checks"]["sample_paths"]

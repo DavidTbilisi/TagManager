@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Basic unit tests for TagManager that don't require full module imports
+Basic unit tests for FileTagger that don't require full module imports
 """
 
 import unittest
@@ -11,7 +11,7 @@ import shutil
 
 
 class TestBasicFunctionality(unittest.TestCase):
-    """Basic test cases that can run without full TagManager installation"""
+    """Basic test cases that can run without full FileTagger installation"""
     
     def setUp(self):
         """Set up test environment"""
@@ -166,12 +166,12 @@ class TestProjectStructure(unittest.TestCase):
             file_path = os.path.join(project_root, file_name)
             self.assertTrue(os.path.exists(file_path), f"Missing essential file: {file_name}")
     
-    def test_tagmanager_package_structure(self):
-        """Test that the tagmanager package structure exists"""
+    def test_filetagger_package_structure(self):
+        """Test that the filetagger package structure exists"""
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        tagmanager_dir = os.path.join(project_root, "tagmanager")
+        filetagger_dir = os.path.join(project_root, "filetagger")
         
-        self.assertTrue(os.path.exists(tagmanager_dir), "tagmanager directory missing")
+        self.assertTrue(os.path.exists(filetagger_dir), "filetagger directory missing")
         
         essential_modules = [
             "__init__.py",
@@ -180,13 +180,13 @@ class TestProjectStructure(unittest.TestCase):
         ]
         
         for module in essential_modules:
-            module_path = os.path.join(tagmanager_dir, module)
+            module_path = os.path.join(filetagger_dir, module)
             self.assertTrue(os.path.exists(module_path), f"Missing module: {module}")
     
     def test_app_modules_exist(self):
         """Test that app modules exist"""
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        app_dir = os.path.join(project_root, "tagmanager", "app")
+        app_dir = os.path.join(project_root, "filetagger", "app")
         
         if os.path.exists(app_dir):
             expected_modules = [

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PyPI Setup Helper for TagManager
+PyPI Setup Helper for FileTagger
 
 This script helps set up PyPI credentials and configuration for publishing.
 """
@@ -143,7 +143,7 @@ def test_pypi_connection():
 
 
 def main():
-    print("🚀 TagManager PyPI Setup Helper")
+    print("🚀 FileTagger PyPI Setup Helper")
     print("=" * 35)
     print()
     

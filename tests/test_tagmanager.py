@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for TagManager CLI application
+Unit tests for FileTagger CLI application
 """
 
 import unittest
@@ -20,11 +20,11 @@ sys.path.insert(0, project_root)
 
 try:
     # Try to import directly from the modules
-    from tagmanager.app.add.service import add_tags
-    from tagmanager.app.remove.service import remove_path, remove_invalid_paths
-    from tagmanager.app.search.service import search_by_tags
-    from tagmanager.app.tags.service import list_all_tags, get_files_by_tag
-    from tagmanager.app.helpers import load_tags, save_tags
+    from filetagger.app.add.service import add_tags
+    from filetagger.app.remove.service import remove_path, remove_invalid_paths
+    from filetagger.app.search.service import search_by_tags
+    from filetagger.app.tags.service import list_all_tags, get_files_by_tag
+    from filetagger.app.helpers import load_tags, save_tags
 except ImportError as e:
     print(f"Warning: Could not import modules: {e}")
     print("Some tests may be skipped")
@@ -47,8 +47,8 @@ except ImportError as e:
         pass
 
 
-class TestTagManager(unittest.TestCase):
-    """Test cases for TagManager functionality"""
+class TestFileTagger(unittest.TestCase):
+    """Test cases for FileTagger functionality"""
     
     def setUp(self):
         """Set up test environment before each test"""
@@ -63,11 +63,11 @@ class TestTagManager(unittest.TestCase):
         
         from unittest.mock import patch
         self._tag_file_patcher = patch(
-            'tagmanager.app.helpers.get_tag_file_path',
+            'filetagger.app.helpers.get_tag_file_path',
             return_value=self.test_tags_file
         )
         self._autotag_patcher = patch(
-            'tagmanager.app.autotag.service.suggest_tags_for_file',
+            'filetagger.app.autotag.service.suggest_tags_for_file',
             return_value=[]
         )
         self._tag_file_patcher.start()
@@ -261,7 +261,7 @@ class TestConfigurationManagement(unittest.TestCase):
     def test_config_manager_import(self):
         """Test that config manager can be imported"""
         try:
-            from tagmanager.config_manager import ConfigManager
+            from filetagger.config_manager import ConfigManager
             self.assertTrue(True)
         except ImportError:
             self.fail("ConfigManager could not be imported")
@@ -269,7 +269,7 @@ class TestConfigurationManagement(unittest.TestCase):
     def test_config_service_import(self):
         """Test that config service can be imported"""
         try:
-            from tagmanager.app.config.service import get_configuration_value, set_configuration_value
+            from filetagger.app.config.service import get_configuration_value, set_configuration_value
             self.assertTrue(callable(get_configuration_value))
             self.assertTrue(callable(set_configuration_value))
         except ImportError:
