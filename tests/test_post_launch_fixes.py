@@ -246,5 +246,52 @@ class TestCrossOsPathHint(unittest.TestCase):
         self.assertEqual(cross_os_path_hint("docs/notes.md"), "")
 
 
+class TestCliCommandBodiesRun(unittest.TestCase):
+    """Invoke read-only command BODIES against an isolated tag DB.
+
+    --help alone never runs the body, so it can't catch a handler that's
+    called but never imported (the launch NameError). This actually executes
+    each safe command so that whole class of wiring bug fails loudly.
+    """
+
+    SAFE = [
+        ["ls"], ["tags"], ["stats"], ["storage"],
+        ["path", "/no/such/file"], ["undo"],
+        ["filter", "duplicates"], ["filter", "orphans"],
+        ["filter", "clusters"], ["filter", "isolated"],
+        ["config", "list"], ["config", "categories"],
+        ["alias", "list"], ["preset", "list"], ["search", "list"],
+        ["license", "status"],
+    ]
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.tags = os.path.join(self.dir, "tags.json")
+        with open(self.tags, "w", encoding="utf-8") as f:
+            json.dump({
+                os.path.join(self.dir, "a.txt"): ["x", "y"],
+                os.path.join(self.dir, "b.txt"): ["x"],
+            }, f)
+
+    def tearDown(self):
+        shutil.rmtree(self.dir, ignore_errors=True)
+
+    def test_command_bodies_have_no_wiring_errors(self):
+        from typer.testing import CliRunner
+        import filetagger.cli as cli
+        runner = CliRunner()
+        failures = []
+        with patch("filetagger.app.helpers.get_tag_file_path", return_value=self.tags), \
+             patch("filetagger.app.journal.service.get_tag_file_path", return_value=self.tags):
+            for args in self.SAFE:
+                res = runner.invoke(cli.app, args)
+                exc = res.exception
+                if isinstance(exc, (NameError, AttributeError, ImportError)):
+                    failures.append((args, repr(exc)))
+                elif res.exit_code == 2:  # Typer usage error == command/arg not wired
+                    failures.append((args, "usage error: " + (res.output or "")[:100]))
+        self.assertEqual(failures, [], "commands with wiring/usage errors: " + repr(failures))
+
+
 if __name__ == "__main__":
     unittest.main()
