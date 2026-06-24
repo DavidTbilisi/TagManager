@@ -218,5 +218,33 @@ class TestLicensingVerify(unittest.TestCase):
         self.assertFalse(self._verify("not-a-key").valid)
 
 
+class TestCrossOsPathHint(unittest.TestCase):
+    def test_path_os_style(self):
+        from filetagger.app.helpers import path_os_style
+        self.assertEqual(path_os_style("/home/dave/x"), "unix")
+        self.assertEqual(path_os_style("~/docs/x"), "unix")
+        self.assertEqual(path_os_style("C:\\Users\\x"), "windows")
+        self.assertEqual(path_os_style("C:/Users/x"), "windows")
+        self.assertEqual(path_os_style("\\\\server\\share"), "windows")
+        self.assertEqual(path_os_style("notes/file.md"), "unknown")
+        self.assertEqual(path_os_style(""), "unknown")
+
+    def test_same_os_path_gives_no_hint(self):
+        from filetagger.app.helpers import cross_os_path_hint
+        native = "C:\\x\\y.txt" if os.name == "nt" else "/home/x/y.txt"
+        self.assertEqual(cross_os_path_hint(native), "")
+
+    def test_foreign_os_path_gives_hint(self):
+        from filetagger.app.helpers import cross_os_path_hint
+        foreign = "/home/x/y.txt" if os.name == "nt" else "C:\\x\\y.txt"
+        hint = cross_os_path_hint(foreign)
+        self.assertTrue(hint)
+        self.assertIn("another machine", hint)
+
+    def test_relative_path_no_hint(self):
+        from filetagger.app.helpers import cross_os_path_hint
+        self.assertEqual(cross_os_path_hint("docs/notes.md"), "")
+
+
 if __name__ == "__main__":
     unittest.main()

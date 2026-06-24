@@ -1,7 +1,7 @@
 import os
 from typing import Dict, Optional, Tuple
 
-from ..helpers import load_tags, save_tags
+from ..helpers import load_tags, save_tags, cross_os_path_hint
 from ..journal.service import append_entry
 
 
@@ -12,6 +12,7 @@ def move_path(old_path: str, new_path: str) -> Tuple[bool, str]:
     Returns (success, message).
     Does NOT touch the actual file on disk — only updates the tag record.
     """
+    raw_old = old_path
     old_path = os.path.normpath(os.path.abspath(old_path))
     new_path = os.path.normpath(os.path.abspath(new_path))
 
@@ -21,7 +22,8 @@ def move_path(old_path: str, new_path: str) -> Tuple[bool, str]:
     tags = load_tags()
 
     if old_path not in tags:
-        return False, f"'{old_path}' is not tracked in FileTagger."
+        hint = cross_os_path_hint(raw_old)
+        return False, f"'{old_path}' is not tracked in FileTagger." + (" — " + hint if hint else "")
 
     if new_path in tags:
         return False, f"'{new_path}' is already tracked. Remove it first if you want to overwrite."

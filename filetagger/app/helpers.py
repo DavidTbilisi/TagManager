@@ -1,6 +1,45 @@
 import json
 import os
+import re
 from ..config_manager import get_config
+
+_WIN_DRIVE_RE = re.compile(r"^[A-Za-z]:[\\/]")
+
+
+def path_os_style(path: str) -> str:
+    """Classify a stored path's apparent OS style: 'windows', 'unix', or 'unknown'.
+
+    Used to explain cross-platform 'not found' errors — the tag database is
+    portable JSON, so a DB synced between machines can hold paths in the other
+    OS's style that will never resolve locally.
+    """
+    p = (path or "").strip()
+    if not p:
+        return "unknown"
+    if _WIN_DRIVE_RE.match(p) or p.startswith("\\\\") or "\\" in p:
+        return "windows"
+    if p.startswith("/") or p.startswith("~"):
+        return "unix"
+    return "unknown"
+
+
+def cross_os_path_hint(path: str) -> str:
+    """Return a one-line hint when *path* is in the other OS's style, else ''.
+
+    e.g. a '/home/...' path while running on Windows. Relative paths and
+    same-OS paths return '' (no hint).
+    """
+    style = path_os_style(path)
+    if style == "unknown":
+        return ""
+    on_windows = os.name == "nt"
+    if on_windows and style == "unix":
+        return ("this looks like a Unix/macOS-style path, but FileTagger is "
+                "running on Windows — the record was likely created on another machine")
+    if not on_windows and style == "windows":
+        return ("this looks like a Windows-style path, but FileTagger is running "
+                "on this system — the record was likely created on another machine")
+    return ""
 
 
 path = os.path.dirname(os.path.abspath(__file__))

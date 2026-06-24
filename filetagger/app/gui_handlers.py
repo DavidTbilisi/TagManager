@@ -11,7 +11,7 @@ import os
 from typing import Any, Dict, List, Optional, Tuple
 
 from .add.service import add_tags
-from .helpers import load_tags, save_tags
+from .helpers import load_tags, save_tags, cross_os_path_hint
 from .remove.service import remove_all_tags, remove_path as _remove_path
 
 
@@ -448,7 +448,8 @@ def relocate_path_handler(old_path: str, new_path: str) -> Dict[str, Any]:
 
     db_key = _resolve_db_path(old_path)
     if db_key is None:
-        return {"ok": False, "error": f"No record found for: {old_path}"}
+        hint = cross_os_path_hint(old_path)
+        return {"ok": False, "error": f"No record found for: {old_path}" + (" — " + hint if hint else "")}
 
     allowed = gui_allowed_root()
     # Both the existing record AND the destination must be inside the jail —
@@ -523,7 +524,8 @@ def open_path_handler(path: str, mode: str = "file") -> Dict[str, Any]:
         return {"ok": False, "error": msg, "path": abs_path}
 
     if not os.path.exists(abs_path):
-        return {"ok": False, "error": "not found", "path": abs_path}
+        hint = cross_os_path_hint(raw)
+        return {"ok": False, "error": "not found" + (" — " + hint if hint else ""), "path": abs_path}
 
     mode = (mode or "file").strip().lower()
     if mode not in ("file", "folder"):

@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-from ..helpers import load_tags, save_tags
+from ..helpers import load_tags, save_tags, cross_os_path_hint
 from ..journal.service import append_entry
 import os
 
@@ -52,7 +52,8 @@ def remove_tag_from_file(file_path: str, tag: str) -> Dict[str, Any]:
 
     data = load_tags()
     if path not in data:
-        return {"success": False, "path": path, "message": f"'{path}' not found in FileTagger"}
+        hint = cross_os_path_hint(file_path)
+        return {"success": False, "path": path, "message": f"'{path}' not found in FileTagger" + (" — " + hint if hint else "")}
 
     before = list(data[path])
     new_tags = [t for t in before if t.lower() != needle.lower()]
@@ -86,11 +87,12 @@ def remove_path(file_path: str) -> Dict[str, Any]:
     tags = load_tags()
     popped_tags = tags.pop(path, None)
     if popped_tags is None:
+        hint = cross_os_path_hint(file_path)
         return {
             "success": False,
             "path": path,
             "removed_tags": None,
-            "message": f"Could not find {path} in FileTagger",
+            "message": f"Could not find {path} in FileTagger" + (" — " + hint if hint else ""),
         }
     save_tags(tags)
     append_entry("remove_path", {"paths": {path: popped_tags}})
