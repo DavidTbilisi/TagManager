@@ -651,6 +651,28 @@
       background: var(--accent);
       transition: width .9s cubic-bezier(.2,.7,.2,1);
     }
+
+    /* ─── Charts (dependency-free SVG) ─────────────────────── */
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2.2rem;
+      margin: .5rem 0 3rem;
+    }
+    @media (max-width: 860px) { .charts { grid-template-columns: 1fr; gap: 1.8rem; } }
+    .chart-card { min-width: 0; }
+    .chart-body { margin-top: .9rem; }
+    .chart-body svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .chart-svg text { font-family: var(--mono); fill: var(--ink-mute); }
+    .chart-svg .label { font-size: 9px; letter-spacing: .03em; }
+    .chart-svg .value { font-size: 9px; fill: var(--ink); font-weight: 600; }
+    .chart-svg .big { font-family: var(--display); fill: var(--ink); font-feature-settings: "tnum"; }
+    .chart-legend {
+      display: flex; gap: 1.1rem; flex-wrap: wrap; margin-top: .7rem;
+      font-family: var(--mono); font-size: .66rem; letter-spacing: .04em; color: var(--ink-mute);
+    }
+    .chart-legend i { display: inline-block; width: 9px; height: 9px; margin-right: .35rem; vertical-align: middle; }
+    .chart-empty { font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); padding: 1.6rem 0; text-align: center; }
     .bar-list .bar-num {
       font-family: var(--mono);
       font-feature-settings: "tnum";
@@ -1457,6 +1479,21 @@
         </div>
       </div>
 
+      <div class="charts">
+        <div class="chart-card">
+          <div class="card-head"><span>Coverage · tagged vs untagged</span></div>
+          <div id="chartCoverage" class="chart-body"></div>
+        </div>
+        <div class="chart-card">
+          <div class="card-head"><span>Subjects per record</span></div>
+          <div id="chartPerFile" class="chart-body"></div>
+        </div>
+        <div class="chart-card">
+          <div class="card-head"><span>Records by file type · top six</span></div>
+          <div id="chartTypes" class="chart-body"></div>
+        </div>
+      </div>
+
       <div class="card-head"><span>Most-used subjects · top ten</span></div>
       <ol class="bar-list" id="topBars"></ol>
     </section>
@@ -2234,6 +2271,89 @@
     }
   }
 
+  // Render the §06 SVG charts from the in-memory database (allDb). Pure SVG,
+  // no external libraries, so the GUI stays fully offline.
+  function renderCharts() {
+    const db = allDb || {};
+    const paths = Object.keys(db);
+    const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+    // Coverage donut: tagged vs untagged records.
+    (function () {
+      const box = $("chartCoverage");
+      if (!box) return;
+      const total = paths.length;
+      if (!total) { box.innerHTML = '<div class="chart-empty">No records yet.</div>'; return; }
+      const untagged = paths.filter(p => !(db[p] && db[p].length)).length;
+      const tagged = total - untagged;
+      const pct = Math.round((tagged / total) * 100);
+      const r = 52, circ = 2 * Math.PI * r, dash = (tagged / total) * circ;
+      box.innerHTML =
+        '<svg class="chart-svg" viewBox="0 0 140 140" role="img" aria-label="' + pct + '% of records tagged">' +
+          '<circle cx="70" cy="70" r="' + r + '" fill="none" stroke="var(--paper-edge)" stroke-width="15"/>' +
+          '<circle cx="70" cy="70" r="' + r + '" fill="none" stroke="var(--leaf)" stroke-width="15" ' +
+            'stroke-dasharray="' + dash.toFixed(2) + ' ' + circ.toFixed(2) + '" transform="rotate(-90 70 70)"/>' +
+          '<text class="big" x="70" y="72" text-anchor="middle" font-size="28">' + pct + '%</text>' +
+          '<text class="label" x="70" y="88" text-anchor="middle">tagged</text>' +
+        '</svg>' +
+        '<div class="chart-legend">' +
+          '<span><i style="background:var(--leaf)"></i>' + tagged + ' tagged</span>' +
+          '<span><i style="background:var(--paper-edge)"></i>' + untagged + ' untagged</span>' +
+        '</div>';
+    })();
+
+    // Histogram: how many subjects each record carries (1,2,3,4,5+).
+    (function () {
+      const box = $("chartPerFile");
+      if (!box) return;
+      if (!paths.length) { box.innerHTML = '<div class="chart-empty">No records yet.</div>'; return; }
+      const buckets = [0, 0, 0, 0, 0];
+      paths.forEach(p => {
+        const n = (db[p] || []).length;
+        if (n > 0) buckets[Math.min(n, 5) - 1]++;
+      });
+      const labels = ["1", "2", "3", "4", "5+"];
+      const max = Math.max(1, ...buckets);
+      const W = 240, H = 132, pad = 20, base = H - 20;
+      const bw = (W - pad * 2) / buckets.length;
+      let bars = '<line x1="' + pad + '" y1="' + base + '" x2="' + (W - pad / 2) + '" y2="' + base + '" stroke="var(--rule)" stroke-width="1"/>';
+      buckets.forEach((v, i) => {
+        const h = (v / max) * (base - 14);
+        const x = pad + i * bw + bw * 0.18, w = bw * 0.64, y = base - h;
+        bars += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="var(--accent)"/>';
+        if (v) bars += '<text class="value" x="' + (x + w / 2).toFixed(1) + '" y="' + (y - 3).toFixed(1) + '" text-anchor="middle">' + v + '</text>';
+        bars += '<text class="label" x="' + (x + w / 2).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="middle">' + labels[i] + '</text>';
+      });
+      box.innerHTML = '<svg class="chart-svg" viewBox="0 0 ' + W + ' ' + H + '">' + bars + '</svg>';
+    })();
+
+    // Horizontal bars: record count by file extension (top six).
+    (function () {
+      const box = $("chartTypes");
+      if (!box) return;
+      if (!paths.length) { box.innerHTML = '<div class="chart-empty">No records yet.</div>'; return; }
+      const counts = {};
+      paths.forEach(p => {
+        const baseName = p.replace(/\\/g, "/").split("/").pop() || "";
+        const dot = baseName.lastIndexOf(".");
+        const ext = dot > 0 ? baseName.slice(dot).toLowerCase() : "(none)";
+        counts[ext] = (counts[ext] || 0) + 1;
+      });
+      const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+      const max = top.length ? top[0][1] : 1;
+      const W = 240, rowH = 20, lblW = 54, H = top.length * rowH + 4;
+      let rows = "";
+      top.forEach(([ext, v], i) => {
+        const y = i * rowH + 4;
+        const w = Math.max(1, (v / max) * (W - lblW - 26));
+        rows += '<text class="label" x="0" y="' + (y + 11) + '">' + esc(ext) + '</text>' +
+          '<rect x="' + lblW + '" y="' + (y + 3) + '" width="' + w.toFixed(1) + '" height="10" fill="var(--ink-soft)"/>' +
+          '<text class="value" x="' + (lblW + w + 5).toFixed(1) + '" y="' + (y + 12) + '">' + v + '</text>';
+      });
+      box.innerHTML = '<svg class="chart-svg" viewBox="0 0 ' + W + ' ' + H + '">' + rows + '</svg>';
+    })();
+  }
+
   async function refreshArchive() {
     try {
       const [db, tags, stats] = await Promise.all([
@@ -2274,6 +2394,7 @@
       });
 
       renderCloud();
+      renderCharts();
       renderArchiveTable($("archiveFilter").value);
       // Re-render the §01 chip suggestion rail (top-8 unless a record is loaded).
       suggCacheKey = "";
