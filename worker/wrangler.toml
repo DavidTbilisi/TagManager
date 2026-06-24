@@ -11,6 +11,8 @@ workers_dev = true
 # Set these in [vars] below (non-secret config):
 
 [vars]
-PADDLE_PRICE_IDS = "pri_01ksjg1y70y6ccy52cjpxqsdnq"
+# Live Paddle price IDs that grant Pro: Individual ($19 one-time), Team ($99/yr),
+# Business ($499/yr). All three are accepted so any purchaser can activate.
+PADDLE_PRICE_IDS = "pri_01ksr72rdvfephq1h3gb20dqse,pri_01ksr7537sr6x9daz8zdy6rpv8,pri_01ksr76adnnmqa0mzankddtr72"
 ATTESTATION_TTL_DAYS = "30"
-PADDLE_ENV = "sandbox"
+PADDLE_ENV = "production"

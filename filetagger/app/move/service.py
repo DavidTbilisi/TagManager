@@ -2,6 +2,7 @@ import os
 from typing import Dict, Optional, Tuple
 
 from ..helpers import load_tags, save_tags
+from ..journal.service import append_entry
 
 
 def move_path(old_path: str, new_path: str) -> Tuple[bool, str]:
@@ -25,10 +26,14 @@ def move_path(old_path: str, new_path: str) -> Tuple[bool, str]:
     if new_path in tags:
         return False, f"'{new_path}' is already tracked. Remove it first if you want to overwrite."
 
+    old_tags = list(tags[old_path])
     tags[new_path] = tags.pop(old_path)
     if not save_tags(tags):
         return False, "Failed to save tag database."
 
+    # Undo restores the old path and drops the new entry (which was not tracked
+    # before — we returned early above if new_path already existed).
+    append_entry("move_path", {"paths": {old_path: old_tags, new_path: None}})
     return True, f"Moved tag record: '{old_path}' → '{new_path}'"
 
 
@@ -50,11 +55,13 @@ def clean_missing(dry_run: bool = False) -> Dict:
             "message": f"Would remove {len(missing)} missing path(s).",
         }
 
+    removed_map = {p: list(tags[p]) for p in missing}
     for path in missing:
         del tags[path]
 
     if missing:
         save_tags(tags)
+        append_entry("clean_missing", {"paths": removed_map})
 
     return {
         "success": True,

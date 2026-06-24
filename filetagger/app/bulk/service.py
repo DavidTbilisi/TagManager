@@ -178,8 +178,10 @@ def bulk_remove_by_tag(tag: str, dry_run: bool = False) -> Dict:
     backup_if_configured()
     # Remove files from tags
     files_removed = 0
+    removed_map: Dict[str, List[str]] = {}
     for file_path in files_to_remove:
         if file_path in data:
+            removed_map[file_path] = list(data[file_path])
             del data[file_path]
             files_removed += 1
 
@@ -194,6 +196,8 @@ def bulk_remove_by_tag(tag: str, dry_run: bool = False) -> Dict:
                 "files_found": files_to_remove,
                 "dry_run": False,
             }
+        from ..journal.service import append_entry
+        append_entry("bulk_remove_by_tag", {"paths": removed_map})
 
     return {
         "success": True,
@@ -350,6 +354,7 @@ def bulk_remove_tag_from_files(tag: str, dry_run: bool = False) -> Dict:
     # Remove tag from files
     files_updated = 0
     files_to_delete = []  # Files that end up with no tags
+    before_map: Dict[str, List[str]] = {}
 
     for file_path in files_to_update:
         if file_path in data:
@@ -357,6 +362,7 @@ def bulk_remove_tag_from_files(tag: str, dry_run: bool = False) -> Dict:
             updated_tags = [t for t in tags if t.lower() != tag.lower()]
 
             if len(updated_tags) != len(tags):  # Tag was actually removed
+                before_map[file_path] = list(tags)
                 if updated_tags:
                     data[file_path] = updated_tags
                 else:
@@ -379,6 +385,8 @@ def bulk_remove_tag_from_files(tag: str, dry_run: bool = False) -> Dict:
                 "files_found": files_to_update,
                 "dry_run": False,
             }
+        from ..journal.service import append_entry
+        append_entry("bulk_remove_tag_from_files", {"paths": before_map})
 
     message = f'Removed tag "{tag}" from {files_updated} files'
     if files_to_delete:

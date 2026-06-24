@@ -9,13 +9,21 @@ def get_aliases() -> Dict[str, str]:
 
 
 def add_alias(alias: str, canonical: str) -> bool:
-    """Map alias -> canonical. Returns False if alias == canonical."""
+    """Map alias -> canonical. Returns False on self-map or if it would create a cycle."""
     alias = alias.strip().lower()
     canonical = canonical.strip().lower()
     if not alias or not canonical or alias == canonical:
         return False
     mgr = get_config_manager()
     aliases = get_aliases()
+    # Reject if the canonical's existing chain leads back to `alias` (a cycle).
+    cur = canonical
+    seen = set()
+    while cur in aliases and cur not in seen:
+        if cur == alias:
+            return False
+        seen.add(cur)
+        cur = aliases[cur]
     aliases[alias] = canonical
     mgr.set_raw("aliases", aliases)
     return True
@@ -42,17 +50,33 @@ def clear_aliases() -> int:
     return count
 
 
+def _resolve_alias(tag: str, aliases: Dict[str, str]) -> str:
+    """Follow the alias chain to its canonical end (transitive), guarding cycles.
+
+    Non-alias tags are returned unchanged (original case preserved).
+    """
+    key = tag.lower()
+    if key not in aliases:
+        return tag
+    seen = set()
+    cur = key
+    while cur in aliases and cur not in seen:
+        seen.add(cur)
+        cur = aliases[cur]
+    return cur
+
+
 def apply_aliases(tags: List[str]) -> List[str]:
     """
-    Replace any tag that matches a known alias with its canonical form.
-    Deduplicates the result while preserving order.
+    Replace any tag that matches a known alias with its canonical form,
+    resolving chains (a->b->c) transitively. Deduplicates, preserving order.
     """
     aliases = get_aliases()
     if not aliases:
         return tags
     seen = []
     for tag in tags:
-        resolved = aliases.get(tag.lower(), tag)
+        resolved = _resolve_alias(tag, aliases)
         if resolved not in seen:
             seen.append(resolved)
     return seen

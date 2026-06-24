@@ -81,8 +81,11 @@ def _resolve_db_path(path: str) -> Optional[str]:
 def path_allowed(path_abs: str, allowed_root: Optional[str]) -> Tuple[bool, str]:
     if not allowed_root:
         return True, ""
-    root = os.path.normpath(os.path.abspath(allowed_root))
-    if path_abs == root or path_abs.startswith(root + os.sep):
+    # Resolve symlinks on BOTH sides so a symlink inside the root can't point
+    # outside it (and a symlinked root, e.g. /home -> /var/home, still matches).
+    root = os.path.realpath(os.path.normpath(os.path.abspath(allowed_root)))
+    real = os.path.realpath(path_abs)
+    if real == root or real.startswith(root + os.sep):
         return True, ""
     return False, f"path outside allowed root ({root})"
 
@@ -447,8 +450,14 @@ def relocate_path_handler(old_path: str, new_path: str) -> Dict[str, Any]:
     if db_key is None:
         return {"ok": False, "error": f"No record found for: {old_path}"}
 
-    new_abs = normalize_gui_path(new_path)
     allowed = gui_allowed_root()
+    # Both the existing record AND the destination must be inside the jail —
+    # otherwise relocate could pull a record out of (or into) the allowed tree.
+    ok, msg = path_allowed(db_key, allowed)
+    if not ok:
+        return {"ok": False, "error": msg}
+
+    new_abs = normalize_gui_path(new_path)
     ok, msg = path_allowed(new_abs, allowed)
     if not ok:
         return {"ok": False, "error": msg}
@@ -456,8 +465,12 @@ def relocate_path_handler(old_path: str, new_path: str) -> Dict[str, Any]:
     tags = load_tags()
     if new_abs in tags:
         return {"ok": False, "error": f"A record already exists at the new path; withdraw it first."}
+    old_tags = list(tags[db_key])
     tags[new_abs] = tags.pop(db_key)
-    save_tags(tags)
+    if not save_tags(tags):
+        return {"ok": False, "error": "Failed to save the tag database."}
+    from .journal.service import append_entry
+    append_entry("relocate", {"paths": {db_key: old_tags, new_abs: None}})
     return {
         "ok": True,
         "old": db_key,

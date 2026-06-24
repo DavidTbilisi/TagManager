@@ -168,7 +168,10 @@ async function handleVerify(req: Request, env: Env): Promise<Response> {
     }
   }
 
-  const ttl = Number(env.ATTESTATION_TTL_DAYS ?? "30");
+  const ttlRaw = Number(env.ATTESTATION_TTL_DAYS ?? "30");
+  // Clamp to a sane range so an ops typo (e.g. "1" or "9999") can't break or
+  // over-extend every activation.
+  const ttl = Number.isFinite(ttlRaw) ? Math.max(1, Math.min(365, ttlRaw)) : 30;
   const signingKey = await loadSigningKey(env);
   const key = await mintAttestation(email, txnId, ttl, signingKey);
   return json({ key });

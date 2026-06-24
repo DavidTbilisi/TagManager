@@ -88,6 +88,25 @@ from .app.exportdata.service import (
 )
 from .app.http_api import run_gui_server, run_server as run_http_server
 from .app.journal.service import journal_enabled, journal_path_for_display, undo_last
+from .app.license.handler import (
+    handle_activate as handle_license_activate,
+    handle_status as handle_license_status,
+    handle_refresh as handle_license_refresh,
+    handle_deactivate as handle_license_deactivate,
+)
+from .app.shell.handler import (
+    handle_tag as handle_shell_tag,
+    handle_uninstall as handle_shell_uninstall,
+    handle_status as handle_shell_status,
+)
+from .app.sendto.handler import (
+    handle_install as handle_sendto_install,
+    handle_uninstall as handle_sendto_uninstall,
+    handle_status as handle_sendto_status,
+)
+# NOTE: hotkey handlers are imported lazily inside each command below — the
+# hotkey service imports `ctypes.wintypes` (Windows-only) at module load, so a
+# top-level import here would break `import filetagger.cli` on Linux/macOS.
 from filetagger import runtime
 
 
@@ -1661,6 +1680,7 @@ def hotkey_run(
     key: str = typer.Option("t", "--key", "-k", help="Single character key, e.g. 't'"),
 ):
     """Run the hotkey daemon in the foreground. Pops a file picker on trigger."""
+    from .app.hotkey.handler import handle_run as handle_hotkey_run
     raise typer.Exit(handle_hotkey_run(modifiers, key))
 
 
@@ -1670,18 +1690,21 @@ def hotkey_install(
     key: str = typer.Option("t", "--key", "-k", help="Single character key"),
 ):
     """Install the hotkey daemon to autostart at logon (Startup folder, no admin)."""
+    from .app.hotkey.handler import handle_install as handle_hotkey_install
     raise typer.Exit(handle_hotkey_install(modifiers, key))
 
 
 @hotkey_app.command("uninstall")
 def hotkey_uninstall():
     """Remove the hotkey daemon from autostart."""
+    from .app.hotkey.handler import handle_uninstall as handle_hotkey_uninstall
     raise typer.Exit(handle_hotkey_uninstall())
 
 
 @hotkey_app.command("status")
 def hotkey_status():
     """Check whether the hotkey daemon autostart is installed."""
+    from .app.hotkey.handler import handle_status as handle_hotkey_status
     raise typer.Exit(handle_hotkey_status())
 
 

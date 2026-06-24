@@ -1140,8 +1140,8 @@
     <!-- Header -->
     <header class="head">
       <div class="eyebrow">A personal catalogue · kept in plain text</div>
-      <h1>The Tag<em>Manager</em></h1>
-      <p class="tagline">Tag a file, find one later, file many at once — all running on this machine, against the same database your <span style="font-family:var(--mono); color:var(--ink)">tm</span> command uses.</p>
+      <h1>The File<em>Tagger</em></h1>
+      <p class="tagline">Tag a file, find one later, file many at once — all running on this machine, against the same database your <span style="font-family:var(--mono); color:var(--ink)">ftag</span> command uses.</p>
       <dl class="meta">
         <div><dt>Records</dt><dd id="hdrFiles">·</dd></div>
         <div><dt>Subjects</dt><dd id="hdrTags">·</dd></div>
@@ -2889,7 +2889,7 @@
         loadedPath = j.new;
         $("fpath").value = j.new;
         await loadPath(j.new);
-        await refreshDb();
+        await refreshArchive();
         status("Relocated · " + j.message);
       } catch (e) { status("Relocate failed: " + (e.message || e), true); }
     });

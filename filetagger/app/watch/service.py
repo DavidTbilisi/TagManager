@@ -154,13 +154,14 @@ class _FileTaggerHandler(_Base):  # type: ignore[misc]
         if event.is_directory or self._ignored(event.src_path):
             return
         with self._lock:
-            result = move_path(event.src_path, event.dest_path)
+            # move_path returns a (success, message) tuple, not a dict.
+            ok, msg = move_path(event.src_path, event.dest_path)
         self.on_event(WatchEvent(
             kind="moved",
             path=event.src_path,
             dest=event.dest_path,
-            success=result.get("success", False),
-            reason=result.get("message", ""),
+            success=ok,
+            reason=msg,
         ))
 
     def on_deleted(self, event) -> None:
